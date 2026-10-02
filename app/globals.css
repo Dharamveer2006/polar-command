@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #070c18;
+    --bg-secondary: #0b132b;
+    --bg-card: rgba(28, 37, 65, 0.72);
+    --border-polar: rgba(72, 202, 228, 0.18);
+    --ice-accent: #72ddf7;
+    --cyan-glow: #00f0ff;
+  }
+
+  * {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #283655 #070c18;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(ellipse at 20% -20%, rgba(14, 165, 233, 0.15), transparent 50%),
+      radial-gradient(ellipse at 80% 120%, rgba(56, 189, 248, 0.08), transparent 50%),
+      linear-gradient(to bottom, #070c18, #0b132b);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Polar glass card utility */
+  .polar-card {
+    background-color: rgba(20, 29, 53, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(114, 221, 247, 0.15);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+
+  .polar-card:hover {
+    border-color: rgba(114, 221, 247, 0.3);
+  }
+
+  .polar-card-highlight {
+    background-color: rgba(24, 38, 70, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    box-shadow: 0 0 25px -5px rgba(0, 240, 255, 0.15);
+  }
+}
+
+@layer utilities {
+  /* Glowing text and indicators */
+  .glow-cyan {
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  }
+
+  .glow-amber {
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  }
+
+  .glow-rose {
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+
+  /* Pulse animation for active telemetry */
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2.5s infinite ease-in-out;
+  }
+}
+
+/* Keyframes */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.96);
+  }
+}
+
+/* WebKit Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #070c18;
+}
+::-webkit-scrollbar-thumb {
+  background: #283655;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #48cae4;
+}
+
+/* Print Styles for Official SITREP Reports */
+@media print {
+  header,
+  nav,
+  .no-print,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .polar-card {
+    background: #ffffff !important;
+    border: 1px solid #cccccc !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+}
