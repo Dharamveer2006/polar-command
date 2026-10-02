@@ -41,6 +41,7 @@ interface StationContextType {
   
   // Station State (Derived from Central Pipeline)
   stationState: StationFullState;
+  derived: StationFullState['derived'];
   allStationsState: Record<StationId, StationFullState>;
   
   // Realtime & Offline status
@@ -60,6 +61,7 @@ interface StationContextType {
   // Event Injections (Composable Scenarios)
   activeInjectedEvents: ActiveScenarios;
   toggleInjectedEvent: (event: keyof ActiveScenarios) => void;
+  triggerFullCascade: () => void;
   resetAllEvents: () => void;
   
   // Alert Actions (Protected by RBAC)
@@ -305,6 +307,16 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     });
     setAlerts(INITIAL_ALERTS);
     addAuditLog('RESET_SCENARIOS', 'STATION', currentStationId, 'All composable scenarios reset to nominal baseline.');
+  }, [currentStationId, addAuditLog]);
+
+  const triggerFullCascade = useCallback(() => {
+    setActiveInjectedEvents({
+      extremeCold: true,
+      highWind: true,
+      generator2Failure: true,
+      resupplyDelay: true,
+    });
+    addAuditLog('CASCADE_SCENARIOS', 'STATION', currentStationId, 'Simultaneous multi-domain cascade triggered (Cold + Wind + Gen2 + Resupply).');
   }, [currentStationId, addAuditLog]);
 
   // Phase 2 — Physically Coupled Realtime Telemetry Drift Tick
@@ -557,6 +569,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser,
       allUsers: DEMO_USERS,
       stationState: currentStationState,
+      derived: currentStationState.derived,
       allStationsState,
       isRealtimeActive,
       setIsRealtimeActive,
@@ -570,6 +583,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       dismissSyncNotification,
       activeInjectedEvents,
       toggleInjectedEvent,
+      triggerFullCascade,
       resetAllEvents,
       acknowledgeAlert,
       resolveAlert,
