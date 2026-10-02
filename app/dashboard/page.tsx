@@ -34,11 +34,12 @@ import {
   HeartPulse,
   Share2,
   Server,
-  ArrowDown
+  ArrowDown,
+  Info
 } from 'lucide-react';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 import StationTwin2D from '@/components/twin/StationTwin2D';
-import { StationId, StationMode } from '@/types';
+import { StationId, StationMode, RiskSeverity } from '@/types';
 
 export default function DashboardPage() {
   const { 
@@ -58,6 +59,10 @@ export default function DashboardPage() {
   const [showExplainModal, setShowExplainModal] = useState<boolean>(false);
   const [activeExplainAlert, setActiveExplainAlert] = useState<any>(null);
 
+  // ==============================================================
+  // 11. SINGLE SOURCE OF TRUTH (effectiveStationState)
+  // All cards consume currentState, riskState, forecastState & recommendedActions
+  // ==============================================================
   const { metadata, environment, energy, infrastructure, logistics, healthScore, activeAlerts } = stationState;
 
   const maitriState = allStationsState['maitri'];
@@ -66,19 +71,21 @@ export default function DashboardPage() {
   const criticalCount = activeAlerts.filter(a => a.severity === 'critical').length;
   const warningCount = activeAlerts.filter(a => a.severity === 'warning').length;
 
-  // Section 2: Fix Operational Status Consistency
-  // Never show "Nominal Operations Across All Systems" when health is reduced, warning exists, or logistics is critical
+  const isPowerDeficit = derived.powerSurplusDeficitKw < 0;
   const isHealthReduced = derived.overallHealthScore < 85;
   const isLogisticsCritical = derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay;
-  const isPowerDeficit = derived.powerSurplusDeficitKw < 0;
 
-  const operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL' = criticalCount > 0 || isPowerDeficit
-    ? 'CRITICAL'
-    : warningCount > 0 || isHealthReduced || isLogisticsCritical
-    ? 'WARNING'
-    : activeInjectedEvents.extremeCold || activeInjectedEvents.highWind
-    ? 'WATCH'
-    : 'NOMINAL';
+  // 2. SEPARATE OPERATING MODE FROM OPERATIONAL STATUS
+  // Operating Mode: NORMAL, SCIENCE OPERATIONS, WEATHER ALERT, POWER CONSERVATION, EMERGENCY
+  // Operational Status: NOMINAL, WATCH, WARNING, CRITICAL
+  const operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL' = 
+    criticalCount > 0 || isPowerDeficit || activeInjectedEvents.generator2Failure
+      ? 'CRITICAL'
+      : warningCount > 0 || isHealthReduced || isLogisticsCritical
+      ? 'WARNING'
+      : activeInjectedEvents.extremeCold || activeInjectedEvents.highWind
+      ? 'WATCH'
+      : 'NOMINAL';
 
   const statusColorMap = {
     CRITICAL: 'bg-[#E53935]/20 text-[#E53935] border-[#E53935] animate-pulse',
@@ -87,186 +94,289 @@ export default function DashboardPage() {
     NOMINAL: 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]',
   };
 
-  // Subsystem States for Operational Status Block (Section 2)
+  // Subsystem States for Operational Status Block
   const subsystemStates = {
-    energy: isPowerDeficit ? (Math.abs(derived.powerSurplusDeficitKw) > 50 ? 'CRITICAL' : 'WARNING') : 'NOMINAL',
+    energy: isPowerDeficit ? 'CRITICAL' : activeInjectedEvents.generator2Failure ? 'WARNING' : 'NOMINAL',
     water: infrastructure.waterPumpHealth < 75 ? 'WARNING' : 'NOMINAL',
     lifeSupport: activeInjectedEvents.extremeCold && isPowerDeficit ? 'CRITICAL' : activeInjectedEvents.extremeCold ? 'WATCH' : 'NOMINAL',
     comms: activeInjectedEvents.highWind ? 'WARNING' : metadata.connectivityState === 'DISCONNECTED' ? 'CRITICAL' : 'NOMINAL',
-    logistics: derived.fuelRunwayDays < 10 ? 'CRITICAL' : (derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay) ? 'CRITICAL' : 'NOMINAL',
+    logistics: derived.fuelRunwayDays < 10 ? 'CRITICAL' : isLogisticsCritical ? 'CRITICAL' : 'NOMINAL',
   };
 
-  // Section 3: Cross-Domain Insight (Power vs Long-term Autonomy)
-  const currentPowerStatus = isPowerDeficit ? 'DEFICIT' : 'NOMINAL';
-  const longTermAutonomyStatus = derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay ? 'CONSTRAINED' : 'SECURE';
-  const autonomyReason = derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay
-    ? `Fuel reserve (${derived.fuelRunwayDays.toFixed(1)}d) is below mandatory 14-day polar buffer. Projected shortage before resupply vessel arrival.`
-    : isPowerDeficit
-    ? `Microgrid generation deficit (${Math.abs(derived.powerSurplusDeficitKw)} kW) discharging battery reserves.`
-    : `Microgrid equilibrium maintained with ${derived.fuelRunwayDays.toFixed(1)} days of fuel autonomy.`;
+  // 3. HEALTH EXPLANATION BREAKDOWN & DRIVER ATTRIBUTION
+  // Exact domain values: Environment, Microgrid, Infrastructure, Logistics
+  const envScore = healthScore?.environmentScore || 95;
+  const energyScore = healthScore?.energyScore || (isPowerDeficit ? 45 : activeInjectedEvents.generator2Failure ? 60 : 92);
+  const infraScore = healthScore?.infrastructureScore || (activeInjectedEvents.extremeCold ? 74 : 91);
+  const logScore = healthScore?.logisticsScore || (isLogisticsCritical ? (derived.fuelRunwayDays < 10 ? 42 : 68) : 88);
 
-  // Section 4: Primary & Secondary Health Drivers
-  const primaryHealthDriver = activeInjectedEvents.generator2Failure 
-    ? 'Generator #2 Mechanical Lockout & Microgrid Deficit'
-    : (derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay)
-    ? 'Fuel Runway Contraction Below Operational Reserve'
-    : activeInjectedEvents.extremeCold
-    ? 'Sub-Zero HVAC Thermodynamic Overdrive'
-    : 'All Subsystems Operating Within Polar Thresholds';
-
-  const secondaryHealthDriver = activeInjectedEvents.resupplyDelay && activeInjectedEvents.generator2Failure
-    ? 'Pack-Ice Resupply Vessel Delay (+12 Days)'
-    : activeInjectedEvents.extremeCold
-    ? 'Katabatic Wind Convective Heat Loss'
-    : derived.fuelRunwayDays < 18
-    ? 'Reserve Buffer Window Narrowing'
-    : 'Thermal Loop Equilibrium';
-
-  // Section 5: Risk Engine Active Incident
-  const riskSeverity: 'nominal' | 'warning' | 'critical' = criticalCount > 0 || isPowerDeficit || activeInjectedEvents.generator2Failure
-    ? 'critical'
-    : warningCount > 0 || isLogisticsCritical || activeInjectedEvents.extremeCold || activeInjectedEvents.resupplyDelay
-    ? 'warning'
-    : 'nominal';
-
-  const riskEventTitle = activeInjectedEvents.generator2Failure && activeInjectedEvents.extremeCold
-    ? 'COMPOUND ANOMALY: Microgrid Deficit during Severe Cold Snap'
-    : activeInjectedEvents.generator2Failure
-    ? 'CRITICAL DEFICIT: Generator #2 Lockout (-190 kW)'
-    : activeInjectedEvents.extremeCold
-    ? 'WEATHER ADVISORY: Extreme Polar Cold Snap (-12°C Offset)'
-    : activeInjectedEvents.resupplyDelay
-    ? 'LOGISTICS ALERT: Pack-Ice Navigation Delay (+12 Days)'
+  const primaryDriverText = activeInjectedEvents.generator2Failure
+    ? 'Generator #2 mechanical trip & microgrid deficit'
     : isLogisticsCritical
-    ? `LOGISTICS ALERT: Fuel Runway Constrained (${derived.fuelRunwayDays.toFixed(1)}d)`
-    : 'Nominal Watchkeeping: Microgrid & Station In Balance';
+    ? 'Fuel autonomy below 14-day polar reserve threshold'
+    : activeInjectedEvents.extremeCold
+    ? 'Sub-zero HVAC thermodynamic overdrive'
+    : 'All subsystems operating within nominal limits';
+
+  const primaryDriverImpact = activeInjectedEvents.generator2Failure
+    ? '-18 pts'
+    : isLogisticsCritical
+    ? '-8 pts'
+    : activeInjectedEvents.extremeCold
+    ? '-9 pts'
+    : '0 pts';
+
+  const secondaryDriverText = activeInjectedEvents.resupplyDelay && activeInjectedEvents.generator2Failure
+    ? 'Pack-ice resupply delay (+12 days)'
+    : activeInjectedEvents.generator2Failure
+    ? 'Microgrid reserve margin & BESS discharge'
+    : activeInjectedEvents.extremeCold
+    ? 'Katabatic wind convective heat loss'
+    : derived.fuelRunwayDays < 18
+    ? 'Reserve buffer window narrowing'
+    : 'Microgrid reserve margin';
+
+  const secondaryDriverImpact = activeInjectedEvents.resupplyDelay && activeInjectedEvents.generator2Failure
+    ? '-10 pts'
+    : activeInjectedEvents.generator2Failure
+    ? '-5 pts'
+    : activeInjectedEvents.extremeCold
+    ? '-4 pts'
+    : derived.fuelRunwayDays < 18
+    ? '-3 pts'
+    : '0 pts';
+
+  // 4. POWER + AUTONOMY DETAILS
+  const currentPowerCondition = isPowerDeficit ? 'DEFICIT' : 'SUFFICIENT';
+  const longTermAutonomyCondition = isLogisticsCritical ? 'CONSTRAINED' : 'SECURE';
+
+  // 5. AUTONOMY & SYSTEM IMPACT: WHY THIS MATTERS
+  const whyThisMattersText = isPowerDeficit
+    ? 'Critical power deficit active. Generation is 190 kW below station baseload. BESS battery is currently discharging to cover life support, but will exhaust in < 6 hours unless auxiliary generation is activated or load shedding is engaged.'
+    : activeInjectedEvents.extremeCold && isLogisticsCritical
+    ? 'Thermodynamic load surge from the cold snap has increased daily fuel consumption by 18%. Combined with sea-ice resupply delays, station fuel runway will breach reserve limits before arrival.'
+    : isLogisticsCritical
+    ? 'Current generation is sufficient for present station demand. However, fuel autonomy is below the operational reserve threshold. No immediate power failure is indicated, but continued operation requires logistics attention.'
+    : activeInjectedEvents.extremeCold
+    ? 'Severe exterior cold has escalated HVAC heating draw by +35 kW. Current generator capacity accommodates the load, but fuel burn rate has accelerated, narrowing polar winter autonomy.'
+    : 'Current generation is sufficient for present station demand and fuel reserves exceed the 14-day winter safety buffer. Nominal polar watchkeeping equilibrium is maintained.';
+
+  // 8. RISK ENGINE ITEMS (WHAT, WHY, AFFECTED, IMPACT, ACTION)
+  const riskWhat = activeInjectedEvents.generator2Failure && activeInjectedEvents.extremeCold
+    ? 'CRITICAL DEFICIT: Microgrid Deficit during Severe Polar Cold Snap'
+    : activeInjectedEvents.generator2Failure
+    ? 'CRITICAL DEFICIT: Generator #2 Lockout & Microgrid Deficit'
+    : isLogisticsCritical
+    ? 'WARNING: Fuel Runway Constrained Below Operational Reserve'
+    : activeInjectedEvents.extremeCold
+    ? 'ADVISORY: Extreme Polar Cold Snap (-12°C Offset)'
+    : 'NOMINAL: All Systems Operating in Balance';
 
   const riskWhy = activeInjectedEvents.generator2Failure
     ? `Emergency trip removed 190 kW generation capacity while station demand is ${derived.totalDemandKw} kW.`
-    : activeInjectedEvents.extremeCold
-    ? `Ambient temperature dropped to ${derived.effectiveTempC.toFixed(1)}°C, surging HVAC heating draw to ${derived.heatingLoadKw} kW.`
-    : activeInjectedEvents.resupplyDelay
-    ? 'Multi-year pack ice obstruction at coastal approach pushed vessel arrival +12 days beyond safety buffer.'
     : isLogisticsCritical
-    ? `Current daily fuel burn (${derived.dailyFuelBurnLitres} L/d) depletes stock to 0 before scheduled replenishment.`
+    ? `Current fuel autonomy is ${derived.fuelRunwayDays.toFixed(1)} days, below the mandatory 14-day polar winter safety buffer.`
+    : activeInjectedEvents.extremeCold
+    ? `Outside ambient temperature dropped to ${derived.effectiveTempC.toFixed(1)}°C, escalating HVAC heating draw to ${derived.heatingLoadKw} kW.`
     : 'Continuous sensor telemetry reporting within nominal operational thresholds.';
 
-  const riskAffected = activeInjectedEvents.generator2Failure
-    ? ['Microgrid', 'Battery (BESS)', 'Station HVAC', 'Life Support']
+  const riskAffectedSystems = activeInjectedEvents.generator2Failure
+    ? ['Energy', 'Microgrid', 'Battery (BESS)', 'Logistics']
+    : isLogisticsCritical
+    ? ['Energy', 'Logistics', 'Fuel Farm']
     : activeInjectedEvents.extremeCold
-    ? ['Environment', 'HVAC Thermal Grid', 'Microgrid Demand', 'Fuel Reserves']
-    : activeInjectedEvents.resupplyDelay
-    ? ['Logistics', 'Fuel Farm', 'Winter Buffer', 'Operational Risk']
+    ? ['Environment', 'HVAC Thermal Loop', 'Energy Demand']
     : ['All Systems Nominal'];
 
-  const riskImpact = activeInjectedEvents.generator2Failure
-    ? `Station battery discharging at current net deficit (${Math.abs(derived.powerSurplusDeficitKw)} kW). Battery will deplete in < 6 hours without intervention.`
+  const riskExpectedImpact = activeInjectedEvents.generator2Failure
+    ? `Battery discharging at current net deficit (${Math.abs(derived.powerSurplusDeficitKw)} kW). Battery will deplete in < 6 hours without intervention.`
+    : isLogisticsCritical
+    ? 'Long-duration station autonomy constrained. Projected shortage before resupply vessel arrival.'
     : activeInjectedEvents.extremeCold
-    ? 'Accelerated thermal leakage increases daily fuel consumption by +18%, shrinking winter fuel autonomy.'
-    : activeInjectedEvents.resupplyDelay
-    ? `Fuel runway margin (${derived.fuelRunwayDays.toFixed(1)}d) drops inside the 30-day resupply window, causing projected fuel exhaustion.`
+    ? 'Accelerated thermal leakage increases daily fuel consumption by +18%, shrinking winter fuel runway.'
     : 'Station maintains positive power reserve and uninterrupted life support stability.';
 
-  const riskAction = activeInjectedEvents.generator2Failure
-    ? 'Activate cold-reserve Genset #3 immediately; shed Tier-3 research laboratory load (-45 kW).'
+  const riskOperatorAction = activeInjectedEvents.generator2Failure
+    ? 'Activate cold-reserve Genset #3 immediately; shed Tier-3 research laboratory loads (-45 kW).'
+    : isLogisticsCritical
+    ? 'Review resupply schedule and engage Power Conservation mode to reduce daily burn rate.'
     : activeInjectedEvents.extremeCold
     ? 'Deploy perimeter thermal storm shutters; engage secondary glycol heat recovery exchangers.'
-    : activeInjectedEvents.resupplyDelay
-    ? 'Enact Tier-2 station energy conservation protocol; submit ski-plane air-drop fuel requisition.'
     : 'Maintain standard watchkeeping routine; log synoptic weather observations.';
 
-  // Section 6: Live Causal Flow State
-  const causalFlow = [
-    { label: 'Temperature', value: `${derived.effectiveTempC.toFixed(1)}°C`, active: activeInjectedEvents.extremeCold },
-    { label: 'HVAC Load', value: `${derived.heatingLoadKw} kW`, active: activeInjectedEvents.extremeCold },
-    { label: 'Energy Demand', value: `${derived.totalDemandKw} kW`, active: activeInjectedEvents.extremeCold || activeInjectedEvents.generator2Failure },
-    { label: 'Generator Load', value: `${derived.generationCapacityKw} kW`, active: activeInjectedEvents.generator2Failure },
-    { label: 'Fuel Burn', value: `${derived.dailyFuelBurnLitres} L/d`, active: activeInjectedEvents.extremeCold || activeInjectedEvents.generator2Failure },
-    { label: 'Fuel Runway', value: `${derived.fuelRunwayDays.toFixed(1)}d`, active: derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay },
-    { label: 'Logistics Risk', value: isLogisticsCritical ? 'CRITICAL' : 'NOMINAL', active: isLogisticsCritical },
+  const riskSeverity: RiskSeverity = operationalStatus === 'CRITICAL' ? 'critical' : operationalStatus === 'WARNING' ? 'warning' : 'nominal';
+
+  // 7. LIVE CAUSAL FLOW
+  // WEATHER -> HVAC LOAD -> ENERGY DEMAND -> POWER BALANCE -> BATTERY -> FUEL RUNWAY -> LOGISTICS RISK
+  const causalFlowItems = [
+    { 
+      label: 'WEATHER', 
+      value: `${derived.effectiveTempC.toFixed(1)}°C`, 
+      sub: `${derived.effectiveWindKmh} km/h`,
+      active: activeInjectedEvents.extremeCold || activeInjectedEvents.highWind 
+    },
+    { 
+      label: 'HVAC LOAD', 
+      value: `${derived.heatingLoadKw} kW`, 
+      sub: activeInjectedEvents.extremeCold ? '+35 kW' : 'Normal',
+      active: activeInjectedEvents.extremeCold 
+    },
+    { 
+      label: 'ENERGY DEMAND', 
+      value: `${derived.totalDemandKw} kW`, 
+      sub: 'Microgrid',
+      active: activeInjectedEvents.extremeCold || activeInjectedEvents.generator2Failure 
+    },
+    { 
+      label: 'POWER BALANCE', 
+      value: isPowerDeficit ? `${derived.powerSurplusDeficitKw} kW` : `+${derived.powerSurplusDeficitKw} kW`, 
+      sub: isPowerDeficit ? 'DEFICIT' : 'RESERVE',
+      active: isPowerDeficit 
+    },
+    { 
+      label: 'BATTERY', 
+      value: `${derived.batterySocPercent}%`, 
+      sub: derived.batteryStatus.toUpperCase(),
+      active: derived.batteryStatus === 'discharging' 
+    },
+    { 
+      label: 'FUEL RUNWAY', 
+      value: `${derived.fuelRunwayDays.toFixed(1)}d`, 
+      sub: `${derived.dailyFuelBurnLitres} L/d`,
+      active: isLogisticsCritical 
+    },
+    { 
+      label: 'LOGISTICS RISK', 
+      value: isLogisticsCritical ? 'CRITICAL' : 'NOMINAL', 
+      sub: activeInjectedEvents.resupplyDelay ? '+12d ICE' : 'On Track',
+      active: isLogisticsCritical 
+    },
   ];
 
-  // Section 7: Next 24 Hours Timeline
+  // 10. NEXT 24 HOURS TIMELINE (NOW, +6H, +12H, +24H)
   const next24hTimeline = [
     {
       label: 'NOW',
       time: 'T+0H',
-      weather: `${derived.effectiveTempC.toFixed(1)}°C, ${derived.effectiveWindKmh} km/h`,
       demand: `${derived.totalDemandKw} kW`,
-      battery: `${derived.batterySocPercent}%`,
+      battery: `${derived.batterySocPercent}% (${derived.batteryStatus})`,
       fuel: `${derived.fuelRunwayDays.toFixed(1)}d`,
       infra: `${derived.overallInfrastructureHealth}%`,
       logistics: isLogisticsCritical ? 'CRITICAL' : 'NOMINAL',
+      risk: operationalStatus,
     },
     {
       label: '+6H',
       time: 'T+6H',
-      weather: `${(derived.effectiveTempC - 0.8).toFixed(1)}°C, ${derived.effectiveWindKmh + 2} km/h`,
       demand: `${derived.totalDemandKw + 8} kW`,
-      battery: isPowerDeficit ? `${Math.max(0, derived.batterySocPercent - 28)}%` : `${derived.batterySocPercent}%`,
+      battery: isPowerDeficit ? `${Math.max(0, derived.batterySocPercent - 28)}% (DRAIN)` : `${derived.batterySocPercent}% (STABLE)`,
       fuel: `${Math.max(0, derived.fuelRunwayDays - 0.3).toFixed(1)}d`,
       infra: isPowerDeficit ? '78%' : `${derived.overallInfrastructureHealth}%`,
       logistics: isLogisticsCritical ? 'CRITICAL' : 'NOMINAL',
+      risk: isPowerDeficit ? 'CRITICAL' : operationalStatus,
     },
     {
       label: '+12H',
       time: 'T+12H',
-      weather: `${(derived.effectiveTempC - 1.4).toFixed(1)}°C, ${derived.effectiveWindKmh + 5} km/h`,
       demand: `${derived.totalDemandKw + 14} kW`,
-      battery: isPowerDeficit ? `${Math.max(0, derived.batterySocPercent - 55)}%` : `${derived.batterySocPercent}%`,
+      battery: isPowerDeficit ? `${Math.max(0, derived.batterySocPercent - 55)}% (CRIT)` : `${derived.batterySocPercent}% (STABLE)`,
       fuel: `${Math.max(0, derived.fuelRunwayDays - 0.6).toFixed(1)}d`,
       infra: isPowerDeficit ? '72%' : `${derived.overallInfrastructureHealth}%`,
       logistics: derived.fuelRunwayDays < 18 ? 'WARNING' : 'NOMINAL',
+      risk: isPowerDeficit ? 'CRITICAL' : isLogisticsCritical ? 'WARNING' : 'NOMINAL',
     },
     {
       label: '+24H',
       time: 'T+24H',
-      weather: `${(derived.effectiveTempC - 2.1).toFixed(1)}°C, ${derived.effectiveWindKmh + 8} km/h`,
       demand: `${derived.totalDemandKw + 22} kW`,
-      battery: isPowerDeficit ? '0% (DEPLETED)' : `${derived.batterySocPercent}%`,
+      battery: isPowerDeficit ? '0% (DEPLETED)' : `${derived.batterySocPercent}% (STABLE)`,
       fuel: `${Math.max(0, derived.fuelRunwayDays - 1.2).toFixed(1)}d`,
       infra: isPowerDeficit ? '65%' : `${derived.overallInfrastructureHealth}%`,
       logistics: derived.fuelRunwayDays < 15 ? 'CRITICAL' : 'WARNING',
+      risk: isPowerDeficit ? 'CRITICAL' : isLogisticsCritical ? 'CRITICAL' : 'NOMINAL',
     },
   ];
 
-  // Asset Dependency Mapping
-  const assetDependencyMap: Record<string, { system: string; cascade: string[]; risk: string; action: string }> = {
+  // 6. ASSET DEPENDENCY MAPPING WITH IMPACT VALUES BESIDE AFFECTED NODES
+  const assetDependencyMap: Record<string, { system: string; cascade: string[]; risk: string; action: string; impactNodes: string[] }> = {
     'bhr-gen-2': {
       system: 'Auxiliary Diesel Generator #2 (220 kW)',
-      cascade: ['Generator #2 Lockout', 'Microgrid Deficit (-190 kW)', 'BESS Battery Discharge', 'HVAC Load Priority', 'Fuel Runway Contraction', 'Station Risk'],
+      cascade: [
+        'Generator #2 (0 kW OFFLINE)',
+        'Microgrid (-190 kW DEFICIT)',
+        'Battery (-32 kW DISCHARGING)',
+        'Fuel (2,652 L/d)',
+        'Logistics (4.3d RUNWAY)',
+        'Risk (CRITICAL)'
+      ],
       risk: activeInjectedEvents.generator2Failure ? 'CRITICAL LOCKOUT' : 'STANDBY NOMINAL',
-      action: activeInjectedEvents.generator2Failure ? 'Execute emergency start on reserve Genset #3; shed non-critical research lab loads.' : 'Inspect oil filter and check coolant level.',
+      action: activeInjectedEvents.generator2Failure ? 'Execute emergency start on reserve Genset #3; shed non-critical research lab loads (-45 kW).' : 'Inspect oil filter and check coolant level.',
+      impactNodes: ['Gen #2: 0 kW (OFFLINE)', 'Microgrid: -190 kW (DEFICIT)', 'BESS: -32 kW (DISCHARGING)', 'Logistics: 4.3d (CRITICAL)'],
     },
     'bhr-gen-1': {
       system: 'Primary Base Generator #1 (220 kW)',
-      cascade: ['Primary Generator', 'Microgrid Backbone', 'Station Baseload', 'Fuel Manifold Injection', 'Cogeneration Heat Exchanger'],
+      cascade: [
+        'Generator #1 (220 kW ONLINE)',
+        'Microgrid Bus (451 kW DEMAND)',
+        'Station Baseload (180 kW)',
+        'Fuel Manifold (98 L/h)',
+        'Cogeneration Heat Exchanger'
+      ],
       risk: 'ONLINE NOMINAL',
       action: 'Verify rotational frequency and continuous lube oil pressure.',
+      impactNodes: ['Gen #1: 220 kW (ONLINE)', 'Fuel: 98 L/h', 'CHP: 65 kW Thermal'],
     },
     'bhr-hvac-1': {
       system: 'Central HVAC & Thermal Balancing Exchangers',
-      cascade: ['Exterior Chill Factor', 'Indoor 21°C Thermal Setpoint', 'HVAC Heater Grid Draw', 'Microgrid Demand Surge', 'Fuel Burn Acceleration'],
+      cascade: [
+        `Environment (${derived.effectiveTempC.toFixed(1)}°C)`,
+        `HVAC Load (${derived.heatingLoadKw} kW)`,
+        `Microgrid Demand (${derived.totalDemandKw} kW)`,
+        `Fuel Burn (${derived.dailyFuelBurnLitres} L/d)`,
+        'Autonomy Impact'
+      ],
       risk: activeInjectedEvents.extremeCold ? 'THERMAL OVERDRIVE' : 'BALANCED NOMINAL',
       action: activeInjectedEvents.extremeCold ? 'Deploy perimeter thermal storm shutters and activate auxiliary glycol loops.' : 'Routine heat exchanger duct inspection.',
+      impactNodes: [`Outside: ${derived.effectiveTempC.toFixed(1)}°C`, `HVAC: ${derived.heatingLoadKw} kW`, `Fuel Burn: ${derived.dailyFuelBurnLitres} L/d`],
     },
     'bhr-fuel-1': {
       system: 'Cryogenic Bulk Fuel Farm & Manifold Pump',
-      cascade: ['Bulk Fuel Storage', 'Daily Burn Rate (2,246 L/d)', 'Vessel Resupply Arrival Window', 'Autonomous Station Runway', 'Emergency Fuel Reserve'],
-      risk: derived.fuelRunwayDays < 14 ? 'CRITICAL RUNWAY' : 'NOMINAL BUFFER',
-      action: derived.fuelRunwayDays < 14 ? 'Dispatch priority ski-plane airlift requisition to NCPOR Command.' : 'Verify tank anti-waxing heating jackets.',
+      cascade: [
+        'Bulk Fuel Farm (9,400 L)',
+        `Daily Burn (${derived.dailyFuelBurnLitres} L/d)`,
+        `Runway (${derived.fuelRunwayDays.toFixed(1)} Days)`,
+        'Resupply Arrival (18-30 Days)',
+        'Station Autonomy Gap'
+      ],
+      risk: isLogisticsCritical ? 'CRITICAL RUNWAY' : 'NOMINAL BUFFER',
+      action: isLogisticsCritical ? 'Review resupply schedule and engage Power Conservation mode immediately.' : 'Verify tank anti-waxing heating jackets.',
+      impactNodes: [`Stock: 9,400 L`, `Burn: ${derived.dailyFuelBurnLitres} L/d`, `Runway: ${derived.fuelRunwayDays.toFixed(1)}d`],
     },
     'bhr-water-1': {
       system: 'Water RO Desalination & Melt Tank System',
-      cascade: ['Seawater/Lake Intake Pump', 'Electrical Trace Heating Cable', 'RO High Pressure Membrane', 'Potable Reservoir', 'Galley Life Support'],
+      cascade: [
+        'Seawater Intake Pump',
+        'Electrical Trace Heating',
+        'RO High Pressure Membrane',
+        'Potable Reservoir (4,200 L)',
+        'Galley Life Support'
+      ],
       risk: 'OPERATIONAL NOMINAL',
       action: 'Check heat-trace current draw on sub-surface water intake line.',
+      impactNodes: ['RO Intake: 18.2 L/min', 'Potable: 4,200 L', 'Trace Heat: 8.5 kW'],
     },
     'bhr-comms-1': {
       system: 'SATCOM Radome & Ku/Ka Deep-Space Array',
-      cascade: ['Steerable Dish Gimbal', 'Geostationary Satellite Link', 'NCPOR Mission Control Sync', 'Edge Queue Telemetry Flush', 'Emergency HF Net'],
+      cascade: [
+        'Steerable Dish Gimbal',
+        'Geostationary Satellite Link',
+        'NCPOR Mission Control Sync',
+        'Edge Queue Flush',
+        'Emergency HF Net'
+      ],
       risk: activeInjectedEvents.highWind ? 'KATABATIC GUST WARNING' : 'ONLINE LINKED',
       action: activeInjectedEvents.highWind ? 'Park and stow satellite dish azimuth to reduce wind-load torsion.' : 'Nominal telemetry sync.',
+      impactNodes: ['Azimuth: 142° Tracking', 'Uplink: 100% Locked', 'Radome Heater: 4.2 kW'],
     },
   };
 
@@ -280,52 +390,88 @@ export default function DashboardPage() {
     <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full font-sans text-slate-100">
       
       {/* ============================================================== */}
-      {/* 1. TOP HEADER: STATION IDENTITY, MODES & ANTARCTIC SWITCHER    */}
+      {/* 1. TOP HEADER: FIXED STATION IDENTITY (NO DUPLICATE WORDING)   */}
       {/* ============================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-xl bg-polar-900 border border-polar-border">
-        {/* Antarctic Station Switcher */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-            <Globe2 className="w-4 h-4 text-polar-cyan" />
-            <span className="uppercase tracking-wider">Antarctic Command:</span>
+      <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-4">
+        
+        {/* Exact Header Specification from Requirement 1 */}
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-xl bg-polar-cyan/15 text-polar-cyan border border-polar-cyan/30 flex items-center justify-center font-mono font-black text-lg shrink-0">
+            {metadata.stationId === 'maitri' ? 'MAI' : 'BHR'}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentStationId('maitri')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                currentStationId === 'maitri'
-                  ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
-                  : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                maitriState?.healthScore?.overall >= 80 ? 'bg-operational-green' : 'bg-warning-amber'
-              }`} />
-              <span>MAITRI</span>
-              <span className="font-mono text-[11px] text-slate-400 font-bold">{maitriState?.healthScore?.overall || 91}%</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentStationId('bharati')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                currentStationId === 'bharati'
-                  ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
-                  : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${
-                derived.overallHealthScore >= 80 ? 'bg-operational-green' : 'bg-critical-red animate-pulse'
-              }`} />
-              <span>BHARATI</span>
-              <span className="font-mono text-[11px] text-slate-400 font-bold">{derived.overallHealthScore}%</span>
-            </button>
+          <div>
+            <div className="flex items-baseline gap-2.5">
+              <h1 className="text-2xl font-black tracking-tight text-white uppercase font-sans">
+                {metadata.stationId === 'maitri' ? 'MAITRI' : 'BHARATI'}
+              </h1>
+              <span className="text-sm font-semibold text-slate-400">Antarctic Research Station</span>
+              <span className="text-xs text-slate-500 font-medium hidden sm:inline">({metadata.hindiName})</span>
+            </div>
+            <p className="text-slate-300 mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px]">
+              <span className="font-medium text-slate-200">
+                {metadata.stationId === 'maitri' ? 'Schirmacher Oasis, Queen Maud Land' : 'Larsemann Hills, Princess Elizabeth Land'}
+              </span>
+              <span className="text-slate-500">·</span>
+              <span className="font-mono text-slate-300">
+                {metadata.stationId === 'maitri' ? '70.767°S · 11.733°E' : '69.407°S · 76.19°E'}
+              </span>
+              <span className="text-slate-500">·</span>
+              <span>Elevation <strong className="font-mono text-white">{metadata.coordinates.elevationM}m</strong></span>
+              <span className="text-slate-500">·</span>
+              <span>Personnel <strong className="font-mono text-white">{metadata.currentPersonnel}</strong></span>
+            </p>
           </div>
         </div>
 
-        {/* Station Operational Mode Selector (Section 9) */}
+        {/* Station Switcher (Maitri vs Bharati) */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase">Operational Stance:</span>
-          <div className="flex items-center gap-1 bg-polar-950 p-1 rounded-lg border border-polar-border">
+          <button
+            onClick={() => setCurrentStationId('maitri')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              currentStationId === 'maitri'
+                ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
+                : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${
+              maitriState?.healthScore?.overall >= 80 ? 'bg-operational-green' : 'bg-warning-amber'
+            }`} />
+            <span>MAITRI</span>
+            <span className="font-mono text-[11px] text-slate-400 font-bold">{maitriState?.healthScore?.overall || 91}%</span>
+          </button>
+
+          <button
+            onClick={() => setCurrentStationId('bharati')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              currentStationId === 'bharati'
+                ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
+                : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${
+              derived.overallHealthScore >= 80 ? 'bg-operational-green' : 'bg-critical-red animate-pulse'
+            }`} />
+            <span>BHARATI</span>
+            <span className="font-mono text-[11px] text-slate-400 font-bold">{derived.overallHealthScore}%</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 2. SEPARATE OPERATING MODE FROM OPERATIONAL STATUS             */}
+      {/* ============================================================== */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        {/* Operating Mode Block */}
+        <div className="polar-card p-3.5 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-polar-cyan" />
+            <div>
+              <span className="text-xs uppercase font-bold text-slate-300 block">Operating Mode:</span>
+              <span className="text-[11px] text-slate-400">Station operational stance set by command</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-1 bg-polar-950 p-1 rounded-lg border border-polar-border">
             {(['NORMAL', 'SCIENCE OPERATIONS', 'WEATHER ALERT', 'POWER CONSERVATION', 'EMERGENCY'] as StationMode[]).map((mode) => (
               <button
                 key={mode}
@@ -333,10 +479,10 @@ export default function DashboardPage() {
                 className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                   stationMode === mode
                     ? mode === 'EMERGENCY'
-                      ? 'bg-critical-red text-white'
+                      ? 'bg-critical-red text-white font-bold'
                       : mode === 'POWER CONSERVATION'
                       ? 'bg-warning-amber text-slate-900 font-bold'
-                      : 'bg-polar-blue text-white'
+                      : 'bg-polar-blue text-white font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -345,176 +491,250 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Station Coordinates & Telemetry Status Bar */}
-      <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-polar-cyan/15 text-polar-cyan border border-polar-cyan/30 flex items-center justify-center font-mono font-bold text-base shrink-0">
-            {metadata.stationId === 'maitri' ? 'MTR' : 'BHR'}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white uppercase">
-                {metadata.name} Antarctic Research Station
-              </h1>
-              <span className="text-slate-400 font-medium">({metadata.hindiName})</span>
+        {/* Operational Status Block */}
+        <div className="polar-card p-3.5 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-polar-cyan" />
+            <div>
+              <span className="text-xs uppercase font-bold text-slate-300 block">Operational Status:</span>
+              <span className="text-[11px] text-slate-400">Real-time condition evaluated by digital twin</span>
             </div>
-            <p className="text-slate-300 mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[13px]">
-              <span>{metadata.region}</span>
-              <span className="text-slate-500">•</span>
-              <span className="font-mono">{metadata.coordinates.lat}°S, {metadata.coordinates.lng}°E</span>
-              <span className="text-slate-500">•</span>
-              <span>Elevation: <strong className="font-mono text-white">{metadata.coordinates.elevationM}m</strong></span>
-              <span className="text-slate-500">•</span>
-              <span>Personnel: <strong className="font-mono text-white">{metadata.currentPersonnel}</strong></span>
-            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${statusColorMap[operationalStatus]}`}>
+              {operationalStatus}
+            </span>
+            <div className="text-[11px] text-slate-300 font-mono">
+              Alerts: <strong className={criticalCount > 0 ? 'text-critical-red' : 'text-slate-200'}>{criticalCount} Crit</strong> · <strong className={warningCount > 0 ? 'text-warning-amber' : 'text-slate-200'}>{warningCount} Warn</strong>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-right">
-          <div>
-            <span className="text-slate-400 block text-[11px] font-medium">Station Time</span>
-            <span className="font-mono text-sm font-bold text-white">
-              {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC+5
-            </span>
-          </div>
-          <div className="border-l border-polar-border pl-4">
-            <span className="text-slate-400 block text-[11px] font-medium">Telemetry Uplink</span>
-            <span className="font-mono text-sm font-bold text-operational-green flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-operational-green animate-pulse" />
-              {metadata.connectivityState === 'CONNECTED' ? 'CONNECTED (100%)' : metadata.connectivityState}
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* ============================================================== */}
-      {/* 2. OPERATIONAL STATUS, HEALTH EXPLAINABILITY & CROSS-DOMAIN KPI */}
-      {/* (Section 2, 3 & 4)                                             */}
+      {/* 3, 4 & 5. HEALTH EXPLANATION, POWER + AUTONOMY & AUTONOMY IMPACT*/}
       {/* ============================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Tile 1: Station Health & Explainability (Section 4) */}
+        {/* Tile 1: 3. HEALTH EXPLANATION */}
         <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
             <span className="text-xs uppercase font-bold text-slate-300">Station Health</span>
-            <span className="text-[11px] text-polar-cyan font-bold">WHY {derived.overallHealthScore}%?</span>
+            <span className="text-[11px] text-polar-cyan font-bold font-mono">WHY {derived.overallHealthScore}%?</span>
           </div>
-          <div className="flex items-baseline gap-3 my-1">
-            <span className={`text-4xl font-black font-mono ${
-              derived.overallHealthScore >= 80 ? 'text-operational-green' :
-              derived.overallHealthScore >= 60 ? 'text-warning-amber' : 'text-critical-red animate-pulse'
-            }`}>
-              {derived.overallHealthScore}%
-            </span>
-            <span className="text-xs font-mono text-slate-400">
-              {derived.healthPointDelta > 0 ? `↓ ${derived.healthPointDelta} pts from nominal` : 'Nominal baseline'}
-            </span>
-          </div>
-          <div className="space-y-1 text-[11px] text-slate-300 pt-1 border-t border-white/5">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Primary Driver:</span>
-              <strong className="text-white truncate max-w-[170px] text-right">{primaryHealthDriver}</strong>
+
+          <div>
+            <div className="flex items-baseline gap-2.5 my-0.5">
+              <span className={`text-4xl md:text-5xl font-black font-mono ${
+                derived.overallHealthScore >= 80 ? 'text-operational-green' :
+                derived.overallHealthScore >= 60 ? 'text-warning-amber' : 'text-critical-red animate-pulse'
+              }`}>
+                {derived.overallHealthScore}
+              </span>
+              <div className="text-xs">
+                <span className="text-slate-400 block font-semibold uppercase text-[10px]">STATION HEALTH</span>
+                <span className="font-mono text-slate-300 text-[11px]">
+                  {derived.healthPointDelta > 0 ? `↓ ${derived.healthPointDelta} points from nominal` : 'At nominal baseline'}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Secondary:</span>
-              <span className="text-slate-300 truncate max-w-[170px] text-right">{secondaryHealthDriver}</span>
+
+            {/* Breakdown across the 4 domains */}
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono pt-1.5 border-t border-white/5">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Environment:</span>
+                <strong className={envScore < 80 ? 'text-warning-amber' : 'text-white'}>{envScore}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Microgrid:</span>
+                <strong className={energyScore < 70 ? 'text-critical-red' : energyScore < 85 ? 'text-warning-amber' : 'text-white'}>{energyScore}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Infrastructure:</span>
+                <strong className={infraScore < 75 ? 'text-warning-amber' : 'text-white'}>{infraScore}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Logistics:</span>
+                <strong className={logScore < 75 ? 'text-critical-red' : 'text-white'}>{logScore}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Primary & Secondary Driver Attribution with Point Contributions */}
+          <div className="space-y-1 text-[11px] pt-1.5 border-t border-white/5">
+            <div className="flex items-start justify-between gap-1">
+              <span className="text-slate-400 uppercase text-[10px] font-bold shrink-0">Primary:</span>
+              <span className="text-right text-slate-200 truncate">
+                <strong className="text-white">{primaryDriverText}</strong> <span className="font-mono text-warning-amber">({primaryDriverImpact})</span>
+              </span>
+            </div>
+            <div className="flex items-start justify-between gap-1">
+              <span className="text-slate-400 uppercase text-[10px] font-bold shrink-0">Secondary:</span>
+              <span className="text-right text-slate-300 truncate">
+                {secondaryDriverText} <span className="font-mono text-slate-400">({secondaryDriverImpact})</span>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Tile 2: Operational Status & Subsystems (Section 2) */}
-        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-slate-300">Operational Status</span>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${statusColorMap[operationalStatus]}`}>
-              {operationalStatus}
-            </span>
-          </div>
-          <div className="text-xs text-slate-300 my-0.5 font-medium">
-            Active Alerts: <strong className={criticalCount > 0 ? 'text-critical-red font-mono' : 'text-slate-300 font-mono'}>{criticalCount} CRITICAL</strong> • <strong className={warningCount > 0 ? 'text-warning-amber font-mono' : 'text-slate-300 font-mono'}>{warningCount} WARNING</strong>
-          </div>
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] pt-1 border-t border-white/5 font-mono">
-            <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Energy:</span>
-              <span className={subsystemStates.energy === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-operational-green'}>{subsystemStates.energy}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Water:</span>
-              <span className="text-operational-green">{subsystemStates.water}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Life Support:</span>
-              <span className={subsystemStates.lifeSupport === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-operational-green'}>{subsystemStates.lifeSupport}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Logistics:</span>
-              <span className={subsystemStates.logistics === 'CRITICAL' ? 'text-critical-red font-bold animate-pulse' : 'text-operational-green'}>{subsystemStates.logistics}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tile 3: Microgrid Net Power Hero (Section 11) */}
+        {/* Tile 2: 4. POWER + AUTONOMY (Microgrid Card showing 2 Concepts) */}
         <div className={`polar-card p-4 rounded-xl border flex flex-col justify-between space-y-2 ${
           isPowerDeficit ? 'border-critical-red/60 bg-critical-red/10' : 'border-operational-green/50 bg-operational-green/10'
         }`}>
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-slate-300">Microgrid Power Balance</span>
+            <span className="text-xs uppercase font-bold text-slate-300">Microgrid & Autonomy</span>
             <ProvenanceBadge source="Derived Calculation" compact />
           </div>
-          <div className="flex items-baseline justify-between my-0.5">
-            <div className={`text-3xl font-black font-mono ${isPowerDeficit ? 'text-critical-red animate-pulse' : 'text-operational-green'}`}>
-              {isPowerDeficit ? `${derived.powerSurplusDeficitKw} kW` : `+${derived.powerSurplusDeficitKw} kW`}
+
+          {/* CURRENT POWER */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Current Power</span>
+              <span className={`text-[10px] font-bold uppercase font-mono ${isPowerDeficit ? 'text-critical-red' : 'text-operational-green'}`}>
+                {isPowerDeficit ? 'POWER DEFICIT' : 'POWER RESERVE'}
+              </span>
             </div>
-            <span className={`text-xs font-bold uppercase tracking-wider ${isPowerDeficit ? 'text-critical-red' : 'text-operational-green'}`}>
-              {isPowerDeficit ? 'POWER DEFICIT' : 'POWER RESERVE'}
-            </span>
+            <div className="flex items-baseline justify-between my-0.5">
+              <span className={`text-3xl font-black font-mono ${isPowerDeficit ? 'text-critical-red animate-pulse' : 'text-operational-green'}`}>
+                {isPowerDeficit ? `${derived.powerSurplusDeficitKw} kW` : `+${derived.powerSurplusDeficitKw} kW`}
+              </span>
+              <span className="text-[11px] font-mono text-slate-300">
+                Gen: <strong>{derived.generationCapacityKw} kW</strong> · Dem: <strong>{derived.totalDemandKw} kW</strong>
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between text-[11px] text-slate-300 pt-1 border-t border-white/5">
-            <span>Gen: <strong className="font-mono text-white">{derived.generationCapacityKw} kW</strong></span>
-            <span>Demand: <strong className="font-mono text-polar-cyan">{derived.totalDemandKw} kW</strong></span>
-            <span>Battery: <strong className="font-mono text-white">{derived.batterySocPercent}%</strong></span>
+
+          {/* LONG-TERM AUTONOMY */}
+          <div className="pt-1.5 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Long-Term Autonomy</span>
+              <span className={`text-[10px] font-bold uppercase font-mono ${isLogisticsCritical ? 'text-warning-amber' : 'text-operational-green'}`}>
+                {isLogisticsCritical ? 'Warning: Below 14d Reserve' : 'Buffer Secure'}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between my-0.5">
+              <span className={`text-2xl font-black font-mono ${isLogisticsCritical ? 'text-warning-amber' : 'text-white'}`}>
+                {derived.fuelRunwayDays.toFixed(1)} DAYS
+              </span>
+              <span className="text-[11px] font-mono text-slate-300">
+                FUEL AUTONOMY
+              </span>
+            </div>
+            <div className="text-[10px] font-semibold text-slate-300 mt-0.5 flex justify-between font-mono">
+              <span>Current power = <strong className={isPowerDeficit ? 'text-critical-red' : 'text-operational-green'}>{currentPowerCondition.toLowerCase()}</strong></span>
+              <span>Autonomy = <strong className={isLogisticsCritical ? 'text-warning-amber' : 'text-operational-green'}>{longTermAutonomyCondition.toLowerCase()}</strong></span>
+            </div>
           </div>
         </div>
 
-        {/* Tile 4: Cross-Domain Insight (Section 3) */}
+        {/* Tile 3: 5. AUTONOMY & SYSTEM IMPACT */}
         <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2 bg-polar-navy/90">
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-polar-cyan">Cross-Domain Intelligence</span>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-              longTermAutonomyStatus === 'CONSTRAINED' ? 'bg-warning-amber text-slate-900' : 'bg-operational-green text-white'
+            <span className="text-xs uppercase font-bold text-polar-cyan font-sans">Autonomy & System Impact</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
+              isLogisticsCritical ? 'bg-warning-amber text-slate-900' : 'bg-operational-green text-white'
             }`}>
-              {longTermAutonomyStatus}
+              {longTermAutonomyCondition}
             </span>
           </div>
-          <div className="text-[12px] text-slate-200 leading-snug">
-            <strong className="text-white block mb-0.5">Power: {currentPowerStatus} • Autonomy: {longTermAutonomyStatus}</strong>
-            <p className="text-[11px] text-slate-300">{autonomyReason}</p>
+
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="p-2 rounded bg-polar-950 border border-polar-border">
+              <span className="text-[10px] text-slate-400 uppercase block font-semibold">Power</span>
+              <strong className={`font-mono text-sm ${isPowerDeficit ? 'text-critical-red' : 'text-operational-green'}`}>
+                {isPowerDeficit ? 'DEFICIT' : 'NOMINAL'}
+              </strong>
+            </div>
+            <div className="p-2 rounded bg-polar-950 border border-polar-border">
+              <span className="text-[10px] text-slate-400 uppercase block font-semibold">Autonomy</span>
+              <strong className={`font-mono text-sm ${isLogisticsCritical ? 'text-warning-amber' : 'text-operational-green'}`}>
+                {longTermAutonomyCondition}
+              </strong>
+            </div>
           </div>
-          <div className="text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono">
-            Fuel: {derived.fuelRunwayDays.toFixed(1)}d runway vs 14d safety threshold
+
+          <div className="space-y-1 text-[11px] text-slate-300 pt-1 border-t border-white/5">
+            <div className="flex justify-between">
+              <span className="text-slate-400">CAUSE:</span>
+              <strong className="text-white truncate max-w-[170px] text-right">
+                {isLogisticsCritical ? 'Fuel runway below reserve' : 'Microgrid balanced'}
+              </strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">IMPACT:</span>
+              <span className="text-slate-200 truncate max-w-[170px] text-right">
+                {isLogisticsCritical ? 'Resupply margin at risk' : 'Buffer maintained'}
+              </span>
+            </div>
+          </div>
+
+          {/* 9. WHY THIS MATTERS (Plain Language Operational Meaning) */}
+          <div className="p-2 rounded bg-polar-950/80 border border-polar-border text-[11px] text-slate-300 leading-snug">
+            <span className="text-polar-cyan font-bold block text-[10px] uppercase mb-0.5 flex items-center gap-1">
+              <Info className="w-3 h-3" /> Why This Matters:
+            </span>
+            <p className="line-clamp-3 text-slate-300">{whyThisMattersText}</p>
+          </div>
+        </div>
+
+        {/* Tile 4: Operational Subsystems Status Grid */}
+        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+            <span className="text-xs uppercase font-bold text-slate-300">Subsystem Readiness</span>
+            <span className="text-[10px] text-slate-400 font-mono">5 Domains Monitored</span>
+          </div>
+
+          <div className="space-y-1.5 text-xs font-mono">
+            <div className="flex items-center justify-between p-1.5 rounded bg-polar-950 border border-polar-border">
+              <span className="text-slate-400 font-sans">Microgrid Energy</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                subsystemStates.energy === 'CRITICAL' ? 'bg-critical-red text-white' : 'text-operational-green'
+              }`}>{subsystemStates.energy}</span>
+            </div>
+            <div className="flex items-center justify-between p-1.5 rounded bg-polar-950 border border-polar-border">
+              <span className="text-slate-400 font-sans">Water Desalination</span>
+              <span className="text-operational-green font-bold text-[10px]">{subsystemStates.water}</span>
+            </div>
+            <div className="flex items-center justify-between p-1.5 rounded bg-polar-950 border border-polar-border">
+              <span className="text-slate-400 font-sans">Life Support / HVAC</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                subsystemStates.lifeSupport === 'CRITICAL' ? 'bg-critical-red text-white' : 'text-operational-green'
+              }`}>{subsystemStates.lifeSupport}</span>
+            </div>
+            <div className="flex items-center justify-between p-1.5 rounded bg-polar-950 border border-polar-border">
+              <span className="text-slate-400 font-sans">SATCOM Array</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                subsystemStates.comms === 'WARNING' ? 'text-warning-amber' : 'text-operational-green'
+              }`}>{subsystemStates.comms}</span>
+            </div>
+            <div className="flex items-center justify-between p-1.5 rounded bg-polar-950 border border-polar-border">
+              <span className="text-slate-400 font-sans">Logistics Runway</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                subsystemStates.logistics === 'CRITICAL' ? 'bg-critical-red text-white animate-pulse' : 'text-operational-green'
+              }`}>{subsystemStates.logistics}</span>
+            </div>
           </div>
         </div>
 
       </div>
 
       {/* ============================================================== */}
-      {/* 3. VISUAL CENTER ABOVE THE FOLD: LEFT 65% + RIGHT 35%          */}
-      {/* (Section 1: Digital Twin + Section 5: Risk Engine)             */}
+      {/* 6. DIGITAL TWIN (LEFT 65%) + 8. RISK ENGINE (RIGHT 35%)         */}
       {/* ============================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
-        {/* LEFT 65%: Operational Spatial Digital Twin (Section 1) */}
+        {/* LEFT 65%: 6. DIGITAL TWIN */}
         <div className="lg:col-span-8 polar-card p-5 rounded-xl border border-polar-border space-y-4 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block">
-                  Core Visual Operational Twin
+                  Interactive Operational Model
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-polar-cyan/20 text-polar-cyan border border-polar-cyan/40 font-bold">
-                  CONNECTED SYSTEM TOPOLOGY
+                  DIRECTIONAL ASSET DEPENDENCIES
                 </span>
               </div>
               <h2 className="text-xl font-bold text-white mt-0.5">
@@ -523,7 +743,7 @@ export default function DashboardPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400 hidden sm:inline">Select asset to highlight relationships:</span>
+              <span className="text-xs text-slate-400 hidden sm:inline">Select asset to trace upstream/downstream impact:</span>
               <Link
                 href="/digital-twin"
                 className="text-xs text-polar-cyan hover:underline font-semibold flex items-center gap-1"
@@ -544,19 +764,19 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Connected Operational Path Highlight Strip (Section 1) */}
-          <div className="p-3.5 rounded-xl bg-polar-950 border border-polar-border space-y-2 text-xs">
+          {/* Connected Operational Path Highlight Strip */}
+          <div className="p-3.5 rounded-xl bg-polar-950 border border-polar-border space-y-2.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="text-slate-300 font-semibold">
-                Connected Systems for <strong className="text-white font-sans">{selectedDependency.system}</strong>:
+                Coupled Downstream Dependencies for <strong className="text-white font-sans">{selectedDependency.system}</strong>:
               </span>
               <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-polar-900 border border-polar-border text-polar-cyan">
                 {selectedDependency.risk}
               </span>
             </div>
 
-            {/* Visual connected path breadcrumb */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* Directional Flow Breadcrumb with Impact Values */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono">
               {selectedDependency.cascade.map((node, i) => (
                 <React.Fragment key={node}>
                   <span className={`px-2.5 py-1 rounded text-xs font-semibold ${
@@ -575,14 +795,15 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            <div className="text-[12px] text-slate-300 pt-1">
-              <strong className="text-slate-400">Mitigation SOP: </strong>
+            {/* Mitigating SOP */}
+            <div className="text-[12px] text-slate-300 pt-1 border-t border-white/5">
+              <strong className="text-slate-400">Recommended SOP: </strong>
               <span>{selectedDependency.action}</span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT 35%: Dominant Cross-Domain Risk Engine (Section 5) */}
+        {/* RIGHT 35%: 8. RISK ENGINE */}
         <div className="lg:col-span-4 polar-card p-5 rounded-xl border border-polar-border space-y-4 shadow-xl flex flex-col justify-between">
           <div className="border-b border-white/10 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -590,7 +811,7 @@ export default function DashboardPage() {
                 riskSeverity === 'critical' ? 'text-critical-red animate-pulse' :
                 riskSeverity === 'warning' ? 'text-warning-amber' : 'text-operational-green'
               }`} />
-              <h3 className="text-lg font-bold text-white uppercase tracking-wider">
+              <h3 className="text-lg font-bold text-white uppercase tracking-wider font-sans">
                 Cross-Domain Risk Engine
               </h3>
             </div>
@@ -603,23 +824,23 @@ export default function DashboardPage() {
           </div>
 
           <div className="space-y-3.5 text-xs">
-            {/* EVENT */}
+            {/* WHAT */}
             <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Active Event:</span>
-              <p className="font-bold text-white text-sm leading-tight">{riskEventTitle}</p>
+              <span className="text-slate-400 uppercase text-[10px] font-bold block tracking-wider">WHAT:</span>
+              <p className="font-bold text-white text-sm leading-tight">{riskWhat}</p>
             </div>
 
-            {/* WHY IT HAPPENED */}
+            {/* WHY */}
             <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Why It Happened:</span>
+              <span className="text-slate-400 uppercase text-[10px] font-bold block tracking-wider">WHY:</span>
               <p className="text-slate-200 leading-relaxed font-medium">{riskWhy}</p>
             </div>
 
             {/* AFFECTED SYSTEMS */}
             <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1.5">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Affected Connected Systems:</span>
+              <span className="text-slate-400 uppercase text-[10px] font-bold block tracking-wider">AFFECTED SYSTEMS:</span>
               <div className="flex flex-wrap gap-1.5">
-                {riskAffected.map((sys) => (
+                {riskAffectedSystems.map((sys) => (
                   <span key={sys} className="px-2 py-0.5 rounded bg-polar-900 border border-polar-border text-slate-200 font-semibold text-[11px]">
                     {sys}
                   </span>
@@ -629,14 +850,14 @@ export default function DashboardPage() {
 
             {/* EXPECTED IMPACT */}
             <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Expected Impact:</span>
-              <p className="text-slate-200 leading-relaxed font-medium">{riskImpact}</p>
+              <span className="text-slate-400 uppercase text-[10px] font-bold block tracking-wider">EXPECTED IMPACT:</span>
+              <p className="text-slate-200 leading-relaxed font-medium">{riskExpectedImpact}</p>
             </div>
 
             {/* OPERATOR ACTION */}
             <div className="p-3.5 rounded-lg bg-polar-cyan/10 border border-polar-cyan/30 space-y-1">
-              <span className="text-polar-cyan uppercase text-[11px] font-bold block">Recommended Operator Action:</span>
-              <p className="text-white font-semibold leading-relaxed">{riskAction}</p>
+              <span className="text-polar-cyan uppercase text-[10px] font-bold block tracking-wider">OPERATOR ACTION:</span>
+              <p className="text-white font-semibold leading-relaxed">{riskOperatorAction}</p>
             </div>
           </div>
 
@@ -645,12 +866,12 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 setActiveExplainAlert({
-                  title: riskEventTitle,
+                  title: riskWhat,
                   severity: riskSeverity,
                   why: riskWhy,
                   causalChain: derived.causalChain,
-                  impact: riskImpact,
-                  action: [riskAction],
+                  impact: riskExpectedImpact,
+                  action: [riskOperatorAction],
                 });
                 setShowExplainModal(true);
               }}
@@ -671,21 +892,23 @@ export default function DashboardPage() {
       </div>
 
       {/* ============================================================== */}
-      {/* 4. LIVE CAUSAL FLOW COMPONENT (Section 6)                      */}
+      {/* 7. LIVE CAUSAL FLOW COMPONENT                                  */}
+      {/* WEATHER -> HVAC LOAD -> ENERGY DEMAND -> POWER BALANCE ->      */}
+      {/* BATTERY -> FUEL RUNWAY -> LOGISTICS RISK                       */}
       {/* ============================================================== */}
       <div className="polar-card p-4 rounded-xl border border-polar-border space-y-3">
         <div className="flex items-center justify-between text-xs border-b border-white/10 pb-2">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-polar-cyan" />
-            <h3 className="font-bold text-white uppercase tracking-wider text-xs">
-              Live Cross-Domain Physical Causal Flow
+            <h3 className="font-bold text-white uppercase tracking-wider text-xs font-sans">
+              Live Causal Flow: Physical Cross-Domain Propagation
             </h3>
           </div>
           <span className="text-slate-400 text-[11px] font-mono">Dynamic Physical Propagation</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          {causalFlow.map((node, i) => (
+          {causalFlowItems.map((node, i) => (
             <div 
               key={node.label}
               className={`p-3 rounded-lg border text-center transition-all ${
@@ -694,13 +917,16 @@ export default function DashboardPage() {
                   : 'bg-polar-950 border-polar-border text-slate-300'
               }`}
             >
-              <div className="text-[10px] text-slate-400 uppercase font-semibold mb-1 truncate">{node.label}</div>
+              <div className="text-[10px] text-slate-400 uppercase font-bold mb-1 truncate">{node.label}</div>
               <div className={`font-mono font-bold text-sm ${node.active ? 'text-critical-red' : 'text-polar-cyan'}`}>
                 {node.value}
               </div>
+              <div className="text-[9px] text-slate-400 font-mono mt-0.5 truncate">
+                {node.sub}
+              </div>
               <div className="mt-1 flex justify-center">
-                {i < causalFlow.length - 1 && (
-                  <span className="text-slate-600 text-xs hidden lg:inline">↓</span>
+                {i < causalFlowItems.length - 1 && (
+                  <span className="text-slate-500 text-xs hidden lg:inline">→</span>
                 )}
               </div>
             </div>
@@ -709,17 +935,16 @@ export default function DashboardPage() {
       </div>
 
       {/* ============================================================== */}
-      {/* 5. PREDICTIVE TIMELINE, LOGISTICS INTELLIGENCE & MISSION LOG   */}
-      {/* (Section 7, 8 & 10)                                            */}
+      {/* 10. PREDICTIVE TIMELINE, LOGISTICS INTELLIGENCE & MISSION LOG  */}
       {/* ============================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
-        {/* Next 24 Hours Timeline (Section 7) */}
+        {/* Next 24 Hours Timeline */}
         <div className="polar-card p-5 rounded-xl border border-polar-border space-y-3">
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-polar-cyan" />
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+              <h3 className="font-bold text-white text-xs uppercase tracking-wider font-sans">
                 Next 24 Hours Projections
               </h3>
             </div>
@@ -737,28 +962,30 @@ export default function DashboardPage() {
                     <span className="font-bold font-mono text-white text-sm">{item.label}</span>
                     <span className="text-[10px] text-slate-400 font-mono">({item.time})</span>
                   </div>
-                  <span className="text-[11px] text-slate-400 block font-mono mt-0.5">{item.weather}</span>
+                  <span className="text-[11px] text-slate-400 block font-mono mt-0.5">
+                    Demand: <strong className="text-polar-cyan">{item.demand}</strong>
+                  </span>
                 </div>
                 <div className="text-right text-[11px] space-y-0.5 font-mono">
-                  <div>Demand: <strong className="text-polar-cyan">{item.demand}</strong></div>
-                  <div>Battery: <strong className={item.battery.includes('0%') ? 'text-critical-red' : 'text-slate-200'}>{item.battery}</strong></div>
-                  <div>Logistics: <strong className={item.logistics === 'CRITICAL' ? 'text-critical-red' : 'text-operational-green'}>{item.logistics}</strong></div>
+                  <div>Battery: <strong className={item.battery.includes('0%') || item.battery.includes('CRIT') ? 'text-critical-red' : 'text-slate-200'}>{item.battery}</strong></div>
+                  <div>Fuel: <strong className="text-slate-200">{item.fuel}</strong></div>
+                  <div>Risk: <strong className={item.risk === 'CRITICAL' ? 'text-critical-red' : item.risk === 'WARNING' ? 'text-warning-amber' : 'text-operational-green'}>{item.risk}</strong></div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Logistics Intelligence Card (Section 10) */}
+        {/* Logistics Intelligence Card */}
         <div className="polar-card p-5 rounded-xl border border-polar-border space-y-3">
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div className="flex items-center gap-2">
               <Package className="w-4 h-4 text-warning-amber" />
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+              <h3 className="font-bold text-white text-xs uppercase tracking-wider font-sans">
                 Logistics Runway & Reserves
               </h3>
             </div>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono ${
               isLogisticsCritical ? 'bg-critical-red text-white' : 'bg-operational-green text-white'
             }`}>
               {isLogisticsCritical ? 'CRITICAL AUTONOMY' : 'BUFFER NOMINAL'}
@@ -809,12 +1036,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Mission Event Timeline (Section 8) */}
+        {/* Mission Event Timeline */}
         <div className="polar-card p-5 rounded-xl border border-polar-border space-y-3">
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-polar-cyan" />
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+              <h3 className="font-bold text-white text-xs uppercase tracking-wider font-sans">
                 Mission Execution Timeline
               </h3>
             </div>
@@ -852,7 +1079,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ============================================================== */}
-      {/* 6. EXPLAIN RISK MODAL / DRAWER (Section 5)                     */}
+      {/* EXPLAIN RISK MODAL                                             */}
       {/* ============================================================== */}
       {showExplainModal && activeExplainAlert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -860,7 +1087,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2.5">
                 <ShieldAlert className="w-5 h-5 text-critical-red" />
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-white font-sans">
                   Why This Operational Risk Exists (Causal Chain)
                 </h3>
               </div>

@@ -8,15 +8,14 @@ import {
   Droplets, 
   Radio, 
   Fuel, 
-  CheckCircle2, 
-  AlertTriangle, 
-  AlertOctagon, 
-  Cpu, 
   Compass, 
   Crosshair,
-  Flame,
+  AlertOctagon,
   BatteryCharging,
-  ArrowRight
+  ArrowRight,
+  TrendingDown,
+  Layers,
+  Thermometer
 } from 'lucide-react';
 import { useStation } from '@/context/StationContext';
 
@@ -29,23 +28,23 @@ interface StationTwin2DProps {
   showEnergyFlow?: boolean;
 }
 
-// Coordinate layout mapping for 2D schematic blueprint (percentages in SVG viewbox 800x480)
-const ASSET_SCHEMATIC_POSITIONS: Record<string, { x: number; y: number; zone: string; icon: React.ComponentType<{ className?: string }> }> = {
+// Coordinate layout mapping for 2D schematic blueprint (percentages in SVG viewbox 820x490)
+const ASSET_SCHEMATIC_POSITIONS: Record<string, { x: number; y: number; zone: string }> = {
   // Bharati Assets
-  'bhr-gen-1': { x: 570, y: 150, zone: 'Power Generation Module', icon: Zap },
-  'bhr-gen-2': { x: 670, y: 150, zone: 'Power Generation Module', icon: Zap },
-  'bhr-hvac-1': { x: 400, y: 160, zone: 'Central HVAC & Air Scrubbers', icon: Wind },
-  'bhr-water-1': { x: 230, y: 200, zone: 'Water RO & Desalination Facility', icon: Droplets },
-  'bhr-comms-1': { x: 400, y: 70, zone: 'SATCOM Radome & Deep-Space Array', icon: Radio },
-  'bhr-fuel-1': { x: 630, y: 320, zone: 'Cryo Fuel Tanks & Pump Station', icon: Fuel },
+  'bhr-gen-1': { x: 570, y: 155, zone: 'Power Generation Module' },
+  'bhr-gen-2': { x: 675, y: 155, zone: 'Power Generation Module' },
+  'bhr-hvac-1': { x: 400, y: 175, zone: 'Central HVAC & Air Scrubbers' },
+  'bhr-water-1': { x: 210, y: 215, zone: 'Water RO & Desalination Facility' },
+  'bhr-comms-1': { x: 400, y: 70, zone: 'SATCOM Radome & Deep-Space Array' },
+  'bhr-fuel-1': { x: 630, y: 340, zone: 'Cryo Fuel Tanks & Pump Station' },
 
   // Maitri Assets
-  'mtr-gen-1': { x: 570, y: 160, zone: 'Main Power House', icon: Zap },
-  'mtr-gen-2': { x: 660, y: 160, zone: 'Auxiliary Power Unit', icon: Zap },
-  'mtr-hvac-1': { x: 400, y: 170, zone: 'Station Thermal & Ventilation', icon: Wind },
-  'mtr-water-1': { x: 220, y: 220, zone: 'Priyadarshini Lake Water Intake', icon: Droplets },
-  'mtr-comms-1': { x: 400, y: 70, zone: 'HF/VHF & Satellite Uplink', icon: Radio },
-  'mtr-fuel-1': { x: 610, y: 320, zone: 'Bulk Fuel Storage & Manifold', icon: Fuel },
+  'mtr-gen-1': { x: 570, y: 155, zone: 'Main Power House' },
+  'mtr-gen-2': { x: 675, y: 155, zone: 'Auxiliary Power Unit' },
+  'mtr-hvac-1': { x: 400, y: 175, zone: 'Station Thermal & Ventilation' },
+  'mtr-water-1': { x: 210, y: 215, zone: 'Priyadarshini Lake Water Intake' },
+  'mtr-comms-1': { x: 400, y: 70, zone: 'HF/VHF & Satellite Uplink' },
+  'mtr-fuel-1': { x: 630, y: 340, zone: 'Bulk Fuel Storage & Manifold' },
 };
 
 export default function StationTwin2D({
@@ -61,167 +60,276 @@ export default function StationTwin2D({
   const { derived, activeAlerts } = stationState;
 
   const isBharati = stationId === 'bharati';
-  const stationTitle = isBharati ? 'Bharati Research Station' : 'Maitri Research Station';
-  const stationRegion = isBharati ? 'Larsemann Hills (69°S, 76°E)' : 'Schirmacher Oasis (70°S, 11°E)';
+  const stationTitle = isBharati ? 'BHARATI' : 'MAITRI';
+  const stationRegion = isBharati ? 'Larsemann Hills (69.4°S, 76.2°E)' : 'Schirmacher Oasis (70.8°S, 11.7°E)';
 
-  // Check if selected or hovered asset is a failed/critical generator
+  const isPowerDeficit = derived.powerSurplusDeficitKw < 0;
+  const isGen2Failed = activeInjectedEvents.generator2Failure;
+  const isColdSnap = activeInjectedEvents.extremeCold;
+  const isHighWind = activeInjectedEvents.highWind;
+  const isResupplyDelayed = activeInjectedEvents.resupplyDelay;
+  const isAutonomyConstrained = derived.fuelRunwayDays < 14 || isResupplyDelayed;
+
+  // Selected asset check
   const selectedAsset = assets.find(a => a.assetId === selectedAssetId);
-  const isSelectedGenFailed = selectedAsset?.type === 'generator' && (selectedAsset.status === 'offline' || selectedAsset.status === 'critical' || activeInjectedEvents.generator2Failure);
+  const isSelectedGen2 = selectedAssetId?.includes('gen-2') || selectedAssetId?.includes('gen-02');
 
   return (
-    <div className="relative bg-polar-950 rounded-xl border border-polar-border overflow-hidden shadow-lg flex flex-col font-mono text-xs">
+    <div className="relative bg-polar-950 rounded-xl border border-polar-border overflow-hidden shadow-2xl flex flex-col font-mono text-xs">
+      
       {/* 2D Blueprint Header Toolbar */}
-      <div className="px-4 py-3 bg-polar-900/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-2.5 bg-polar-900/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 text-slate-200">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+          <div className="p-1.5 rounded-lg bg-polar-cyan/20 text-polar-cyan border border-polar-cyan/30">
             <Compass className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white uppercase tracking-wider">{stationTitle}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                Spatial Digital Twin
+              <span className="font-bold text-white uppercase tracking-wider font-sans">{stationTitle}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-polar-navy border border-polar-cyan/40 text-polar-cyan font-bold">
+                OPERATIONAL SPATIAL TWIN
               </span>
             </div>
             <span className="text-[11px] text-slate-400">{stationRegion}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-[11px]">
-          <span className="flex items-center gap-1.5 text-cyan-300 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            Live Vector Telemetry
-          </span>
-          <span className="text-slate-400">Scale: 1:250 Orthographic CAD</span>
+        {/* Directional Flow Guide Legend */}
+        <div className="flex items-center gap-4 text-[11px] hidden sm:flex">
+          <div className="flex items-center gap-1.5 text-polar-cyan font-semibold">
+            <span className="w-2 h-2 rounded-full bg-polar-cyan animate-pulse" />
+            <span>Directional Coupling: Env → HVAC → Grid → Gen → BESS → Fuel → Logistics</span>
+          </div>
+          <span className="text-slate-400 font-mono">1:250 CAD Scale</span>
         </div>
       </div>
 
       {/* Main 2D Interactive Blueprint SVG Canvas */}
-      <div className="relative w-full h-[400px] md:h-[460px] bg-polar-950 overflow-hidden select-none">
+      <div className="relative w-full h-[420px] md:h-[480px] bg-[#030d17] overflow-hidden select-none">
+        
         {/* Subtle CAD Blueprint Grid */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <pattern id="cad-small-grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" strokeWidth="0.8" />
+            <pattern id="cad-small-grid-v4" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#0e2a47" strokeWidth="0.8" />
             </pattern>
-            <pattern id="cad-large-grid" width="100" height="100" patternUnits="userSpaceOnUse">
-              <rect width="100" height="100" fill="url(#cad-small-grid)" />
-              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#334155" strokeWidth="1.2" />
+            <pattern id="cad-large-grid-v4" width="100" height="100" patternUnits="userSpaceOnUse">
+              <rect width="100" height="100" fill="url(#cad-small-grid-v4)" />
+              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#163e66" strokeWidth="1.2" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#cad-large-grid)" />
+          <rect width="100%" height="100%" fill="url(#cad-large-grid-v4)" />
         </svg>
 
-        {/* 2D Station Structural Blueprint Elements */}
+        {/* SVG Drawing Canvas */}
         <svg
-          viewBox="0 0 800 480"
+          viewBox="0 0 820 490"
           className="w-full h-full"
           preserveAspectRatio="xMidYMid meet"
         >
+          <defs>
+            {/* Arrowhead Markers for Directional Coupling Flow */}
+            <marker id="arrow-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 9 5 L 0 9 z" fill="#00B8E6" />
+            </marker>
+            <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 9 5 L 0 9 z" fill="#E53935" />
+            </marker>
+            <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 9 5 L 0 9 z" fill="#F59E0B" />
+            </marker>
+            <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 9 5 L 0 9 z" fill="#10B981" />
+            </marker>
+
+            {/* Linear Gradients for Active Modules */}
+            <linearGradient id="grad-core" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#08243A" />
+              <stop offset="100%" stopColor="#041424" />
+            </linearGradient>
+            <linearGradient id="grad-power" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1a1c23" />
+              <stop offset="100%" stopColor="#0f172a" />
+            </linearGradient>
+          </defs>
+
           {/* Compass Rose */}
-          <g transform="translate(60, 60)" className="text-slate-400">
-            <circle cx="0" cy="0" r="28" fill="none" stroke="#334155" strokeWidth="1" strokeDasharray="3 3" />
-            <line x1="0" y1="-28" x2="0" y2="28" stroke="#475569" strokeWidth="1.5" />
-            <line x1="-28" y1="0" x2="28" y2="0" stroke="#475569" strokeWidth="1.5" />
-            <text x="0" y="-32" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#38bdf8" fontFamily="monospace">N</text>
-            <text x="0" y="40" textAnchor="middle" fontSize="9" fill="#64748b" fontFamily="monospace">S</text>
-            <text x="36" y="3" textAnchor="start" fontSize="9" fill="#64748b" fontFamily="monospace">E</text>
-            <text x="-36" y="3" textAnchor="end" fontSize="9" fill="#64748b" fontFamily="monospace">W</text>
+          <g transform="translate(60, 55)" className="text-slate-400">
+            <circle cx="0" cy="0" r="26" fill="none" stroke="#1d4b75" strokeWidth="1" strokeDasharray="3 3" />
+            <line x1="0" y1="-26" x2="0" y2="26" stroke="#1d4b75" strokeWidth="1.5" />
+            <line x1="-26" y1="0" x2="26" y2="0" stroke="#1d4b75" strokeWidth="1.5" />
+            <text x="0" y="-30" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#00B8E6" fontFamily="monospace">N</text>
+            <text x="0" y="38" textAnchor="middle" fontSize="9" fill="#64748b" fontFamily="monospace">S</text>
+            <text x="34" y="3" textAnchor="start" fontSize="9" fill="#64748b" fontFamily="monospace">E</text>
+            <text x="-34" y="3" textAnchor="end" fontSize="9" fill="#64748b" fontFamily="monospace">W</text>
           </g>
 
-          {/* Ice / Bedrock Boundary */}
-          <path
-            d="M 50 420 Q 250 370 450 410 T 750 390"
-            fill="none"
-            stroke="#1e3a8a"
-            strokeWidth="1.5"
-            strokeDasharray="6 4"
-          />
-          <text x="80" y="440" fontSize="10" fill="#3b82f6" fontFamily="monospace">PERMAFROST ICE BOUNDARY / ANCHOR PILINGS</text>
+          {/* Exterior Environment Vector Node (Top-Left) */}
+          <g transform="translate(50, 115)">
+            <rect x="0" y="0" width="130" height="54" rx="8" fill="#041624" stroke={isColdSnap || isHighWind ? "#E53935" : "#00B8E6"} strokeWidth="1.5" />
+            <text x="65" y="16" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#00B8E6" fontFamily="monospace">
+              EXTERNAL WEATHER
+            </text>
+            <text x="65" y="32" textAnchor="middle" fontSize="11" fontWeight="bold" fill={isColdSnap ? "#E53935" : "#ffffff"} fontFamily="monospace">
+              {derived.effectiveTempC.toFixed(1)}°C · {derived.effectiveWindKmh} km/h
+            </text>
+            <text x="65" y="46" textAnchor="middle" fontSize="8.5" fill={isColdSnap ? "#F59E0B" : "#94a3b8"} fontFamily="monospace">
+              {isColdSnap ? 'COLD SNAP (-12°C)' : 'Stable Polar Inversion'}
+            </text>
+          </g>
 
-          {/* Inter-module Conduits (Normal Flow) */}
+          {/* ============================================================== */}
+          {/* DIRECTIONAL COUPLING PATHWAYS (PIPELINES)                      */}
+          {/* 1. Environment -> HVAC                                         */}
+          {/* 2. HVAC -> Microgrid Bus                                       */}
+          {/* 3. Microgrid Bus -> Generators (Gen 1 & Gen 2)                 */}
+          {/* 4. Microgrid Bus -> Battery (BESS)                             */}
+          {/* 5. Generators -> Fuel Storage                                  */}
+          {/* 6. Fuel Storage -> Logistics Arrival / Autonomy                */}
+          {/* ============================================================== */}
+
+          {/* Conduits (Base lines) */}
+          {/* Path 1: Env -> HVAC */}
           <path
-            d="M 230 200 L 400 200 L 400 70 M 400 200 L 620 200 L 620 150 M 620 200 L 630 320"
+            d="M 180 142 L 320 180"
             fill="none"
-            stroke="#0284c7"
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.3"
+            stroke="#1d4b75"
+            strokeWidth="3"
+            strokeDasharray="4 3"
+            markerEnd="url(#arrow-cyan)"
+          />
+
+          {/* Path 2: HVAC -> Microgrid Bus */}
+          <path
+            d="M 470 180 L 530 180"
+            fill="none"
+            stroke={isPowerDeficit ? "#E53935" : "#00B8E6"}
+            strokeWidth={isPowerDeficit ? "4" : "3"}
+            markerEnd={isPowerDeficit ? "url(#arrow-red)" : "url(#arrow-cyan)"}
+          />
+
+          {/* Path 3: Microgrid Bus <-> Generators */}
+          <path
+            d="M 590 180 L 570 190 M 640 180 L 675 190"
+            fill="none"
+            stroke="#1d4b75"
+            strokeWidth="2.5"
+          />
+
+          {/* Path 4: Microgrid Bus <-> Battery (BESS) */}
+          <path
+            d="M 400 250 L 400 295"
+            fill="none"
+            stroke={isPowerDeficit ? "#E53935" : "#10B981"}
+            strokeWidth={isPowerDeficit ? "4" : "2.5"}
+            markerEnd={isPowerDeficit ? "url(#arrow-red)" : "url(#arrow-green)"}
+          />
+
+          {/* Path 5: Generators -> Fuel Depot */}
+          <path
+            d="M 640 230 L 640 280"
+            fill="none"
+            stroke={isAutonomyConstrained ? "#F59E0B" : "#00B8E6"}
+            strokeWidth="3"
+            markerEnd={isAutonomyConstrained ? "url(#arrow-amber)" : "url(#arrow-cyan)"}
+          />
+
+          {/* Path 6: Fuel Depot -> Logistics Assessment (Bottom) */}
+          <path
+            d="M 640 380 L 640 415"
+            fill="none"
+            stroke={isAutonomyConstrained ? "#E53935" : "#10B981"}
+            strokeWidth="3"
+            markerEnd={isAutonomyConstrained ? "url(#arrow-red)" : "url(#arrow-green)"}
+          />
+
+          {/* Lateral Inter-Module Conduits: West Wing (Water) & North (Comms) */}
+          <path
+            d="M 280 215 L 320 215"
+            fill="none"
+            stroke="#00B8E6"
+            strokeWidth="2.5"
+            markerEnd="url(#arrow-cyan)"
           />
           <path
-            d="M 230 200 L 400 200 L 400 70 M 400 200 L 620 200 L 620 150 M 620 200 L 630 320"
+            d="M 400 110 L 400 135"
             fill="none"
-            stroke="#38bdf8"
+            stroke="#00B8E6"
             strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.8"
+            markerEnd="url(#arrow-cyan)"
           />
 
           {/* ============================================================== */}
-          {/* PHASE 8: CAUSAL RELATIONSHIP HIGHLIGHTING CONDUITS             */}
-          {/* If failed generator is selected or tripped, highlight:        */}
-          {/* Generator → Energy Deficit → Battery → Fuel → Alerts           */}
+          {/* ACTIVE HIGHLIGHTED CASCADE PATHWAY (WHEN GEN 2 OR RISK TRIPPED)*/}
+          {/* Generator #2 OFFLINE -> Microgrid -> Battery -> Fuel -> Logistics */}
           {/* ============================================================== */}
-          {isSelectedGenFailed && (
+          {(isGen2Failed || isSelectedGen2) && (
             <g className="animate-pulse">
-              {/* Highlight conduit: Generator House to Main Core */}
+              {/* Generator #2 to Microgrid */}
               <path
-                d="M 620 150 L 620 200 L 400 200"
+                d="M 675 180 L 630 180 L 470 180"
                 fill="none"
-                stroke="#f43f5e"
-                strokeWidth="6"
+                stroke="#E53935"
+                strokeWidth="5"
                 strokeLinecap="round"
-                opacity="0.8"
+                opacity="0.9"
               />
-              {/* Highlight conduit: Power House to Fuel Storage */}
+              {/* Microgrid to Battery */}
               <path
-                d="M 620 200 L 630 320"
+                d="M 400 250 L 400 295"
                 fill="none"
-                stroke="#fb923c"
-                strokeWidth="6"
+                stroke="#E53935"
+                strokeWidth="5"
                 strokeLinecap="round"
-                opacity="0.8"
+                opacity="0.9"
               />
-              {/* Causal Callout Badge in SVG */}
-              <g transform="translate(500, 230)">
-                <rect x="-85" y="-14" width="170" height="28" rx="6" fill="#881337" stroke="#f43f5e" strokeWidth="1.5" />
-                <text x="0" y="4" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#fff" fontFamily="monospace">
-                  ⚠ CAUSAL CASCADE ACTIVE
-                </text>
-              </g>
-            </g>
-          )}
-
-          {/* Thermal Flow indicators (Conduits) */}
-          {showThermalFlow && (
-            <g opacity="0.6">
-              <circle cx="400" cy="180" r="3" fill="#38bdf8" className="animate-ping" />
-              <circle cx="470" cy="200" r="3" fill="#38bdf8" className="animate-ping" />
+              {/* Power House to Fuel Storage */}
+              <path
+                d="M 630 230 L 630 280"
+                fill="none"
+                stroke="#F59E0B"
+                strokeWidth="5"
+                strokeLinecap="round"
+                opacity="0.9"
+              />
+              {/* Fuel to Logistics */}
+              <path
+                d="M 630 380 L 630 415"
+                fill="none"
+                stroke="#E53935"
+                strokeWidth="5"
+                strokeLinecap="round"
+                opacity="0.9"
+              />
             </g>
           )}
 
           {/* Module 1: West Wing - Water & Life Support Facility */}
           <g>
             <rect
-              x="160"
-              y="150"
-              width="140"
-              height="110"
-              rx="12"
-              fill="#082f49"
-              stroke="#0284c7"
-              strokeWidth="2"
-              className="transition-all hover:fill-sky-950"
+              x="150"
+              y="165"
+              width="130"
+              height="100"
+              rx="10"
+              fill="#08243A"
+              stroke="#00B8E6"
+              strokeWidth="1.5"
             />
-            <rect x="170" y="160" width="120" height="20" rx="4" fill="#0c4a6e" />
-            <text x="230" y="174" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#38bdf8" fontFamily="monospace">
-              WEST (LIFE SUPPORT)
+            <rect x="160" y="175" width="110" height="18" rx="4" fill="#0C2D48" />
+            <text x="215" y="188" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#00B8E6" fontFamily="monospace">
+              WEST: WATER / RO
             </text>
-            <text x="230" y="248" textAnchor="middle" fontSize="9" fill="#94a3b8" fontFamily="monospace">
-              RO & Greywater Intake
+            <text x="215" y="246" textAnchor="middle" fontSize="9" fill="#94a3b8" fontFamily="monospace">
+              RO & Melt Tanks
             </text>
+            {/* Impact tag beside module */}
+            <g transform="translate(150, 272)">
+              <rect x="0" y="0" width="130" height="16" rx="4" fill="#061c2d" stroke="#1d4b75" strokeWidth="1" />
+              <text x="65" y="11" textAnchor="middle" fontSize="8.5" fill="#38bdf8" fontFamily="monospace">
+                Intake: 18.2 L/min (Nominal)
+              </text>
+            </g>
           </g>
 
           {/* Module 2: North Sector - Communications & SATCOM Array */}
@@ -231,91 +339,89 @@ export default function StationTwin2D({
               y="25"
               width="160"
               height="80"
-              rx="12"
-              fill="#0f172a"
-              stroke="#334155"
-              strokeWidth="2"
-              className="transition-all hover:fill-slate-900"
+              rx="10"
+              fill="#0C2D48"
+              stroke={isHighWind ? "#F59E0B" : "#1d4b75"}
+              strokeWidth={isHighWind ? "2" : "1.5"}
             />
-            <circle cx="400" cy="70" r="24" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 3" />
-            <text x="400" y="44" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#f8fafc" fontFamily="monospace">
-              NORTH RADOME DOME
+            <circle cx="400" cy="65" r="22" fill="#08243A" stroke="#00B8E6" strokeWidth="1.5" strokeDasharray="3 3" />
+            <text x="400" y="40" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#ffffff" fontFamily="monospace">
+              SATCOM RADOME
             </text>
-            <text x="400" y="98" textAnchor="middle" fontSize="9" fill="#94a3b8" fontFamily="monospace">
-              SATCOM Ku/Ka Tracking
+            <text x="400" y="94" textAnchor="middle" fontSize="8.5" fill={isHighWind ? "#F59E0B" : "#94a3b8"} fontFamily="monospace">
+              {isHighWind ? 'HIGH WIND STOW (85 km/h)' : 'Ku/Ka 100% Tracking'}
             </text>
           </g>
 
           {/* Module 3: Central Core - Habitation, Operations & HVAC */}
           <g>
             <rect
-              x="330"
-              y="130"
-              width="140"
-              height="130"
-              rx="14"
-              fill="#020617"
-              stroke={isSelectedGenFailed ? "#f43f5e" : "#0284c7"}
-              strokeWidth={isSelectedGenFailed ? "3" : "2"}
-              className="transition-all"
+              x="320"
+              y="135"
+              width="160"
+              height="120"
+              rx="12"
+              fill="url(#grad-core)"
+              stroke={isColdSnap ? "#F59E0B" : isPowerDeficit ? "#E53935" : "#00B8E6"}
+              strokeWidth={isColdSnap || isPowerDeficit ? "2.5" : "1.5"}
             />
-            <rect x="340" y="140" width="120" height="22" rx="4" fill="#0f172a" />
-            <text x="400" y="155" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#ffffff" fontFamily="monospace">
-              MAIN STATION CORE
+            <rect x="330" y="145" width="140" height="20" rx="4" fill="#0C2D48" />
+            <text x="400" y="159" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#ffffff" fontFamily="monospace">
+              CENTRAL HVAC CORE
             </text>
-            <line x1="340" y1="195" x2="460" y2="195" stroke="#1e293b" strokeWidth="1" strokeDasharray="4 2" />
             <text x="400" y="215" textAnchor="middle" fontSize="9" fill="#cbd5e1" fontFamily="monospace">
-              Command Deck & Labs
+              Core Habitation (21°C)
             </text>
-            <text x="400" y="240" textAnchor="middle" fontSize="9" fill="#38bdf8" fontFamily="monospace">
-              HVAC Loop ({derived.heatingLoadKw} kW)
+            {/* Impact tag on HVAC */}
+            <text x="400" y="240" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill={isColdSnap ? "#F59E0B" : "#00B8E6"} fontFamily="monospace">
+              HVAC Draw: {derived.heatingLoadKw} kW {isColdSnap ? '(+35 kW SURGE)' : ''}
             </text>
           </g>
 
-          {/* Module 4: East Wing - Microgrid & Diesel Generators */}
+          {/* Module 4: East Wing - Microgrid Bus & Diesel Generators */}
           <g>
             <rect
               x="530"
-              y="110"
-              width="190"
-              height="100"
+              y="115"
+              width="210"
+              height="115"
               rx="12"
-              fill="#451a03"
-              stroke={isSelectedGenFailed ? "#f43f5e" : "#d97706"}
-              strokeWidth={isSelectedGenFailed ? "3" : "2"}
-              className="transition-all hover:fill-amber-950"
+              fill="url(#grad-power)"
+              stroke={isPowerDeficit ? "#E53935" : "#00B8E6"}
+              strokeWidth={isPowerDeficit ? "3" : "1.5"}
             />
-            <rect x="540" y="120" width="170" height="20" rx="4" fill="#78350f" />
-            <text x="625" y="134" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#fde68a" fontFamily="monospace">
-              EAST POWER HOUSE (MICROGRID)
+            <rect x="540" y="125" width="190" height="20" rx="4" fill="#1e293b" />
+            <text x="635" y="139" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#f8fafc" fontFamily="monospace">
+              MICROGRID BUS & POWER HOUSE
             </text>
-            <text x="625" y="196" textAnchor="middle" fontSize="9" fill="#fcd34d" fontFamily="monospace">
-              Primary Gen #1 & Aux Gen #2
+            
+            {/* Live Microgrid Power Balance Callout */}
+            <text x="635" y="215" textAnchor="middle" fontSize="10" fontWeight="bold" fill={isPowerDeficit ? "#E53935" : "#10B981"} fontFamily="monospace">
+              Demand: {derived.totalDemandKw} kW · {isPowerDeficit ? `${derived.powerSurplusDeficitKw} kW DEFICIT` : `+${derived.powerSurplusDeficitKw} kW SURPLUS`}
             </text>
           </g>
 
           {/* Module: BESS Battery Storage Subsystem */}
           <g>
             <rect
-              x="330"
-              y="280"
-              width="150"
+              x="320"
+              y="295"
+              width="160"
               height="80"
               rx="10"
-              fill="#064e3b"
-              stroke={derived.batterySocPercent < 40 ? "#e11d48" : "#10b981"}
-              strokeWidth="2"
-              className="transition-all"
+              fill="#062e24"
+              stroke={derived.batteryStatus === 'discharging' ? "#E53935" : "#10B981"}
+              strokeWidth={derived.batteryStatus === 'discharging' ? "2.5" : "1.5"}
             />
-            <rect x="340" y="290" width="130" height="18" rx="4" fill="#065f46" />
-            <text x="405" y="303" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#a7f3d0" fontFamily="monospace">
-              BESS BATTERY STORAGE
+            <rect x="330" y="305" width="140" height="18" rx="4" fill="#0a4637" />
+            <text x="400" y="318" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#a7f3d0" fontFamily="monospace">
+              BESS BATTERY BANK (450 kWh)
             </text>
-            <text x="405" y="332" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#34d399" fontFamily="monospace">
+            <text x="400" y="346" textAnchor="middle" fontSize="11" fontWeight="bold" fill={derived.batteryStatus === 'discharging' ? "#E53935" : "#34d399"} fontFamily="monospace">
               {derived.batterySocPercent}% SOC ({derived.batteryStatus.toUpperCase()})
             </text>
-            <text x="405" y="350" textAnchor="middle" fontSize="8.5" fill="#6ee7b7" fontFamily="monospace">
-              Usable: 450 kWh Buffer
+            <text x="400" y="364" textAnchor="middle" fontSize="8.5" fill={derived.batteryStatus === 'discharging' ? "#F59E0B" : "#6ee7b7"} fontFamily="monospace">
+              {derived.batteryStatus === 'discharging' ? 'Discharging to cover deficit' : 'Floating in Standby'}
             </text>
           </g>
 
@@ -323,34 +429,60 @@ export default function StationTwin2D({
           <g>
             <rect
               x="530"
-              y="270"
-              width="190"
-              height="100"
+              y="280"
+              width="210"
+              height="95"
               rx="12"
-              fill="#4c0519"
-              stroke={isSelectedGenFailed ? "#f43f5e" : "#e11d48"}
-              strokeWidth={isSelectedGenFailed ? "3" : "2"}
-              className="transition-all hover:fill-rose-950"
+              fill="#2e0814"
+              stroke={isAutonomyConstrained ? "#E53935" : "#F59E0B"}
+              strokeWidth={isAutonomyConstrained ? "2.5" : "1.5"}
             />
-            <rect x="540" y="280" width="170" height="20" rx="4" fill="#881337" />
-            <text x="625" y="294" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#fecdd3" fontFamily="monospace">
-              SOUTH CRYOGENIC FUEL DEPOT
+            <rect x="540" y="290" width="190" height="18" rx="4" fill="#4c0519" />
+            <text x="635" y="303" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#fecdd3" fontFamily="monospace">
+              CRYOGENIC BULK FUEL FARM
             </text>
-            <text x="625" y="356" textAnchor="middle" fontSize="9" fill="#fda4af" fontFamily="monospace">
-              Aviation Turbine Fuel ({derived.fuelRunwayDays}d runway)
+            {/* Impact tags on Fuel Depot */}
+            <text x="635" y="336" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill={isAutonomyConstrained ? "#E53935" : "#fda4af"} fontFamily="monospace">
+              Burn: {derived.dailyFuelBurnLitres} L/d · Runway: {derived.fuelRunwayDays.toFixed(1)} Days
+            </text>
+            <text x="635" y="356" textAnchor="middle" fontSize="8.5" fill={isAutonomyConstrained ? "#F59E0B" : "#fda4af"} fontFamily="monospace">
+              {isAutonomyConstrained ? '⚠ BELOW 14-DAY POLAR RESERVE' : 'Stock Above 14-day Safety Threshold'}
+            </text>
+          </g>
+
+          {/* Logistics Arrival & Risk Destination Node (Bottom Right) */}
+          <g transform="translate(530, 415)">
+            <rect
+              x="0"
+              y="0"
+              width="210"
+              height="55"
+              rx="8"
+              fill="#08243A"
+              stroke={isAutonomyConstrained ? "#E53935" : "#10B981"}
+              strokeWidth={isAutonomyConstrained ? "2" : "1.5"}
+            />
+            <text x="105" y="16" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#ffffff" fontFamily="monospace">
+              LOGISTICS RESUPPLY ETA & AUTONOMY
+            </text>
+            <text x="105" y="32" textAnchor="middle" fontSize="10" fontWeight="bold" fill={isAutonomyConstrained ? "#E53935" : "#10B981"} fontFamily="monospace">
+              {isResupplyDelayed ? '30 Days (+12d ICE DELAY)' : '18 Days Scheduled Arrival'}
+            </text>
+            <text x="105" y="47" textAnchor="middle" fontSize="8.5" fill={isAutonomyConstrained ? "#F59E0B" : "#94a3b8"} fontFamily="monospace">
+              {isAutonomyConstrained ? 'PROJECTED FUEL STOCKOUT BEFORE ETA' : 'Resupply Arrives Within Buffer'}
             </text>
           </g>
 
           {/* Interactive Hotspot Nodes for Assets */}
           {assets.map((asset) => {
-            const pos = ASSET_SCHEMATIC_POSITIONS[asset.assetId] || { x: 400, y: 200, zone: asset.building, icon: Cpu };
+            const pos = ASSET_SCHEMATIC_POSITIONS[asset.assetId] || { x: 400, y: 200, zone: asset.building };
             const isSelected = selectedAssetId === asset.assetId;
             const isHovered = hoveredAssetId === asset.assetId;
             const isWarning = asset.status === 'warning';
             const isCritical = asset.status === 'critical' || asset.status === 'offline';
-            const isGen2Failed = asset.assetId.includes('gen-02') && activeInjectedEvents.generator2Failure;
+            const isThisGen2Failed = (asset.assetId.includes('gen-2') || asset.assetId.includes('gen-02')) && isGen2Failed;
 
-            const statusFill = (isGen2Failed || isCritical) ? '#f43f5e' : isWarning ? '#f59e0b' : '#10b981';
+            const statusFill = (isThisGen2Failed || isCritical) ? '#E53935' : isWarning ? '#F59E0B' : '#10B981';
 
             return (
               <g
@@ -365,7 +497,7 @@ export default function StationTwin2D({
                 <circle
                   cx="0"
                   cy="0"
-                  r={isSelected ? "22" : "16"}
+                  r={isSelected ? "22" : "15"}
                   fill={statusFill}
                   opacity={isSelected ? "0.4" : "0.2"}
                   className="animate-ping"
@@ -376,9 +508,9 @@ export default function StationTwin2D({
                   <circle
                     cx="0"
                     cy="0"
-                    r="20"
+                    r="19"
                     fill="none"
-                    stroke="#38bdf8"
+                    stroke="#00B8E6"
                     strokeWidth="3"
                     strokeDasharray="4 2"
                   />
@@ -388,10 +520,10 @@ export default function StationTwin2D({
                 <circle
                   cx="0"
                   cy="0"
-                  r={isSelected ? "14" : "11"}
-                  fill={isSelected ? "#0284c7" : "#0f172a"}
+                  r={isSelected ? "13" : "10"}
+                  fill={isSelected ? "#00B8E6" : "#08243A"}
                   stroke={statusFill}
-                  strokeWidth={isSelected ? "3" : "2.5"}
+                  strokeWidth={isSelected ? "3" : "2"}
                   className="transition-all duration-200 group-hover:scale-125"
                 />
 
@@ -399,27 +531,27 @@ export default function StationTwin2D({
                 <circle
                   cx="0"
                   cy="0"
-                  r={isSelected ? "5" : "4"}
+                  r={isSelected ? "5" : "3.5"}
                   fill={isSelected ? "#ffffff" : statusFill}
                 />
 
                 {/* Asset Label Pill Badge */}
-                <g transform="translate(0, 22)">
+                <g transform="translate(0, 20)">
                   <rect
-                    x="-45"
-                    y="-8"
-                    width="90"
-                    height="16"
-                    rx="8"
-                    fill={isSelected ? "#0284c7" : "#0f172a"}
-                    stroke={isSelected ? "#38bdf8" : "#334155"}
+                    x="-42"
+                    y="-7"
+                    width="84"
+                    height="15"
+                    rx="7.5"
+                    fill={isSelected ? "#00B8E6" : "#08243A"}
+                    stroke={isSelected ? "#38bdf8" : "#1d4b75"}
                     strokeWidth="1"
                   />
                   <text
                     x="0"
                     y="4"
                     textAnchor="middle"
-                    fontSize="8.5"
+                    fontSize="8"
                     fontWeight="bold"
                     fill="#ffffff"
                     fontFamily="monospace"
@@ -428,83 +560,56 @@ export default function StationTwin2D({
                   </text>
                 </g>
 
-                {/* Tooltip Card on Hover */}
-                {isHovered && !isSelected && (
-                  <g transform="translate(18, -45)" className="pointer-events-none z-50">
-                    <rect
-                      x="0"
-                      y="0"
-                      width="160"
-                      height="64"
-                      rx="6"
-                      fill="#020617"
-                      stroke="#38bdf8"
-                      strokeWidth="1"
-                    />
-                    <text x="8" y="16" fontSize="10" fontWeight="bold" fill="#ffffff" fontFamily="monospace">
-                      {asset.name}
-                    </text>
-                    <text x="8" y="32" fontSize="9" fill="#94a3b8" fontFamily="monospace">
-                      Health: {isGen2Failed ? '0%' : `${asset.health}%`} • {isGen2Failed ? 'OFFLINE' : asset.status.toUpperCase()}
-                    </text>
-                    <text x="8" y="47" fontSize="9" fill="#38bdf8" fontFamily="monospace">
-                      Click to inspect causal links →
-                    </text>
-                  </g>
-                )}
+                {/* Live Value Tag directly on Asset */}
+                <text
+                  x="0"
+                  y="-14"
+                  textAnchor="middle"
+                  fontSize="8"
+                  fontWeight="bold"
+                  fill={isThisGen2Failed ? "#E53935" : isWarning ? "#F59E0B" : "#00B8E6"}
+                  fontFamily="monospace"
+                >
+                  {isThisGen2Failed ? '0 kW (OFFLINE)' : asset.type === 'generator' ? '220 kW' : `${asset.health}%`}
+                </text>
               </g>
             );
           })}
         </svg>
 
         {/* Blueprint Legend Floating Bar */}
-        <div className="absolute bottom-3 left-3 bg-polar-900/95 backdrop-blur-sm border border-polar-border px-3 py-1.5 rounded-lg shadow-sm font-mono text-[11px] flex items-center gap-4 text-slate-300">
+        <div className="absolute bottom-2.5 left-3 bg-polar-900/95 backdrop-blur-sm border border-polar-border px-3 py-1.5 rounded-lg shadow-sm font-mono text-[11px] flex items-center gap-4 text-slate-300">
           <span className="font-bold text-white flex items-center gap-1">
-            <Crosshair className="w-3.5 h-3.5 text-cyan-400" /> Hotspot Legend:
+            <Crosshair className="w-3.5 h-3.5 text-polar-cyan" /> Coupling Flow:
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            Operational
+            <span className="w-2.5 h-2.5 rounded-full bg-operational-green" />
+            Nominal
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-            Warning
+            <span className="w-2.5 h-2.5 rounded-full bg-warning-amber" />
+            Advisory
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-            Critical / Tripped
+            <span className="w-2.5 h-2.5 rounded-full bg-critical-red" />
+            Tripped / Deficit
           </span>
         </div>
 
         {/* Active Node Counter Indicator */}
-        <div className="absolute bottom-3 right-3 bg-polar-900/95 backdrop-blur-sm border border-polar-border px-2.5 py-1 rounded-lg shadow-sm font-mono text-[10px] text-slate-400">
-          Spatial Twin Hotspots: {assets.length} Nodes
+        <div className="absolute bottom-2.5 right-3 bg-polar-900/95 backdrop-blur-sm border border-polar-border px-2.5 py-1 rounded-lg shadow-sm font-mono text-[10px] text-slate-400">
+          Spatial Twin: {assets.length} Active Modules
         </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* PHASE 8: CAUSAL RELATIONSHIP BANNER WHEN FAILED GEN SELECTED   */}
-      {/* ============================================================== */}
-      {isSelectedGenFailed && (
-        <div className="p-3 bg-rose-950/90 border-t border-rose-600/60 text-rose-200 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <AlertOctagon className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
-            <span className="font-bold">CAUSAL COUPLING IMPACT:</span>
-            <span className="text-[11px]">
-              Genset #2 Trip → <strong>{Math.abs(derived.powerSurplusDeficitKw)} kW Microgrid Deficit</strong> → Battery Discharging ({derived.batterySocPercent}%) → Fuel burn shifts to Gen #1 → Resupply gap escalated.
-            </span>
-          </div>
-          <span className="text-[10px] font-bold uppercase bg-rose-900/80 px-2 py-0.5 rounded border border-rose-400">
-            Affected Alerts: {activeAlerts.length}
-          </span>
-        </div>
-      )}
-
-      {/* Quick Asset Selector Grid Underneath Blueprint */}
-      <div className="p-3 bg-polar-900/80 border-t border-polar-border">
+      {/* Upstream/Downstream Directional Relationship Strip */}
+      <div className="p-3 bg-polar-900 border-t border-polar-border">
         <div className="text-[11px] font-mono text-slate-400 mb-2 flex items-center justify-between">
-          <span>Click any station subsystem below or on the schematic above:</span>
-          <span className="text-cyan-400 font-semibold">{assets.length} Subsystems in Filter</span>
+          <span className="text-white font-semibold flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-polar-cyan" />
+            Interactive Dependency Graph: Select node to trace upstream/downstream impact
+          </span>
+          <span className="text-polar-cyan font-semibold">Active: {selectedAsset?.name || 'Generator #2'}</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
@@ -512,7 +617,7 @@ export default function StationTwin2D({
             const isSelected = selectedAssetId === asset.assetId;
             const isWarning = asset.status === 'warning';
             const isCritical = asset.status === 'critical' || asset.status === 'offline';
-            const isGen2Failed = asset.assetId.includes('gen-02') && activeInjectedEvents.generator2Failure;
+            const isThisGen2Failed = (asset.assetId.includes('gen-2') || asset.assetId.includes('gen-02')) && isGen2Failed;
 
             return (
               <button
@@ -520,11 +625,11 @@ export default function StationTwin2D({
                 onClick={() => onSelectAsset(asset.assetId)}
                 className={`p-2 rounded-lg border text-left font-mono transition-all text-xs flex flex-col justify-between ${
                   isSelected
-                    ? 'border-cyan-400 bg-polar-800 ring-1 ring-cyan-400/50 shadow-md'
-                    : isGen2Failed || isCritical
-                    ? 'border-rose-700 bg-rose-950/60 hover:bg-rose-900/40'
+                    ? 'border-polar-cyan bg-polar-800 ring-1 ring-polar-cyan/50 shadow-md'
+                    : isThisGen2Failed || isCritical
+                    ? 'border-critical-red/80 bg-critical-red/20 hover:bg-critical-red/30'
                     : isWarning
-                    ? 'border-amber-700 bg-amber-950/60 hover:bg-amber-900/40'
+                    ? 'border-warning-amber/80 bg-warning-amber/20 hover:bg-warning-amber/30'
                     : 'border-polar-border bg-polar-950 hover:bg-polar-900'
                 }`}
               >
@@ -533,17 +638,17 @@ export default function StationTwin2D({
                     {asset.type.replace('_', ' ')}
                   </span>
                   <span className={`w-2 h-2 rounded-full shrink-0 ${
-                    isGen2Failed || isCritical ? 'bg-rose-500 animate-pulse' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
+                    isThisGen2Failed || isCritical ? 'bg-critical-red animate-pulse' : isWarning ? 'bg-warning-amber' : 'bg-operational-green'
                   }`} />
                 </div>
                 <span className="font-bold text-white text-[11px] truncate">{asset.name}</span>
                 <div className="mt-1.5 pt-1 border-t border-white/5 flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">Health:</span>
                   <span className={`font-bold ${
-                    isGen2Failed ? 'text-rose-400' :
-                    asset.health >= 80 ? 'text-emerald-400' : asset.health >= 60 ? 'text-amber-400' : 'text-rose-400'
+                    isThisGen2Failed ? 'text-critical-red' :
+                    asset.health >= 80 ? 'text-operational-green' : asset.health >= 60 ? 'text-warning-amber' : 'text-critical-red'
                   }`}>
-                    {isGen2Failed ? '0%' : `${asset.health}%`}
+                    {isThisGen2Failed ? '0% (TRIP)' : `${asset.health}%`}
                   </span>
                 </div>
               </button>
