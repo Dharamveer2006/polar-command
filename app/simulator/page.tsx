@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useStation } from '@/context/StationContext';
-import GlobalStationStatusRail from '@/components/layout/GlobalStationStatusRail';
 import { 
   SlidersHorizontal, 
   Play, 
@@ -19,9 +18,7 @@ import {
   Clock,
   Layers,
   Activity,
-  ArrowDown,
-  AlertOctagon,
-  Scale
+  ArrowDown
 } from 'lucide-react';
 import { SimulationInputs, SimulationTimelinePoint } from '@/types';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
@@ -56,13 +53,9 @@ export default function SimulatorPage() {
 
   const res = lastSimulationResult;
   const activePoint = res?.timeline?.find(p => p.timeHorizon === selectedTimelinePoint) || res?.timeline?.[3] || null;
-  const isBatteryDepleted = (activePoint && activePoint.batterySoc === 0) || (res && res.simulated.batterySocAfter24h === 0);
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
-      {/* Global Shared Station Status Rail */}
-      <GlobalStationStatusRail />
-
       {/* Header */}
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -145,23 +138,16 @@ export default function SimulatorPage() {
           </div>
 
           {/* Generator 2 State */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400" /> Genset #02 Status:
-              </span>
-              <span className={`font-bold ${generator2Offline ? 'text-rose-400' : 'text-emerald-400'}`}>
-                {generator2Offline ? 'OFFLINE (TRIPPED)' : 'RUNNING (ONLINE)'}
-              </span>
-            </div>
-            <div className="flex gap-2">
+          <div className="p-3.5 rounded-lg bg-polar-900 border border-polar-border space-y-2">
+            <span className="text-slate-300 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-400" /> Genset #2 (Primary 220kW Unit)
+            </span>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setGenerator2Offline(false)}
-                className={`flex-1 py-1.5 rounded border text-[11px] font-bold transition-all ${
-                  !generator2Offline 
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' 
-                    : 'bg-polar-900 text-slate-400 border-polar-border'
+                className={`py-1.5 rounded transition-colors ${
+                  !generator2Offline ? 'bg-emerald-600 text-white font-bold' : 'bg-polar-950 text-slate-400'
                 }`}
               >
                 ONLINE
@@ -169,13 +155,11 @@ export default function SimulatorPage() {
               <button
                 type="button"
                 onClick={() => setGenerator2Offline(true)}
-                className={`flex-1 py-1.5 rounded border text-[11px] font-bold transition-all ${
-                  generator2Offline 
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
-                    : 'bg-polar-900 text-slate-400 border-polar-border'
+                className={`py-1.5 rounded transition-colors ${
+                  generator2Offline ? 'bg-rose-600 text-white font-bold' : 'bg-polar-950 text-slate-400'
                 }`}
               >
-                TRIP OFFLINE
+                TRIPPED (OFFLINE)
               </button>
             </div>
           </div>
@@ -184,27 +168,35 @@ export default function SimulatorPage() {
           <div className="space-y-1.5">
             <div className="flex justify-between">
               <span className="text-slate-300 flex items-center gap-1.5">
-                <Fuel className="w-3.5 h-3.5 text-orange-400" /> Sea-Ice Resupply Delay:
+                <Fuel className="w-3.5 h-3.5 text-purple-400" /> Resupply Ship Delay:
               </span>
-              <span className="font-bold text-orange-300">+{resupplyDelayDays} Days</span>
+              <span className="font-bold text-purple-300">+{resupplyDelayDays} Days</span>
             </div>
             <input
               type="range"
               min={0}
-              max={30}
-              step={2}
+              max={25}
+              step={1}
               value={resupplyDelayDays}
               onChange={(e) => setResupplyDelayDays(Number(e.target.value))}
-              className="w-full accent-orange-400 cursor-pointer"
+              className="w-full accent-purple-400 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-slate-500">
-              <span>0 Days (On-Time Docking)</span>
-              <span>+30 Days (Severe Pack Ice Lockout)</span>
+              <span>On Schedule (0d)</span>
+              <span>+25 Days (Pack-Ice Blockade)</span>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="pt-2 space-y-2">
+          <div className="pt-2 border-t border-white/10 space-y-2">
+            <button
+              onClick={handleRun}
+              className="w-full py-2.5 rounded-lg bg-polar-blue hover:bg-polar-blue/80 text-white font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              [ RE-EVALUATE SIMULATION ]
+            </button>
+
+            {/* Section 36 Step 7: Run Recovery Simulation */}
             <button
               onClick={() => {
                 setTemperatureAdjustmentC(0);
@@ -268,119 +260,6 @@ export default function SimulatorPage() {
                   </span>
                 </div>
               </div>
-
-              {/* Section 6 Requirement: BASELINE vs STRESS vs RECOVERY Matrix */}
-              <div className="polar-card p-4 rounded-xl space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-cyan-400" />
-                    <span className="font-bold text-white uppercase tracking-wider">
-                      BASELINE vs STRESS vs RECOVERY COMPARISON
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400">Station Multi-State Evaluation</span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-[11px]">
-                    <thead>
-                      <tr className="border-b border-white/10 text-slate-400">
-                        <th className="py-2">METRIC</th>
-                        <th className="text-emerald-400">BASELINE</th>
-                        <th className="text-rose-400">STRESS (SIMULATED)</th>
-                        <th className="text-cyan-300">RECOVERY (ACTIONS)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      <tr>
-                        <td className="py-2 font-bold text-white">Power Balance</td>
-                        <td className="text-emerald-400">Equilibrium (0 kW Deficit)</td>
-                        <td className={res.simulated.energyDeficitPercent > 0 ? 'text-rose-400 font-bold' : 'text-slate-300'}>
-                          {res.simulated.energyDeficitPercent > 0 ? `-${Math.max(30, Math.abs(res.simulated.netPowerKw))} kW Deficit` : 'Equilibrium'}
-                        </td>
-                        <td className="text-cyan-300 font-semibold">+25 kW Spinning Reserve</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 font-bold text-white">Battery Reserve</td>
-                        <td className="text-emerald-400">85% SOC (Nominal Float)</td>
-                        <td className={res.simulated.batterySocAfter24h < 40 ? 'text-rose-400 font-bold' : 'text-slate-300'}>
-                          {res.simulated.batterySocAfter24h}% SOC
-                        </td>
-                        <td className="text-cyan-300 font-semibold">78% SOC (Stabilized)</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 font-bold text-white">Fuel Runway</td>
-                        <td className="text-emerald-400">20.4 Days</td>
-                        <td className={res.simulated.fuelRunwayDays < 14 ? 'text-amber-300 font-bold' : 'text-slate-300'}>
-                          {res.simulated.fuelRunwayDays} Days
-                        </td>
-                        <td className="text-cyan-300 font-semibold">{Math.min(24, res.simulated.fuelRunwayDays + 6)} Days (Conserved)</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 font-bold text-white">Inventory Safety</td>
-                        <td className="text-emerald-400">45 Days Buffer</td>
-                        <td className={res.simulated.criticalInventoryDays < 14 ? 'text-rose-400 font-bold' : 'text-slate-300'}>
-                          {res.simulated.criticalInventoryDays} Days Buffer
-                        </td>
-                        <td className="text-cyan-300 font-semibold">{res.simulated.criticalInventoryDays + 14} Days (Rationed)</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 font-bold text-white">Operational Risk</td>
-                        <td>
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">
-                            NOMINAL
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
-                            res.simulated.overallRisk === 'critical' ? 'bg-rose-500 text-white' :
-                            res.simulated.overallRisk === 'warning' ? 'bg-amber-500 text-polar-950' : 'bg-emerald-500/20 text-emerald-300'
-                          }`}>
-                            {res.simulated.overallRisk}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 uppercase">
-                            WATCH / RECOVERING
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Section 6 Requirement: Explainable Battery Depletion Callout */}
-              {isBatteryDepleted && (
-                <div className="p-4 rounded-xl bg-red-950/90 border-2 border-red-500 font-mono text-xs text-red-100 shadow-xl space-y-2">
-                  <div className="flex items-center gap-2 text-red-400 font-bold text-sm uppercase">
-                    <AlertOctagon className="w-5 h-5" />
-                    <span>BATTERY DEPLETED</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[11px]">
-                    <div className="bg-black/40 p-2.5 rounded border border-red-500/30">
-                      <span className="text-slate-400 uppercase text-[10px] block font-bold">Cause:</span>
-                      <span className="text-white">
-                        {generator2Offline 
-                          ? 'Continuous microgrid power deficit of 190 kW following Generator #02 trip without shedding non-essential load.' 
-                          : 'Severe Antarctic cold snap thermodynamic demand exceeds total microgrid generation capacity.'}
-                      </span>
-                    </div>
-                    <div className="bg-black/40 p-2.5 rounded border border-red-500/30">
-                      <span className="text-slate-400 uppercase text-[10px] block font-bold">Duration:</span>
-                      <span className="text-white">
-                        BESS storage fully exhausted at {selectedTimelinePoint}; blackout condition active until emergency diesel start.
-                      </span>
-                    </div>
-                    <div className="bg-black/40 p-2.5 rounded border border-red-500/30">
-                      <span className="text-slate-400 uppercase text-[10px] block font-bold">Power Deficit:</span>
-                      <span className="text-red-300 font-bold text-sm block mt-0.5">
-                        -{Math.max(45, Math.abs(res.simulated.netPowerKw))} kW Unserved
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* ============================================================== */}
               {/* PHASE 4: TIMELINE CARDS (T+0h to T+96h)                         */}

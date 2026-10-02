@@ -15,9 +15,7 @@ import {
   EdgeQueueItem,
   ActiveScenarios,
   StationMode,
-  MissionTimelineEvent,
-  EffectiveStationState,
-  RiskSeverity
+  MissionTimelineEvent
 } from '@/types';
 import { 
   DEMO_USERS, 
@@ -43,8 +41,7 @@ interface StationContextType {
   setCurrentUser: (user: User) => void;
   allUsers: User[];
   
-  // Station State (Derived from Central Pipeline - Single Source of Truth)
-  effectiveStationState: EffectiveStationState;
+  // Station State (Derived from Central Pipeline)
   stationState: StationFullState;
   derived: StationFullState['derived'];
   allStationsState: Record<StationId, StationFullState>;
@@ -328,36 +325,15 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     };
   }, [connectivity, lastSyncTime, activeInjectedEvents, telemetryDrift, requisitions, alerts, stationMode]);
 
-  // Helper to record live station history events to mission timeline (Requirement 10)
-  const recordTimelineEvent = useCallback((category: MissionTimelineEvent['category'], title: string, details: string) => {
-    const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    setMissionTimeline(prev => [
-      {
-        id: `mt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        time,
-        category,
-        title,
-        details,
-        stationId: currentStationId,
-      },
-      ...prev.slice(0, 24),
-    ]);
-  }, [currentStationId]);
-
   // Phase 3 — Composable Scenario Toggling
   const toggleInjectedEvent = useCallback((eventKey: keyof ActiveScenarios) => {
     setActiveInjectedEvents(prev => {
       const nextVal = !prev[eventKey];
       const updated = { ...prev, [eventKey]: nextVal };
       addAuditLog('TOGGLE_SCENARIO', 'STATION', currentStationId, `Scenario ${eventKey} set to ${nextVal}`);
-      recordTimelineEvent(
-        nextVal ? 'ALERT' : 'HUMAN ACTION',
-        nextVal ? `Scenario Triggered: ${eventKey}` : `Scenario Cleared: ${eventKey}`,
-        nextVal ? `Physical stress condition injected into station state engine: ${eventKey}.` : `Anomalous condition ${eventKey} neutralized by operator.`
-      );
       return updated;
     });
-  }, [currentStationId, addAuditLog, recordTimelineEvent]);
+  }, [currentStationId, addAuditLog]);
 
   const resetAllEvents = useCallback(() => {
     setActiveInjectedEvents({
@@ -372,8 +348,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     });
     setAlerts(INITIAL_ALERTS);
     addAuditLog('RESET_SCENARIOS', 'STATION', currentStationId, 'All composable scenarios reset to nominal baseline.');
-    recordTimelineEvent('HUMAN ACTION', 'Station Reset to Nominal Baseline', 'All composable failure events cleared. Nominal watchkeeping equilibrium restored across all 4 domains.');
-  }, [currentStationId, addAuditLog, recordTimelineEvent]);
+  }, [currentStationId, addAuditLog]);
 
   const triggerFullCascade = useCallback(() => {
     setActiveInjectedEvents({
@@ -383,8 +358,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       resupplyDelay: true,
     });
     addAuditLog('CASCADE_SCENARIOS', 'STATION', currentStationId, 'Simultaneous multi-domain cascade triggered (Cold + Wind + Gen2 + Resupply).');
-    recordTimelineEvent('ALERT', 'Compounded Full-Station Cascade', 'Extreme cold snap, katabatic blizzard, generator lockout, and pack-ice delay activated simultaneously.');
-  }, [currentStationId, addAuditLog, recordTimelineEvent]);
+  }, [currentStationId, addAuditLog]);
 
   // Phase 2 — Physically Coupled Realtime Telemetry Drift Tick
   useEffect(() => {
@@ -616,9 +590,8 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     );
     setLastSimulationResult(res);
     addAuditLog('RUN_SIMULATION', 'SIMULATION', inputs.stationId, `Executed predictive simulation: ${res.scenarioName}`);
-    recordTimelineEvent('SIMULATION', `Scenario Simulated: ${res.scenarioName}`, `Horizon projection calculated: ${res.simulated.overallRisk.toUpperCase()} risk with ${res.simulated.energyDeficitPercent}% deficit.`);
     return res;
-  }, [currentUser, addAuditLog, recordTimelineEvent]);
+  }, [currentUser, addAuditLog]);
 
   // Current Evaluated Station State
   const currentStationState = useMemo(() => buildStationFullState(currentStationId), [buildStationFullState, currentStationId]);
@@ -632,120 +605,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
   const setStationMode = useCallback((mode: StationMode) => {
     setStationModeState(mode);
     addAuditLog('CHANGE_STATION_MODE', 'STATION', currentStationId, `Operational stance updated to ${mode}`);
-    recordTimelineEvent('HUMAN ACTION', `Operational Stance: ${mode}`, `Station operational policy transitioned to ${mode}.`);
-  }, [currentStationId, addAuditLog, recordTimelineEvent]);
-
-  // Single Source of Truth: effectiveStationState
-  const effectiveStationState = useMemo<EffectiveStationState>(() => {
-    const s = currentStationState;
-    const d = s.derived;
-    const critCount = s.activeAlerts.filter(a => a.severity === 'critical').length;
-    const warnCount = s.activeAlerts.filter(a => a.severity === 'warning').length;
-    const isPowerDeficit = d.powerSurplusDeficitKw < 0;
-    const isLogisticsCritical = d.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay;
-    const isHealthReduced = d.overallHealthScore < 85;
-
-    const operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL' =
-      critCount > 0 || isPowerDeficit || activeInjectedEvents.generator2Failure
-        ? 'CRITICAL'
-        : warnCount > 0 || isHealthReduced || isLogisticsCritical
-        ? 'WARNING'
-        : activeInjectedEvents.extremeCold || activeInjectedEvents.highWind
-        ? 'WATCH'
-        : 'NOMINAL';
-
-    const riskSeverity: RiskSeverity = operationalStatus === 'CRITICAL' ? 'critical' : operationalStatus === 'WARNING' ? 'warning' : 'nominal';
-
-    const whyThisMatters = isPowerDeficit
-      ? 'Critical power deficit active. Generation is 190 kW below station baseload. BESS battery is currently discharging to cover life support, but will exhaust in < 6 hours unless auxiliary generation is activated or load shedding is engaged.'
-      : activeInjectedEvents.extremeCold && isLogisticsCritical
-      ? 'Thermodynamic load surge from the cold snap has increased daily fuel consumption by 18%. Combined with sea-ice resupply delays, station fuel runway will breach reserve limits before arrival.'
-      : isLogisticsCritical
-      ? 'Current generation is sufficient for present station demand. However, fuel autonomy is below the operational reserve threshold. No immediate power failure is indicated, but continued operation requires logistics attention.'
-      : activeInjectedEvents.extremeCold
-      ? 'Severe exterior cold has escalated HVAC heating draw by +35 kW. Current generator capacity accommodates the load, but fuel burn rate has accelerated, narrowing polar winter autonomy.'
-      : 'Current generation is sufficient for present station demand and fuel reserves exceed the 14-day winter safety buffer. Nominal polar watchkeeping equilibrium is maintained.';
-
-    return {
-      station: s.metadata,
-      environment: s.environment,
-      energy: s.energy,
-      infrastructure: s.infrastructure,
-      logistics: s.logistics,
-      health: s.healthScore,
-      risk: {
-        severity: riskSeverity,
-        operationalStatus,
-        title: d.activeIncidentTitle,
-        why: d.rootCause,
-        affectedSystems: d.primaryDrivers,
-        expectedImpact: d.forecastedImpact,
-        operatorAction: d.recommendedResponse,
-        causalChain: d.causalChain,
-        isPowerDeficit,
-        isAutonomyConstrained: isLogisticsCritical,
-        whyThisMatters,
-      },
-      forecast: {
-        next24h: [
-          {
-            label: 'NOW',
-            time: 'T+0H',
-            demandKw: d.totalDemandKw,
-            batterySoc: d.batterySocPercent,
-            batteryStatus: d.batteryStatus,
-            fuelRunwayDays: d.fuelRunwayDays,
-            infrastructureHealth: d.overallInfrastructureHealth,
-            risk: riskSeverity,
-            operationalStatus,
-          },
-          {
-            label: '+6H',
-            time: 'T+6H',
-            demandKw: d.totalDemandKw + 8,
-            batterySoc: isPowerDeficit ? Math.max(0, d.batterySocPercent - 28) : d.batterySocPercent,
-            batteryStatus: isPowerDeficit ? 'discharging' : 'nominal',
-            fuelRunwayDays: Math.max(0, Number((d.fuelRunwayDays - 0.3).toFixed(1))),
-            infrastructureHealth: isPowerDeficit ? 78 : d.overallInfrastructureHealth,
-            risk: isPowerDeficit ? 'critical' : riskSeverity,
-            operationalStatus: isPowerDeficit ? 'CRITICAL' : operationalStatus,
-          },
-          {
-            label: '+12H',
-            time: 'T+12H',
-            demandKw: d.totalDemandKw + 14,
-            batterySoc: isPowerDeficit ? Math.max(0, d.batterySocPercent - 55) : d.batterySocPercent,
-            batteryStatus: isPowerDeficit ? 'discharging' : 'nominal',
-            fuelRunwayDays: Math.max(0, Number((d.fuelRunwayDays - 0.6).toFixed(1))),
-            infrastructureHealth: isPowerDeficit ? 72 : d.overallInfrastructureHealth,
-            risk: isPowerDeficit ? 'critical' : d.fuelRunwayDays < 18 ? 'warning' : 'nominal',
-            operationalStatus: isPowerDeficit ? 'CRITICAL' : d.fuelRunwayDays < 18 ? 'WARNING' : 'NOMINAL',
-          },
-          {
-            label: '+24H',
-            time: 'T+24H',
-            demandKw: d.totalDemandKw + 22,
-            batterySoc: isPowerDeficit ? 0 : d.batterySocPercent,
-            batteryStatus: isPowerDeficit ? 'discharging' : 'nominal',
-            fuelRunwayDays: Math.max(0, Number((d.fuelRunwayDays - 1.2).toFixed(1))),
-            infrastructureHealth: isPowerDeficit ? 65 : d.overallInfrastructureHealth,
-            risk: isPowerDeficit ? 'critical' : d.fuelRunwayDays < 15 ? 'critical' : 'warning',
-            operationalStatus: isPowerDeficit ? 'CRITICAL' : d.fuelRunwayDays < 15 ? 'CRITICAL' : 'WARNING',
-          },
-        ],
-      },
-      alerts: s.activeAlerts,
-      recommendations: d.recommendedResponses,
-      historicalTelemetry: [
-        { time: '02:00', temperatureC: d.effectiveTempC + 1.2, demandKw: d.totalDemandKw - 18, generationKw: d.generationCapacityKw, batterySoc: 98, fuelBurnLpd: d.dailyFuelBurnLitres - 80 },
-        { time: '04:00', temperatureC: d.effectiveTempC + 0.8, demandKw: d.totalDemandKw - 12, generationKw: d.generationCapacityKw, batterySoc: 97, fuelBurnLpd: d.dailyFuelBurnLitres - 50 },
-        { time: '06:00', temperatureC: d.effectiveTempC + 0.4, demandKw: d.totalDemandKw - 5, generationKw: d.generationCapacityKw, batterySoc: 96, fuelBurnLpd: d.dailyFuelBurnLitres - 20 },
-        { time: '08:00', temperatureC: d.effectiveTempC, demandKw: d.totalDemandKw, generationKw: d.generationCapacityKw, batterySoc: d.batterySocPercent, fuelBurnLpd: d.dailyFuelBurnLitres },
-      ],
-      operationalStance: stationMode,
-      derived: d,
-    };
-  }, [currentStationState, activeInjectedEvents, stationMode]);
+  }, [currentStationId, addAuditLog]);
 
   return (
     <StationContext.Provider value={{
@@ -754,7 +614,6 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       currentUser,
       setCurrentUser,
       allUsers: DEMO_USERS,
-      effectiveStationState,
       stationState: currentStationState,
       derived: currentStationState.derived,
       allStationsState,

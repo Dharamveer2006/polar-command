@@ -129,9 +129,6 @@ export interface StationAsset {
     fuelRateLph?: number;
   };
   anomaly?: AssetAnomaly;
-  upstreamDependencies?: string[];
-  downstreamDependencies?: string[];
-  operationalImpact?: string;
   alerts: string[];
   lastServiced: string;
   nextServiceDue: string;
@@ -158,11 +155,6 @@ export type InventoryCategory =
 
 export type InventoryStatus = 'SAFE' | 'WARNING' | 'PROJECTED SHORTAGE' | 'CRITICAL';
 
-export type LogisticsStatusCategory = 
-  | 'CRITICAL STOCKOUT' 
-  | 'BELOW SAFETY BUFFER / TIGHT RESUPPLY WINDOW' 
-  | 'BUFFER SECURE';
-
 export interface InventoryItem {
   id: string;
   stationId: StationId;
@@ -179,7 +171,6 @@ export interface InventoryItem {
   burnRateTrend: 'normal' | 'elevated' | 'critical';
   riskLevel: RiskSeverity;
   inventoryStatus: InventoryStatus;
-  logisticsStatusCategory?: LogisticsStatusCategory;
   nextResupplyEta: string;
   source: DataProvenance;
   updatedAt: string;
@@ -266,7 +257,7 @@ export interface MissionTimelineEvent {
   id: string;
   time: string;
   title: string;
-  category: 'TELEMETRY' | 'ANOMALY' | 'RISK' | 'ALERT' | 'ACTION' | 'SIMULATION' | 'ANALYSIS' | 'HUMAN ACTION' | 'FOLLOW-UP';
+  category: 'TELEMETRY' | 'ALERT' | 'ANALYSIS' | 'HUMAN ACTION' | 'FOLLOW-UP';
   details: string;
   stationId: StationId;
 }
@@ -318,57 +309,6 @@ export interface StationFullState {
   activeAlerts: Alert[];
   derived: StationDerivedState;
   lastEvaluatedAt: string;
-}
-
-export interface EffectiveStationState {
-  station: StationMetadata;
-  environment: EnvironmentTelemetry;
-  energy: EnergyTelemetry;
-  infrastructure: InfrastructureTelemetry;
-  logistics: {
-    inventory: InventoryItem[];
-    requisitions: Requisition[];
-    source: DataProvenance;
-  };
-  health: StationHealthScore;
-  risk: {
-    severity: RiskSeverity;
-    operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL';
-    title: string;
-    why: string;
-    affectedSystems: string[];
-    expectedImpact: string;
-    operatorAction: string;
-    causalChain: string[];
-    isPowerDeficit: boolean;
-    isAutonomyConstrained: boolean;
-    whyThisMatters: string;
-  };
-  forecast: {
-    next24h: Array<{
-      label: string;
-      time: string;
-      demandKw: number;
-      batterySoc: number;
-      batteryStatus: string;
-      fuelRunwayDays: number;
-      infrastructureHealth: number;
-      risk: RiskSeverity;
-      operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL';
-    }>;
-  };
-  alerts: Alert[];
-  recommendations: string[];
-  historicalTelemetry: Array<{
-    time: string;
-    temperatureC: number;
-    demandKw: number;
-    generationKw: number;
-    batterySoc: number;
-    fuelBurnLpd: number;
-  }>;
-  operationalStance: StationMode;
-  derived: StationDerivedState;
 }
 
 export interface SimulationInputs {

@@ -1,9 +1,7 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import { useStation } from '@/context/StationContext';
-import { useSearchParams } from 'next/navigation';
-import GlobalStationStatusRail from '@/components/layout/GlobalStationStatusRail';
 import { 
   ShieldCheck, 
   AlertTriangle, 
@@ -13,23 +11,16 @@ import {
   CheckCircle2,
   AlertOctagon,
   Clock,
-  Layers,
-  ArrowRight,
-  GitBranch
+  Layers
 } from 'lucide-react';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 
-function InfrastructureContent() {
-  const searchParams = useSearchParams();
-  const focusedAssetId = searchParams.get('assetId');
+export default function InfrastructurePage() {
   const { stationState, activeInjectedEvents } = useStation();
   const { infrastructure, metadata, derived } = stationState;
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
-      {/* Global Shared Station Status Rail */}
-      <GlobalStationStatusRail />
-
       {/* Header */}
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -41,10 +32,10 @@ function InfrastructureContent() {
             <span className="text-xs font-mono text-slate-400">{metadata.name}</span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight mt-1">
-            Station Mechanical Systems, Power Assets & Dependency Topology
+            Station Mechanical Systems, Power Assets & Anomaly Telemetry
           </h1>
           <p className="text-xs text-slate-300 font-mono">
-            Exposes deterministic asset anomaly detection, upstream/downstream causal cascades, and cross-domain operational impacts.
+            Exposes deterministic asset anomaly detection, expected operating tolerances, cross-domain risks, and service schedules.
           </p>
         </div>
 
@@ -222,57 +213,6 @@ function InfrastructureContent() {
                   </div>
                 </div>
 
-                {/* Section 7 Requirement: Upstream Dependencies → Asset → Downstream Dependencies & Operational Impact */}
-                <div className="mt-3 p-3 rounded-xl bg-black/40 border border-white/10 space-y-2 text-[11px]">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-cyan-400">
-                    <span className="flex items-center gap-1.5">
-                      <GitBranch className="w-3.5 h-3.5" /> Dependency Cascade & Cross-Domain Flow
-                    </span>
-                    <span className="text-slate-400 font-normal">Topology Node</span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Upstream */}
-                    <div className="flex items-center gap-1.5 bg-polar-950 px-2 py-1 rounded border border-white/10">
-                      <span className="text-[9px] uppercase text-slate-400 font-bold">Upstream:</span>
-                      <span className="text-slate-200">
-                        {asset.upstreamDependencies && asset.upstreamDependencies.length > 0 
-                          ? asset.upstreamDependencies.join(', ') 
-                          : 'Independent Primary Feed'}
-                      </span>
-                    </div>
-
-                    <ArrowRight className="w-3 h-3 text-cyan-400 shrink-0" />
-
-                    {/* Current Asset */}
-                    <div className="bg-cyan-500/10 border border-cyan-400/40 text-cyan-300 px-2 py-1 rounded font-bold">
-                      {asset.name}
-                    </div>
-
-                    <ArrowRight className="w-3 h-3 text-cyan-400 shrink-0" />
-
-                    {/* Downstream */}
-                    <div className="flex items-center gap-1.5 bg-polar-950 px-2 py-1 rounded border border-white/10">
-                      <span className="text-[9px] uppercase text-slate-400 font-bold">Downstream:</span>
-                      <span className="text-slate-200">
-                        {asset.downstreamDependencies && asset.downstreamDependencies.length > 0 
-                          ? asset.downstreamDependencies.join(' → ') 
-                          : 'Terminal End Device'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Concrete Operational Impact */}
-                  <div className="pt-1.5 border-t border-white/5 flex items-start gap-2 text-slate-300">
-                    <span className="text-[10px] uppercase font-bold text-amber-400 shrink-0 mt-0.5">
-                      Operational Impact:
-                    </span>
-                    <span className="text-[11px] text-slate-200 leading-relaxed">
-                      {asset.operationalImpact || 'Failure triggers secondary degradation in connected sub-loops; baseline life support unaffected.'}
-                    </span>
-                  </div>
-                </div>
-
                 {/* Bottom Row: Service Schedule & Advisories */}
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2 border-t border-white/5 text-[11px] text-slate-400">
                   <div className="flex items-center gap-4">
@@ -298,13 +238,5 @@ function InfrastructureContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function InfrastructurePage() {
-  return (
-    <Suspense fallback={<div className="flex-1 p-6 text-slate-400 font-mono text-xs">Loading infrastructure telemetry...</div>}>
-      <InfrastructureContent />
-    </Suspense>
   );
 }

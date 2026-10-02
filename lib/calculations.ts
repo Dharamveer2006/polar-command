@@ -14,7 +14,6 @@ import {
   StationDerivedState,
   StationAsset,
   InventoryStatus,
-  LogisticsStatusCategory,
   DataProvenance
 } from '@/types';
 
@@ -87,24 +86,19 @@ export function calculatePredictiveLogistics(
 
     let status: InventoryStatus = 'SAFE';
     let riskLevel: RiskSeverity = 'nominal';
-    let logisticsStatusCategory: LogisticsStatusCategory = 'BUFFER SECURE';
 
     if (daysRemaining < effectiveEtaDays) {
       status = 'CRITICAL';
       riskLevel = 'critical';
-      logisticsStatusCategory = 'CRITICAL STOCKOUT';
     } else if (daysRemaining < effectiveEtaDays + 4) {
       status = 'PROJECTED SHORTAGE';
       riskLevel = 'warning';
-      logisticsStatusCategory = 'BELOW SAFETY BUFFER / TIGHT RESUPPLY WINDOW';
     } else if (daysRemaining < item.safetyStockDays || daysRemaining < effectiveEtaDays + 8) {
       status = 'WARNING';
       riskLevel = 'warning';
-      logisticsStatusCategory = 'BELOW SAFETY BUFFER / TIGHT RESUPPLY WINDOW';
     } else {
       status = 'SAFE';
       riskLevel = 'nominal';
-      logisticsStatusCategory = 'BUFFER SECURE';
     }
 
     return {
@@ -113,7 +107,6 @@ export function calculatePredictiveLogistics(
       projectedShortageDate: shortageDate.toISOString().split('T')[0],
       nextResupplyEta: resupplyDate.toISOString().split('T')[0],
       inventoryStatus: status,
-      logisticsStatusCategory,
       riskLevel,
       burnRateTrend: daysRemaining < effectiveEtaDays ? 'critical' : daysRemaining < effectiveEtaDays + 7 ? 'elevated' : 'normal',
       source: 'Derived Calculation' as DataProvenance,
@@ -196,47 +189,11 @@ export function detectAssetAnomalies(assets: StationAsset[]): StationAsset[] {
       }
     }
 
-    // Upstream and downstream dependencies & operational impact (Requirement 7)
-    let upstreamDependencies: string[] = [];
-    let downstreamDependencies: string[] = [];
-    let operationalImpact: string = '';
-
-    if (asset.type === 'generator') {
-      upstreamDependencies = ['Cryogenic Fuel Storage', 'Fuel Manifold & Preheat', 'Engine Governor Controls'];
-      downstreamDependencies = ['Microgrid Bus Backbone', 'BESS Battery Bank', 'Station HVAC Core', 'Life Support'];
-      operationalImpact = status === 'offline' || status === 'critical'
-        ? 'Loss of 190 kW generation triggers microgrid deficit, forcing BESS battery discharge and accelerated fuel burn on Gen #1.'
-        : 'Primary 220 kW generation baseline powering station critical life support.';
-    } else if (asset.type === 'hvac') {
-      upstreamDependencies = ['Exterior Antarctic Atmosphere', 'Microgrid Power Feed', 'Primary Glycol Loop'];
-      downstreamDependencies = ['Habitation Living Quarters', 'Science Labs', 'Hydroponics Greenhouse'];
-      operationalImpact = 'Maintains 21°C indoor thermal setpoint against sub-zero exterior temperatures.';
-    } else if (asset.type === 'water_pump' || asset.type === 'reverse_osmosis') {
-      upstreamDependencies = ['Intake Melt Lake / Seawater', 'Electrical Trace Heating Cable', 'Microgrid Power Feed'];
-      downstreamDependencies = ['Water System (RO)', 'Potable Reservoir (4,200 L)', 'Life Support', 'Station Risk'];
-      operationalImpact = 'Provides 4,200 L daily potable water from seawater / glacial lake melt.';
-    } else if (asset.type === 'fuel_pump') {
-      upstreamDependencies = ['Cryogenic Bulk Tanks', 'Emergency Heated Jacket'];
-      downstreamDependencies = ['Generators #1 & #2', 'Boilers', 'Snowcat Sortie Vehicles'];
-      operationalImpact = 'Supplies continuous fuel feed to microgrid prime movers.';
-    } else if (asset.type === 'satellite_uplink') {
-      upstreamDependencies = ['Steerable Dish Gimbal', 'Microgrid Clean UPS Power'];
-      downstreamDependencies = ['Geostationary Satellite Link', 'NCPOR Mission Control Sync', 'Edge Queue Telemetry Flush'];
-      operationalImpact = 'Transmits real-time synoptic telemetry and mission control command packets.';
-    } else {
-      upstreamDependencies = ['Microgrid Power Feed', 'Station Environmental Controls'];
-      downstreamDependencies = ['Life Support Subsystems', 'Crew Accommodation'];
-      operationalImpact = 'Operational support for station living quarters.';
-    }
-
     return {
       ...asset,
       status,
       health,
       anomaly,
-      upstreamDependencies,
-      downstreamDependencies,
-      operationalImpact,
       updatedAt: new Date().toISOString(),
     };
   });
