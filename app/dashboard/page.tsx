@@ -150,13 +150,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Interactive Schematic Diagram */}
-          <div className="relative bg-polar-950/80 rounded-lg border border-polar-border/40 p-4 h-72 flex flex-col justify-between overflow-hidden">
+          <div className="relative bg-slate-50/80 rounded-lg border border-slate-200 p-4 h-72 flex flex-col justify-between overflow-hidden">
             {/* Background grid lines */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293d_1px,transparent_1px),linear-gradient(to_bottom,#1f293d_1px,transparent_1px)] bg-[size:2rem_2rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] opacity-70 pointer-events-none" />
 
-            <div className="relative z-10 flex items-center justify-between text-xs font-mono text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="relative z-10 flex items-center justify-between text-xs font-mono text-slate-500">
+              <span className="flex items-center gap-1.5 font-semibold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 2D Schematic Overlay • Layer: Operational Assets
               </span>
               <span>Coordinates: {metadata.coordinates.lat}°, {metadata.coordinates.lng}°</span>
@@ -174,22 +174,22 @@ export default function DashboardPage() {
                     href={`/infrastructure`}
                     className={`p-2.5 rounded-lg border transition-all text-xs font-mono flex flex-col justify-between ${
                       isCritical
-                        ? 'bg-rose-950/60 border-rose-500/50 hover:bg-rose-900/60'
+                        ? 'bg-rose-50 border-rose-300 hover:bg-rose-100/80'
                         : isWarning
-                        ? 'bg-amber-950/50 border-amber-500/40 hover:bg-amber-900/50'
-                        : 'bg-polar-900/80 border-polar-border/60 hover:border-polar-ice/60 hover:bg-polar-800'
+                        ? 'bg-amber-50 border-amber-300 hover:bg-amber-100/80'
+                        : 'bg-white border-slate-200 hover:border-sky-400 hover:bg-sky-50/50 shadow-sm'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 uppercase truncate">{asset.building}</span>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold truncate">{asset.building}</span>
                       <span className={`w-2 h-2 rounded-full ${
-                        isCritical ? 'bg-rose-500 animate-pulse' : isWarning ? 'bg-amber-400' : 'bg-emerald-400'
+                        isCritical ? 'bg-rose-500 animate-pulse' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'
                       }`} />
                     </div>
-                    <span className="font-semibold text-white mt-1 truncate">{asset.name}</span>
-                    <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/5 text-[10px] text-slate-400">
+                    <span className="font-bold text-slate-900 mt-1 truncate">{asset.name}</span>
+                    <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100 text-[10px] text-slate-500">
                       <span>Health:</span>
-                      <span className={asset.health >= 80 ? 'text-emerald-400' : 'text-amber-400'}>
+                      <span className={`font-semibold ${asset.health >= 80 ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {asset.health}%
                       </span>
                     </div>
@@ -199,9 +199,9 @@ export default function DashboardPage() {
             </div>
 
             {/* Schematic Footer Details */}
-            <div className="relative z-10 flex items-center justify-between text-xs font-mono pt-2 border-t border-white/5 text-slate-400">
+            <div className="relative z-10 flex items-center justify-between text-xs font-mono pt-2 border-t border-slate-200 text-slate-500">
               <span>Station Assets: {healthyAssets}/{totalAssets} Nominal</span>
-              <span className="text-slate-500">Source: Telemetry Gateway Adapter</span>
+              <span className="text-slate-400">Source: Telemetry Gateway Adapter</span>
             </div>
           </div>
 
@@ -209,23 +209,23 @@ export default function DashboardPage() {
           <div className="grid grid-cols-3 gap-3 pt-1">
             <Link
               href="/simulator"
-              className="py-2 px-3 rounded-lg bg-polar-800 hover:bg-polar-700 border border-polar-border text-xs font-mono text-center text-white flex items-center justify-center gap-1.5 transition-all"
+              className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-mono text-center text-slate-800 font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-polar-ice" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-sky-700" />
               [ Run Scenario ]
             </Link>
             <Link
               href="/alerts"
-              className="py-2 px-3 rounded-lg bg-polar-800 hover:bg-polar-700 border border-polar-border text-xs font-mono text-center text-white flex items-center justify-center gap-1.5 transition-all"
+              className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-mono text-center text-slate-800 font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               [ Open Alerts ({activeAlerts.length}) ]
             </Link>
             <Link
               href="/logistics"
-              className="py-2 px-3 rounded-lg bg-polar-800 hover:bg-polar-700 border border-polar-border text-xs font-mono text-center text-white flex items-center justify-center gap-1.5 transition-all"
+              className="py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-xs font-mono text-center text-slate-800 font-semibold flex items-center justify-center gap-1.5 transition-all shadow-sm"
             >
-              <FilePlus className="w-3.5 h-3.5 text-emerald-400" />
+              <FilePlus className="w-3.5 h-3.5 text-emerald-700" />
               [ Requisition ]
             </Link>
           </div>
