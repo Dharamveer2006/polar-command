@@ -294,12 +294,37 @@ export default function StationTwin2D({
             </text>
           </g>
 
+          {/* Module: BESS Battery Storage Subsystem */}
+          <g>
+            <rect
+              x="330"
+              y="280"
+              width="150"
+              height="80"
+              rx="10"
+              fill="#064e3b"
+              stroke={derived.batterySocPercent < 40 ? "#e11d48" : "#10b981"}
+              strokeWidth="2"
+              className="transition-all"
+            />
+            <rect x="340" y="290" width="130" height="18" rx="4" fill="#065f46" />
+            <text x="405" y="303" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#a7f3d0" fontFamily="monospace">
+              BESS BATTERY STORAGE
+            </text>
+            <text x="405" y="332" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#34d399" fontFamily="monospace">
+              {derived.batterySocPercent}% SOC ({derived.batteryStatus.toUpperCase()})
+            </text>
+            <text x="405" y="350" textAnchor="middle" fontSize="8.5" fill="#6ee7b7" fontFamily="monospace">
+              Usable: 450 kWh Buffer
+            </text>
+          </g>
+
           {/* Module 5: South Sector - Fuel Depot & Bulk Storage */}
           <g>
             <rect
-              x="540"
+              x="530"
               y="270"
-              width="180"
+              width="190"
               height="100"
               rx="12"
               fill="#4c0519"
@@ -307,11 +332,11 @@ export default function StationTwin2D({
               strokeWidth={isSelectedGenFailed ? "3" : "2"}
               className="transition-all hover:fill-rose-950"
             />
-            <rect x="550" y="280" width="160" height="20" rx="4" fill="#881337" />
-            <text x="630" y="294" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#fecdd3" fontFamily="monospace">
+            <rect x="540" y="280" width="170" height="20" rx="4" fill="#881337" />
+            <text x="625" y="294" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#fecdd3" fontFamily="monospace">
               SOUTH CRYOGENIC FUEL DEPOT
             </text>
-            <text x="630" y="356" textAnchor="middle" fontSize="9" fill="#fda4af" fontFamily="monospace">
+            <text x="625" y="356" textAnchor="middle" fontSize="9" fill="#fda4af" fontFamily="monospace">
               Aviation Turbine Fuel ({derived.fuelRunwayDays}d runway)
             </text>
           </g>

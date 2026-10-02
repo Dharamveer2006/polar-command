@@ -287,6 +287,27 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       ...alerts.filter(a => a.stationId === stationId && a.status !== 'resolved'),
     ];
 
+    // Section 9: Station Mode Operational Effects
+    if (stationMode === 'POWER CONSERVATION') {
+      const loadShedKw = 45;
+      evaluated.energy.demandKw = Math.max(160, evaluated.energy.demandKw - loadShedKw);
+      evaluated.energy.nonCriticalLoadKw = 0;
+      evaluated.derived.totalDemandKw = evaluated.energy.demandKw;
+      evaluated.derived.powerBalanceKw = evaluated.derived.generationCapacityKw - evaluated.derived.totalDemandKw;
+      evaluated.derived.powerSurplusDeficitKw = evaluated.derived.powerBalanceKw;
+      evaluated.derived.batteryStatus = evaluated.derived.powerBalanceKw >= 0 ? 'charging' : 'nominal';
+      evaluated.derived.dailyFuelBurnLitres = Math.round(evaluated.derived.dailyFuelBurnLitres * 0.84);
+      if (evaluated.derived.dailyFuelBurnLitres > 0) {
+        evaluated.derived.fuelRunwayDays = Number((evaluated.energy.fuelLitres / evaluated.derived.dailyFuelBurnLitres).toFixed(1));
+      }
+    } else if (stationMode === 'SCIENCE OPERATIONS') {
+      const scienceLoadKw = 20;
+      evaluated.energy.demandKw += scienceLoadKw;
+      evaluated.derived.totalDemandKw += scienceLoadKw;
+      evaluated.derived.powerBalanceKw -= scienceLoadKw;
+      evaluated.derived.powerSurplusDeficitKw -= scienceLoadKw;
+    }
+
     return {
       metadata: meta,
       environment: evaluated.environment,
@@ -302,7 +323,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       derived: evaluated.derived,
       lastEvaluatedAt: new Date().toISOString(),
     };
-  }, [connectivity, lastSyncTime, activeInjectedEvents, telemetryDrift, requisitions, alerts]);
+  }, [connectivity, lastSyncTime, activeInjectedEvents, telemetryDrift, requisitions, alerts, stationMode]);
 
   // Phase 3 — Composable Scenario Toggling
   const toggleInjectedEvent = useCallback((eventKey: keyof ActiveScenarios) => {

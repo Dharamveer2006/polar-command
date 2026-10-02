@@ -496,6 +496,10 @@ export function evaluateStationState(
     recommendedResponse.push('Implement Tier-2 station conservation protocol (reduce non-essential comfort heating by 1.5°C).');
     recommendedResponse.push('Prepare alternative fuel cache requisition from neighboring Antarctic station.');
   } else {
+    crossDomainRisk = 'nominal';
+    activeIncidentTitle = 'Nominal Operations Across All Systems';
+    rootCause = 'All subsystems operating within defined polar thresholds.';
+    forecastedImpact = 'Station will maintain continuous thermal balance, microgrid equilibrium, and 20+ day resupply margin.';
     recommendedResponse.push('Maintain nominal watchkeeping routine; all systems operating within baseline parameters.');
   }
 
