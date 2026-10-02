@@ -1054,6 +1054,10 @@ export default function DashboardPage() {
                 TELEMETRY: 'bg-polar-cyan/20 text-polar-cyan border-polar-cyan/30',
                 ALERT: 'bg-critical-red/20 text-critical-red border-critical-red/40',
                 ANALYSIS: 'bg-polar-blue/20 text-polar-cyan border-polar-blue/40',
+                ANOMALY: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                RISK: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                ACTION: 'bg-operational-green/20 text-operational-green border-operational-green/40',
+                SIMULATION: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40',
                 'HUMAN ACTION': 'bg-operational-green/20 text-operational-green border-operational-green/40',
                 'FOLLOW-UP': 'bg-warning-amber/20 text-warning-amber border-warning-amber/40',
               };

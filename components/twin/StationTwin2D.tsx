@@ -26,6 +26,7 @@ interface StationTwin2DProps {
   onSelectAsset: (assetId: string) => void;
   showThermalFlow?: boolean;
   showEnergyFlow?: boolean;
+  focusIncidentMode?: boolean;
 }
 
 // Coordinate layout mapping for 2D schematic blueprint (percentages in SVG viewbox 820x490)
@@ -54,6 +55,7 @@ export default function StationTwin2D({
   onSelectAsset,
   showThermalFlow = true,
   showEnergyFlow = true,
+  focusIncidentMode = false,
 }: StationTwin2DProps) {
   const [hoveredAssetId, setHoveredAssetId] = useState<string | null>(null);
   const { stationState, activeInjectedEvents } = useStation();
@@ -71,8 +73,33 @@ export default function StationTwin2D({
   const isAutonomyConstrained = derived.fuelRunwayDays < 14 || isResupplyDelayed;
 
   // Selected asset check
-  const selectedAsset = assets.find(a => a.assetId === selectedAssetId);
+  const selectedAsset = assets.find(a => a.assetId === selectedAssetId) || assets[0];
   const isSelectedGen2 = selectedAssetId?.includes('gen-2') || selectedAssetId?.includes('gen-02');
+
+  // Dependency Graph Tracing (Section 8 & 9 Requirements)
+  const isUpstream = (asset: StationAsset) => {
+    if (!selectedAsset || asset.assetId === selectedAsset.assetId) return false;
+    return selectedAsset.upstreamDependencies?.some(dep => 
+      asset.name.toLowerCase().includes(dep.toLowerCase()) || 
+      dep.toLowerCase().includes(asset.name.toLowerCase()) ||
+      dep.toLowerCase().includes(asset.type.replace('_', ' '))
+    ) || false;
+  };
+
+  const isDownstream = (asset: StationAsset) => {
+    if (!selectedAsset || asset.assetId === selectedAsset.assetId) return false;
+    return selectedAsset.downstreamDependencies?.some(dep => 
+      asset.name.toLowerCase().includes(dep.toLowerCase()) || 
+      dep.toLowerCase().includes(asset.name.toLowerCase()) ||
+      dep.toLowerCase().includes(asset.type.replace('_', ' '))
+    ) || false;
+  };
+
+  const isDimmedInFocus = (asset: StationAsset) => {
+    if (!focusIncidentMode) return false;
+    if (asset.assetId === selectedAssetId) return false;
+    return !isUpstream(asset) && !isDownstream(asset);
+  };
 
   return (
     <div className="relative bg-polar-950 rounded-xl border border-polar-border overflow-hidden shadow-2xl flex flex-col font-mono text-xs">
@@ -473,7 +500,7 @@ export default function StationTwin2D({
             </text>
           </g>
 
-          {/* Interactive Hotspot Nodes for Assets */}
+          {/* Interactive Hotspot Nodes for Assets with Dependency Highlights */}
           {assets.map((asset) => {
             const pos = ASSET_SCHEMATIC_POSITIONS[asset.assetId] || { x: 400, y: 200, zone: asset.building };
             const isSelected = selectedAssetId === asset.assetId;
@@ -481,6 +508,9 @@ export default function StationTwin2D({
             const isWarning = asset.status === 'warning';
             const isCritical = asset.status === 'critical' || asset.status === 'offline';
             const isThisGen2Failed = (asset.assetId.includes('gen-2') || asset.assetId.includes('gen-02')) && isGen2Failed;
+            const isUp = isUpstream(asset);
+            const isDown = isDownstream(asset);
+            const isDimmed = isDimmedInFocus(asset);
 
             const statusFill = (isThisGen2Failed || isCritical) ? '#E53935' : isWarning ? '#F59E0B' : '#10B981';
 
@@ -491,19 +521,20 @@ export default function StationTwin2D({
                 onClick={() => onSelectAsset(asset.assetId)}
                 onMouseEnter={() => setHoveredAssetId(asset.assetId)}
                 onMouseLeave={() => setHoveredAssetId(null)}
-                className="cursor-pointer group"
+                opacity={isDimmed ? 0.18 : 1}
+                className="cursor-pointer group transition-opacity duration-300"
               >
                 {/* Animated Pulsing Beacon Ring */}
                 <circle
                   cx="0"
                   cy="0"
-                  r={isSelected ? "22" : "15"}
-                  fill={statusFill}
-                  opacity={isSelected ? "0.4" : "0.2"}
+                  r={isSelected ? "22" : (isUp || isDown) ? "18" : "15"}
+                  fill={isUp ? "#F59E0B" : isDown ? "#38bdf8" : statusFill}
+                  opacity={isSelected ? "0.4" : (isUp || isDown) ? "0.3" : "0.2"}
                   className="animate-ping"
                 />
 
-                {/* Outer Selection Highlight Ring */}
+                {/* Outer Selection / Dependency Highlight Ring */}
                 {isSelected && (
                   <circle
                     cx="0"
@@ -516,13 +547,37 @@ export default function StationTwin2D({
                   />
                 )}
 
+                {isUp && (
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="16"
+                    fill="none"
+                    stroke="#F59E0B"
+                    strokeWidth="2"
+                    strokeDasharray="2 2"
+                  />
+                )}
+
+                {isDown && (
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="16"
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="2"
+                    strokeDasharray="2 2"
+                  />
+                )}
+
                 {/* Main Node Circle */}
                 <circle
                   cx="0"
                   cy="0"
                   r={isSelected ? "13" : "10"}
-                  fill={isSelected ? "#00B8E6" : "#08243A"}
-                  stroke={statusFill}
+                  fill={isSelected ? "#00B8E6" : isUp ? "#78350f" : isDown ? "#0c4a6e" : "#08243A"}
+                  stroke={isUp ? "#F59E0B" : isDown ? "#38bdf8" : statusFill}
                   strokeWidth={isSelected ? "3" : "2"}
                   className="transition-all duration-200 group-hover:scale-125"
                 />
@@ -532,8 +587,23 @@ export default function StationTwin2D({
                   cx="0"
                   cy="0"
                   r={isSelected ? "5" : "3.5"}
-                  fill={isSelected ? "#ffffff" : statusFill}
+                  fill={isSelected ? "#ffffff" : isUp ? "#F59E0B" : isDown ? "#38bdf8" : statusFill}
                 />
+
+                {/* Focus Role Indicator Tag */}
+                {focusIncidentMode && (
+                  <text
+                    x="0"
+                    y="-24"
+                    textAnchor="middle"
+                    fontSize="7"
+                    fontWeight="bold"
+                    fill={isSelected ? "#00B8E6" : isUp ? "#F59E0B" : isDown ? "#38bdf8" : "#94a3b8"}
+                    fontFamily="monospace"
+                  >
+                    {isSelected ? '★ INCIDENT FOCUS' : isUp ? '▲ UPSTREAM' : isDown ? '▼ DOWNSTREAM' : ''}
+                  </text>
+                )}
 
                 {/* Asset Label Pill Badge */}
                 <g transform="translate(0, 20)">
@@ -543,8 +613,8 @@ export default function StationTwin2D({
                     width="84"
                     height="15"
                     rx="7.5"
-                    fill={isSelected ? "#00B8E6" : "#08243A"}
-                    stroke={isSelected ? "#38bdf8" : "#1d4b75"}
+                    fill={isSelected ? "#00B8E6" : isUp ? "#78350f" : isDown ? "#0c4a6e" : "#08243A"}
+                    stroke={isSelected ? "#38bdf8" : isUp ? "#F59E0B" : isDown ? "#38bdf8" : "#1d4b75"}
                     strokeWidth="1"
                   />
                   <text

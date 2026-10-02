@@ -18,9 +18,12 @@ import {
 } from 'lucide-react';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 
+import GlobalStationStatusRail from '@/components/layout/GlobalStationStatusRail';
+
 export default function ReportsPage() {
-  const { stationState, currentStationId, allStationsState, currentUser, activeInjectedEvents } = useStation();
+  const { stationState, effectiveStationState, currentStationId, allStationsState, currentUser, activeInjectedEvents } = useStation();
   const { metadata, environment, energy, infrastructure, logistics, healthScore, activeAlerts, derived } = stationState;
+  const { risk } = effectiveStationState;
 
   const [reportType, setReportType] = useState<'daily' | 'incident' | 'energy' | 'logistics'>('daily');
   const [reportWindow, setReportWindow] = useState<'24h' | '7d' | '30d'>('24h');
@@ -48,7 +51,8 @@ export default function ReportsPage() {
     csvContent += `Time Horizon Window,${reportWindow} (${windowLabel})\n`;
     csvContent += `Generated At,${new Date().toISOString()}\n`;
     csvContent += `Operator,${currentUser.name} (${currentUser.role})\n`;
-    csvContent += `Station Health,${derived.overallHealthScore}%\n\n`;
+    csvContent += `Station Health,${derived.overallHealthScore}%\n`;
+    csvContent += `Operational Status,${risk.operationalStatus}\n\n`;
 
     if (reportType === 'daily' || reportType === 'energy') {
       csvContent += "DOMAIN: ENERGY TELEMETRY & HISTORICAL WINDOW\n";
@@ -86,8 +90,54 @@ export default function ReportsPage() {
     window.print();
   };
 
+  // Generate automated narrative strictly aligned with effectiveStationState
+  const generateNarrative = () => {
+    if (risk.operationalStatus === 'CRITICAL') {
+      return {
+        stance: 'CRITICAL ALERT — ACTIVE LIFE SUPPORT / POWER DEFICIT RISK',
+        primaryConstraint: activeInjectedEvents.generator2Failure 
+          ? 'Generator #02 offline with 190 kW deficit against station baseload.' 
+          : 'Life support or thermal equilibrium breached under severe Antarctic stress.',
+        generationAssessment: derived.powerSurplusDeficitKw < 0
+          ? `Microgrid generation (${derived.generationCapacityKw} kW) is currently INSUFFICIENT for station demand (${derived.totalDemandKw} kW). BESS discharging.`
+          : `Current generation capacity (${derived.generationCapacityKw} kW) operating at maximum peak envelope.`,
+        concern: 'Battery depletion imminent within 6 hours without auxiliary generator activation or non-critical load shedding.',
+      };
+    }
+    if (risk.operationalStatus === 'WARNING') {
+      return {
+        stance: 'WARNING — AUTONOMY CONSTRAINED / OPERATIONAL RESERVE DEFICIT',
+        primaryConstraint: 'Fuel autonomy or consumable buffer below operational reserve target.',
+        generationAssessment: 'Current power generation remains sufficient for present station demand.',
+        concern: 'Long-duration autonomy depends on timely resupply vessel docking and strict thermal conservation.',
+      };
+    }
+    if (risk.operationalStatus === 'WATCH') {
+      return {
+        stance: 'WATCH — ELEVATED WEATHER / THERMODYNAMIC STRESS',
+        primaryConstraint: 'Exterior weather envelope (temperature/katabatic wind) increasing thermal HVAC draw.',
+        generationAssessment: `Current generation (${derived.generationCapacityKw} kW) covers current heating surge (${derived.heatingLoadKw} kW).`,
+        concern: 'Continued severe cold will accelerate daily fuel draw above nominal baselines.',
+      };
+    }
+    return {
+      stance: 'NOMINAL — EQUILIBRIUM ACROSS ALL MONITORED SYSTEMS',
+      primaryConstraint: 'None. All monitored mechanical, electrical, and thermal parameters within calibrated tolerances.',
+      generationAssessment: 'Microgrid generation exceeds total connected demand with spinning reserve.',
+      concern: 'Fuel reserves exceed the 14-day winter safety buffer with vessel resupply tracking to window.',
+    };
+  };
+
+  const narrative = generateNarrative();
+  const fuelItem = logistics.inventory.find(i => i.category === 'fuel') || logistics.inventory[0];
+  const resupplyDate = activeInjectedEvents.resupplyDelay ? 'Nov 03, 2026' : 'Oct 22, 2026';
+  const fuelDepletionDate = new Date(Date.now() + derived.fuelRunwayDays * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
+      {/* Global Status Rail */}
+      <GlobalStationStatusRail />
+
       {/* Header */}
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -99,10 +149,10 @@ export default function ReportsPage() {
             <span className="text-xs font-mono text-slate-400">{metadata.name}</span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight mt-1">
-            POLAR COMMAND PROTOTYPE REPORT
+            POLAR COMMAND OPERATIONAL REPORT
           </h1>
           <p className="text-xs text-slate-300 font-mono">
-            Synthesized operational situation reports computed over 24h, 7d, and 30d telemetry timeframes for NCPOR Command.
+            Derived directly from effectiveStationState. Auto-generated narrative and unified decision summary for NCPOR Mission Command.
           </p>
         </div>
 
@@ -181,7 +231,61 @@ export default function ReportsPage() {
           <div className="text-right text-xs text-slate-400 space-y-0.5">
             <div>REF: POLAR-CMD/{metadata.stationId.toUpperCase()}/{reportType.toUpperCase()}/{reportWindow.toUpperCase()}</div>
             <div>Generated: {new Date().toLocaleString()}</div>
+            <div>Status: <span className={`font-bold ${
+              risk.operationalStatus === 'CRITICAL' ? 'text-rose-400' :
+              risk.operationalStatus === 'WARNING' ? 'text-amber-400' :
+              risk.operationalStatus === 'WATCH' ? 'text-sky-300' : 'text-emerald-400'
+            }`}>{risk.operationalStatus}</span></div>
             <div>Signoff: <span className="text-white font-bold">{currentUser.name}</span> ({currentUser.role})</div>
+          </div>
+        </div>
+
+        {/* DECISION SUMMARY (Section 4 Requirement) */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center justify-between">
+            <span>DECISION SUMMARY</span>
+            <span className="text-[10px] text-slate-400 font-normal">Derived from effectiveStationState</span>
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs">
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Current Power</span>
+              <span className="text-base font-bold text-white">{derived.totalDemandKw} kW</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Cap: {derived.generationCapacityKw} kW</span>
+            </div>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Fuel Autonomy</span>
+              <span className={`text-base font-bold ${derived.fuelRunwayDays < 14 ? 'text-amber-300' : 'text-emerald-400'}`}>
+                {derived.fuelRunwayDays} Days
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">{derived.dailyFuelBurnLitres} L/day</span>
+            </div>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Resupply ETA</span>
+              <span className="text-base font-bold text-cyan-300">{resupplyDate}</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">{activeInjectedEvents.resupplyDelay ? 'Delayed (+12d)' : 'Nominal Voyage'}</span>
+            </div>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Projected Depletion</span>
+              <span className="text-base font-bold text-slate-200">{fuelDepletionDate}</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Physical Runout</span>
+            </div>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Operational Risk</span>
+              <span className={`text-base font-bold uppercase ${
+                risk.operationalStatus === 'CRITICAL' ? 'text-rose-400' :
+                risk.operationalStatus === 'WARNING' ? 'text-amber-400' :
+                risk.operationalStatus === 'WATCH' ? 'text-sky-300' : 'text-emerald-400'
+              }`}>
+                {risk.operationalStatus}
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Health {derived.overallHealthScore}%</span>
+            </div>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border md:col-span-1">
+              <span className="text-slate-400 text-[10px] uppercase block">Recommended Action</span>
+              <span className="text-[11px] font-bold text-cyan-300 line-clamp-2 mt-0.5">
+                {derived.recommendedResponse}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -217,25 +321,29 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Section 2: Report Template Specific Detailed Content */}
-        {reportType === 'daily' && (
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-              2. Operational Situation Narrative & Causal Stance
-            </h3>
-            <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
-              <p>• <strong>Station Stance:</strong> {derived.activeIncident}</p>
-              <p>• <strong>Root Cause Analysis:</strong> {derived.rootCause}</p>
-              <p>• <strong>Forecasted Trajectory:</strong> {derived.forecastedImpact}</p>
-              <p>• <strong>Recommended Mitigating Action:</strong> {derived.recommendedResponse}</p>
-            </div>
+        {/* Section 2: Automated Narrative Grounded in State */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+            2. Operational Situation Narrative & Automated Stance
+          </h3>
+          <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
+            <p>• <strong>Station Status:</strong> <span className={`font-bold ${
+              risk.operationalStatus === 'CRITICAL' ? 'text-rose-400' :
+              risk.operationalStatus === 'WARNING' ? 'text-amber-400' :
+              risk.operationalStatus === 'WATCH' ? 'text-sky-300' : 'text-emerald-400'
+            }`}>{risk.operationalStatus}</span> ({narrative.stance})</p>
+            <p>• <strong>Primary Constraint:</strong> {narrative.primaryConstraint}</p>
+            <p>• <strong>Power Generation:</strong> {narrative.generationAssessment}</p>
+            <p>• <strong>Operational Concern:</strong> {narrative.concern}</p>
+            <p>• <strong>Root Cause Analysis:</strong> {derived.rootCause}</p>
+            <p>• <strong>Recommended Response:</strong> {derived.recommendedResponse}</p>
           </div>
-        )}
+        </div>
 
         {reportType === 'incident' && (
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider">
-              2. Incident Investigation & Causal Chain Log
+              3. Incident Investigation & Causal Chain Log
             </h3>
             <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs space-y-3">
               <div className="font-bold text-white text-sm">{derived.activeIncident}</div>
@@ -258,7 +366,7 @@ export default function ReportsPage() {
         {reportType === 'energy' && (
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-              2. Microgrid Balance & Fuel Autonomy Analysis
+              3. Microgrid Balance & Fuel Autonomy Analysis
             </h3>
             <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
               <div className="grid grid-cols-3 gap-3 text-center mb-2">
@@ -284,7 +392,7 @@ export default function ReportsPage() {
         {reportType === 'logistics' && (
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider">
-              2. Consumables Runway & Vessel ETA Window
+              3. Consumables Runway & Vessel ETA Window
             </h3>
             <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
               <p>• <strong>Resupply Vessel Schedule:</strong> {activeInjectedEvents.resupplyDelay ? 'Delayed transit (+12 days). Revised ETA: Nov 3.' : 'Nominal transit. ETA: Oct 22.'}</p>
@@ -300,23 +408,26 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {logistics.inventory.map(i => (
-                      <tr key={i.id}>
-                        <td className="py-1.5 font-bold text-white">{i.name}</td>
-                        <td>{i.quantity.toLocaleString()} {i.unit}</td>
-                        <td>{i.daysRemaining}d</td>
-                        <td>{i.projectedShortageDate || '2026-11-15'}</td>
-                        <td>
-                          <span className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-bold ${
-                            i.inventoryStatus === 'CRITICAL' ? 'bg-rose-500 text-white' :
-                            i.inventoryStatus === 'PROJECTED SHORTAGE' ? 'bg-orange-500/20 text-orange-300' :
-                            'bg-emerald-500/20 text-emerald-300'
-                          }`}>
-                            {i.inventoryStatus || 'SAFE'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {logistics.inventory.map(i => {
+                      const displayDays = i.category === 'fuel' ? derived.fuelRunwayDays : i.daysRemaining;
+                      return (
+                        <tr key={i.id}>
+                          <td className="py-1.5 font-bold text-white">{i.name}</td>
+                          <td>{i.quantity.toLocaleString()} {i.unit}</td>
+                          <td>{displayDays}d</td>
+                          <td>{i.projectedShortageDate || '2026-11-15'}</td>
+                          <td>
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-bold ${
+                              i.logisticsStatusCategory === 'CRITICAL STOCKOUT' || i.inventoryStatus === 'CRITICAL' ? 'bg-rose-500 text-white' :
+                              i.logisticsStatusCategory === 'BELOW SAFETY BUFFER / TIGHT RESUPPLY WINDOW' || i.inventoryStatus === 'PROJECTED SHORTAGE' ? 'bg-orange-500/20 text-orange-300' :
+                              'bg-emerald-500/20 text-emerald-300'
+                            }`}>
+                              {i.logisticsStatusCategory || i.inventoryStatus || 'BUFFER SECURE'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -324,10 +435,10 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Section 3: Active Alerts Log */}
+        {/* Section 4: Active Alerts Log */}
         <div className="space-y-3">
           <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-            3. Active Operational Risk & Alert Summary ({activeAlerts.length} Unresolved)
+            4. Active Operational Risk & Alert Summary ({activeAlerts.length} Unresolved)
           </h3>
           {activeAlerts.length === 0 ? (
             <p className="text-xs text-emerald-400 p-3 rounded bg-emerald-950/20 border border-emerald-500/30">

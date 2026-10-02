@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { RequisitionPriority } from '@/types';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
+import GlobalStationStatusRail from '@/components/layout/GlobalStationStatusRail';
 
 export default function LogisticsPage() {
   const { 
@@ -29,7 +30,7 @@ export default function LogisticsPage() {
     activeInjectedEvents 
   } = useStation();
 
-  const { logistics, metadata } = stationState;
+  const { logistics, metadata, derived } = stationState;
   const permissions = ROLE_PERMISSIONS[currentUser.role];
 
   // Modal / Form state for new requisition
@@ -65,22 +66,34 @@ export default function LogisticsPage() {
     setShowCreateModal(false);
   };
 
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'CRITICAL':
-        return 'bg-rose-500/20 text-rose-300 border-rose-500/50 font-bold';
-      case 'PROJECTED SHORTAGE':
-        return 'bg-orange-500/20 text-orange-300 border-orange-500/50 font-bold';
-      case 'WARNING':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold';
-      case 'SAFE':
-      default:
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-semibold';
+  const getLogisticsStatusBadge = (item: typeof logistics.inventory[0], daysRem: number, resupplyEtaDays: number) => {
+    if (daysRem < resupplyEtaDays) {
+      return {
+        label: 'CRITICAL STOCKOUT',
+        style: 'bg-rose-500/20 text-rose-300 border-rose-500/50 font-bold animate-pulse',
+      };
     }
+    if (daysRem < item.safetyStockDays || daysRem < resupplyEtaDays + 7) {
+      return {
+        label: 'BELOW SAFETY BUFFER / TIGHT RESUPPLY WINDOW',
+        style: 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold',
+      };
+    }
+    return {
+      label: 'BUFFER SECURE',
+      style: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-semibold',
+    };
   };
+
+  const resupplyEtaDays = activeInjectedEvents.resupplyDelay ? 30 : 18;
 
   return (
     <div className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
+      {/* Global Station Status Rail for Cross-System Consistency */}
+      <div className="-mt-2">
+        <GlobalStationStatusRail />
+      </div>
+
       {/* Header */}
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -95,7 +108,7 @@ export default function LogisticsPage() {
             Predictive Logistics & Consumables Runway Engine
           </h1>
           <p className="text-xs text-slate-300 font-mono">
-            Calculates <code className="text-cyan-300">daysRemaining = quantity / dailyConsumption</code> and projects shortages against icebreaker routing windows.
+            Calculates <code className="text-cyan-300">daysRemaining = quantity / dailyConsumption</code> and evaluates autonomy against vessel routing windows.
           </p>
         </div>
 
@@ -119,8 +132,8 @@ export default function LogisticsPage() {
             <span className="font-bold text-white text-sm">MV Vasiliy Golovnin Resupply Track</span>
             <p className="text-slate-400 text-[11px]">
               {activeInjectedEvents.resupplyDelay 
-                ? 'DELAYED: Fast-ice freeze in Prydz Bay has added +12 days transit. Revised ETA: 2026-11-03.' 
-                : 'ON SCHEDULE: Ice-strengthened cargo vessel navigating via Cape Town. ETA: 2026-10-22.'}
+                ? 'DELAYED: Fast-ice freeze in Prydz Bay has added +12 days transit. Revised ETA: 30 Days (2026-11-03).' 
+                : 'ON SCHEDULE: Ice-strengthened cargo vessel navigating via Cape Town. ETA: 18 Days (2026-10-22).'}
             </p>
           </div>
         </div>
@@ -131,7 +144,7 @@ export default function LogisticsPage() {
               ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
               : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
           }`}>
-            {activeInjectedEvents.resupplyDelay ? 'Delayed (+12d)' : 'Nominal Transit'}
+            {activeInjectedEvents.resupplyDelay ? 'Delayed (+12d ICE)' : 'Nominal Transit'}
           </span>
         </div>
       </div>
@@ -141,10 +154,10 @@ export default function LogisticsPage() {
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div>
             <h2 className="text-sm font-bold text-white uppercase tracking-wider">
-              Critical Consumables Ledger & Dynamic Shortage Projection
+              Critical Consumables Ledger & Dynamic Autonomy Model
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Target Safety Threshold: ≥ 14 Days Reserve
+              Separates Physical Autonomy from Safety Buffer and Scheduled Resupply ETA
             </p>
           </div>
           <ProvenanceBadge source="Derived Calculation" />
@@ -158,18 +171,21 @@ export default function LogisticsPage() {
                 <th className="py-2.5">CATEGORY</th>
                 <th className="py-2.5">STOCK ON HAND</th>
                 <th className="py-2.5">DAILY BURN</th>
-                <th className="py-2.5">DAYS REMAINING</th>
-                <th className="py-2.5">SAFETY STOCK</th>
+                <th className="py-2.5">AUTONOMY</th>
+                <th className="py-2.5">SAFETY BUFFER</th>
                 <th className="py-2.5">RESUPPLY ETA</th>
-                <th className="py-2.5">PROJECTED SHORTAGE</th>
-                <th className="py-2.5">STATUS</th>
+                <th className="py-2.5">PROJECTED DEPLETION</th>
+                <th className="py-2.5">LOGISTICS STATUS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-slate-200">
               {logistics.inventory.map((item) => {
-                const daysRem = Number((item.quantity / Math.max(0.1, item.dailyConsumption)).toFixed(1));
-                const status = item.inventoryStatus || (daysRem < 10 ? 'CRITICAL' : daysRem < 15 ? 'PROJECTED SHORTAGE' : daysRem < 20 ? 'WARNING' : 'SAFE');
-                const shortageDate = item.projectedShortageDate || '2026-11-15';
+                // Ensure Single Source of Truth for Fuel
+                const daysRem = item.category === 'fuel' 
+                  ? derived.fuelRunwayDays 
+                  : Number((item.quantity / Math.max(0.1, item.dailyConsumption)).toFixed(1));
+                const depletionDate = new Date(Date.now() + daysRem * 86400000).toISOString().split('T')[0];
+                const badge = getLogisticsStatusBadge(item, daysRem, resupplyEtaDays);
 
                 return (
                   <tr key={item.id} className="hover:bg-white/5 transition-colors">
@@ -185,18 +201,18 @@ export default function LogisticsPage() {
                       {item.dailyConsumption.toFixed(1)} {item.unit}/day
                     </td>
                     <td className="py-3 font-bold">
-                      <span className={daysRem < 14 ? 'text-rose-400' : daysRem < 21 ? 'text-amber-400' : 'text-emerald-400'}>
-                        {daysRem} days
+                      <span className={daysRem < resupplyEtaDays ? 'text-rose-400' : daysRem < 14 ? 'text-amber-400' : 'text-emerald-400'}>
+                        {daysRem} Days
                       </span>
                     </td>
                     <td className="py-3 text-slate-400">
-                      {item.safetyStock.toLocaleString()} {item.unit}
+                      {item.safetyStockDays || 14} Days
                     </td>
-                    <td className="py-3 text-cyan-300">{item.nextResupplyEta}</td>
-                    <td className="py-3 text-slate-300 text-[11px]">{shortageDate}</td>
+                    <td className="py-3 text-cyan-300 font-bold">{resupplyEtaDays} Days</td>
+                    <td className="py-3 text-slate-300 text-[11px]">{depletionDate}</td>
                     <td className="py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${getStatusBadge(status)}`}>
-                        {status}
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${badge.style}`}>
+                        {badge.label}
                       </span>
                     </td>
                   </tr>
