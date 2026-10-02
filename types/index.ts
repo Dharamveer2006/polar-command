@@ -21,6 +21,10 @@ export type ConnectivityStatus = 'CONNECTED' | 'INTERMITTENT' | 'DISCONNECTED';
 export type RiskSeverity = 'nominal' | 'warning' | 'critical';
 
 export type DataProvenance = 
+  | 'Observed'
+  | 'Derived'
+  | 'Forecast'
+  | 'Synthetic Fallback'
   | 'Public Observation' 
   | 'Synthetic Telemetry' 
   | 'Prototype Forecast' 
@@ -45,15 +49,73 @@ export interface StationMetadata {
   lastSync: string;
 }
 
+export type WeatherState = 'LIVE' | 'STALE' | 'FALLBACK' | 'ERROR';
+
+export type WeatherEventType = 
+  | 'RAPID_COOLING' 
+  | 'HIGH_WIND' 
+  | 'LOW_VISIBILITY' 
+  | 'PRESSURE_DROP' 
+  | 'BLIZZARD_RISK' 
+  | 'NONE';
+
+export interface WeatherEventDetection {
+  type: WeatherEventType;
+  severity: 'nominal' | 'warning' | 'critical';
+  title: string;
+  description: string;
+  rateOfChange?: string;
+  operationalImpact: string;
+  detectedAt: string;
+}
+
+export type SatelliteLayerId = 'true-color' | 'infrared' | 'clouds' | 'snow-ice';
+
+export interface SatelliteMetadata {
+  satelliteName: string;
+  layerId: SatelliteLayerId;
+  layerName: string;
+  status: 'NEAR-REAL-TIME' | 'LATEST_CYCLE' | 'UNAVAILABLE';
+  timestamp: string;
+  latency: string;
+  resolution: string;
+  projection: string;
+  source: string;
+  tileUrlTemplate?: string;
+}
+
+export interface WeatherForecastHorizon {
+  horizon: '+6H' | '+12H' | '+24H' | '+48H' | '+72H' | '+96H';
+  timestamp: string;
+  temperatureC: number;
+  windKmh: number;
+  windMs: number;
+  pressureHpa: number;
+  blizzardProbability: number;
+  condition: string;
+  projectedHeatingLoadKw: number;
+  modelCycle: string;
+}
+
 export interface EnvironmentTelemetry {
   temperatureC: number;
   windKmh: number;
+  windMs?: number;
   windDirectionDeg: number;
   pressureHpa: number;
   visibilityKm: number;
   humidityPercent: number;
+  windChillC?: number;
   blizzardRisk: RiskSeverity;
   source: DataProvenance;
+  primarySource?: string;
+  secondarySource?: string;
+  forecastSource?: string;
+  weatherState?: WeatherState;
+  sourceLatencySec?: number;
+  lastUpdated?: string;
+  nextUpdate?: string;
+  activeWeatherEvents?: WeatherEventDetection[];
   updatedAt: string;
 }
 

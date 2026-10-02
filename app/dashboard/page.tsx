@@ -75,9 +75,14 @@ export default function DashboardPage() {
   const isLogisticsCritical = derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay;
   const isPowerDeficit = derived.powerSurplusDeficitKw < 0;
 
-  const operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL' = criticalCount > 0 || isPowerDeficit
+  const activeWeatherEvents = environment.activeWeatherEvents || [];
+  const primaryWeatherEvent = activeWeatherEvents[0];
+  const hasWeatherCritical = activeWeatherEvents.some(e => e.severity === 'critical');
+  const hasWeatherWarning = activeWeatherEvents.some(e => e.severity === 'warning');
+
+  const operationalStatus: 'NOMINAL' | 'WATCH' | 'WARNING' | 'CRITICAL' = criticalCount > 0 || isPowerDeficit || hasWeatherCritical
     ? 'CRITICAL'
-    : warningCount > 0 || isHealthReduced || isLogisticsCritical
+    : warningCount > 0 || isHealthReduced || isLogisticsCritical || hasWeatherWarning
     ? 'WARNING'
     : activeInjectedEvents.extremeCold || activeInjectedEvents.highWind
     ? 'WATCH'
@@ -90,13 +95,14 @@ export default function DashboardPage() {
     NOMINAL: 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]',
   };
 
-  // Subsystem States for Operational Status Block (Section 2)
+  // Subsystem States for Operational Status Block (Section 2 & 13)
   const subsystemStates = {
     energy: isPowerDeficit ? (Math.abs(derived.powerSurplusDeficitKw) > 50 ? 'CRITICAL' : 'WARNING') : 'NOMINAL',
     water: infrastructure.waterPumpHealth < 75 ? 'WARNING' : 'NOMINAL',
     lifeSupport: activeInjectedEvents.extremeCold && isPowerDeficit ? 'CRITICAL' : activeInjectedEvents.extremeCold ? 'WATCH' : 'NOMINAL',
     comms: activeInjectedEvents.highWind ? 'WARNING' : metadata.connectivityState === 'DISCONNECTED' ? 'CRITICAL' : 'NOMINAL',
     logistics: derived.fuelRunwayDays < 10 ? 'CRITICAL' : (derived.fuelRunwayDays < 14 || activeInjectedEvents.resupplyDelay) ? 'CRITICAL' : 'NOMINAL',
+    environment: hasWeatherCritical ? 'CRITICAL' : hasWeatherWarning ? 'WARNING' : 'NOMINAL',
   };
 
   // Section 3: Cross-Domain Insight (Power vs Long-term Autonomy)
@@ -430,7 +436,46 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-right">
+        <div className="flex flex-wrap items-center gap-4 text-right">
+          {/* WEATHER STATUS (Section 13) */}
+          <Link 
+            href="/environment" 
+            title="Open Polar Weather Monitor"
+            className="text-left bg-polar-950/80 px-3 py-1.5 rounded-lg border border-polar-border hover:border-polar-cyan transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-white uppercase">
+                {metadata.stationId === 'maitri' ? 'MAITRI' : 'BHARATI'}
+              </span>
+              <span className="font-mono text-xs text-polar-cyan font-bold">
+                {environment.temperatureC.toFixed(1)}°C
+              </span>
+              <span className="font-mono text-xs text-sky-300">
+                Wind {environment.windMs ? environment.windMs : (environment.windKmh / 3.6).toFixed(1)} m/s
+              </span>
+              <span className="flex items-center gap-1 font-mono text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                <span className={`w-1.5 h-1.5 rounded-full ${environment.weatherState === 'LIVE' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                {environment.weatherState || 'LIVE'}
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px]">
+              <span className="text-slate-400">Weather Event:</span>
+              {primaryWeatherEvent ? (
+                <span className={`font-bold px-1.5 py-0.2 rounded uppercase ${
+                  primaryWeatherEvent.severity === 'critical' 
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}>
+                  {primaryWeatherEvent.title.split(' ')[0]} {primaryWeatherEvent.severity.toUpperCase()}
+                </span>
+              ) : (
+                <span className="text-emerald-400 font-semibold">
+                  NONE
+                </span>
+              )}
+            </div>
+          </Link>
+
           <div>
             <span className="text-slate-400 block text-[11px] font-medium">Station Time</span>
             <span className="font-mono text-sm font-bold text-white">

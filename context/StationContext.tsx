@@ -31,6 +31,21 @@ import {
   evaluateStationState, 
   runWhatIfSimulation 
 } from '@/lib/calculations';
+import { 
+  BASELINE_STATION_WEATHER, 
+  SATELLITE_LAYERS, 
+  detectWeatherEvents, 
+  generateStationForecast 
+} from '@/lib/weatherEngine';
+import { 
+  SatelliteLayerId, 
+  SatelliteMetadata, 
+  WeatherForecastHorizon, 
+  WeatherEventDetection, 
+  WeatherState,
+  EnvironmentTelemetry,
+  DataProvenance
+} from '@/types';
 import { hasPermission } from '@/lib/permissions';
 
 interface StationContextType {
@@ -83,6 +98,16 @@ interface StationContextType {
   runSimulation: (inputs: SimulationInputs) => SimulationResult;
   lastSimulationResult: SimulationResult | null;
   
+  // Real-Time Polar Weather Engine (SIH26060)
+  liveWeather: Record<StationId, EnvironmentTelemetry>;
+  updateLiveWeather: (stationId: StationId, patch: Partial<EnvironmentTelemetry>) => void;
+  activeWeatherEvents: WeatherEventDetection[];
+  satelliteMetadata: Record<SatelliteLayerId, SatelliteMetadata>;
+  activeSatelliteLayer: SatelliteLayerId;
+  setActiveSatelliteLayer: (layer: SatelliteLayerId) => void;
+  stationForecast: WeatherForecastHorizon[];
+  refreshWeather: () => void;
+
   // Security / RBAC Feedback & Audit Logs
   actionFeedback: { type: 'success' | 'error'; message: string } | null;
   dismissActionFeedback: () => void;
@@ -130,11 +155,6 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     bharati: { tempNoise: 0, windNoise: 0, loadNoise: 0 },
   });
 
-  // Mutable collections (Requisitions & Alerts)
-  const [requisitions, setRequisitions] = useState<Requisition[]>(INITIAL_REQUISITIONS);
-  const [alerts, setAlerts] = useState<Alert[]>(INITIAL_ALERTS);
-  const [lastSimulationResult, setLastSimulationResult] = useState<SimulationResult | null>(null);
-
   // Audit trail
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([
     {
@@ -167,6 +187,73 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     ]);
   }, [currentUser]);
 
+  // Real-Time Polar Weather Engine
+  const [liveWeather, setLiveWeather] = useState<Record<StationId, EnvironmentTelemetry>>(BASELINE_STATION_WEATHER);
+  const [activeSatelliteLayer, setActiveSatelliteLayer] = useState<SatelliteLayerId>('true-color');
+
+  const updateLiveWeather = useCallback((stationId: StationId, patch: Partial<EnvironmentTelemetry>) => {
+    setLiveWeather(prev => {
+      const current = prev[stationId] || BASELINE_STATION_WEATHER[stationId];
+      const newT = patch.temperatureC !== undefined ? patch.temperatureC : current.temperatureC;
+      const newW = patch.windKmh !== undefined ? patch.windKmh : (patch.windMs !== undefined ? Math.round(patch.windMs * 3.6) : current.windKmh);
+      const newMs = patch.windMs !== undefined ? patch.windMs : Number((newW / 3.6).toFixed(1));
+      const newP = patch.pressureHpa !== undefined ? patch.pressureHpa : current.pressureHpa;
+      const newVis = patch.visibilityKm !== undefined ? patch.visibilityKm : current.visibilityKm;
+      const newChill = Number((newT - (newW * 0.18)).toFixed(1));
+
+      const updated: EnvironmentTelemetry = {
+        ...current,
+        ...patch,
+        temperatureC: newT,
+        windKmh: newW,
+        windMs: newMs,
+        pressureHpa: newP,
+        visibilityKm: newVis,
+        windChillC: newChill,
+        source: patch.source || current.source,
+        weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : 'LIVE') as WeatherState,
+        lastUpdated: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const detected = detectWeatherEvents(updated, current);
+      updated.activeWeatherEvents = detected;
+
+      addAuditLog('WEATHER_UPDATE', 'STATION', stationId, `Weather updated: ${newT}°C, ${newW} km/h (${newMs} m/s)`);
+      return { ...prev, [stationId]: updated };
+    });
+  }, [connectivity, addAuditLog]);
+
+  const refreshWeather = useCallback(() => {
+    setLiveWeather(prev => {
+      const now = new Date();
+      return {
+        maitri: {
+          ...prev.maitri,
+          lastUpdated: now.toISOString(),
+          nextUpdate: new Date(now.getTime() + 180000).toISOString(),
+          weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : 'LIVE') as WeatherState,
+        },
+        bharati: {
+          ...prev.bharati,
+          lastUpdated: now.toISOString(),
+          nextUpdate: new Date(now.getTime() + 180000).toISOString(),
+          weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : 'LIVE') as WeatherState,
+        },
+      };
+    });
+  }, [connectivity]);
+
+  const currentStationForecast = useMemo(() => {
+    const curEnv = liveWeather[currentStationId] || BASELINE_STATION_WEATHER[currentStationId];
+    return generateStationForecast(curEnv, currentStationId);
+  }, [liveWeather, currentStationId]);
+
+  // Mutable collections (Requisitions & Alerts)
+  const [requisitions, setRequisitions] = useState<Requisition[]>(INITIAL_REQUISITIONS);
+  const [alerts, setAlerts] = useState<Alert[]>(INITIAL_ALERTS);
+  const [lastSimulationResult, setLastSimulationResult] = useState<SimulationResult | null>(null);
+
   // Phase 1 — Central Evaluation Pipeline Builder
   const buildStationFullState = useCallback((stationId: StationId): StationFullState => {
     const meta = {
@@ -175,7 +262,12 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       lastSync: lastSyncTime,
     };
 
-    const baseEnv = INITIAL_ENVIRONMENT[stationId];
+    const rawEnv = liveWeather[stationId] || BASELINE_STATION_WEATHER[stationId];
+    const baseEnv: EnvironmentTelemetry = {
+      ...rawEnv,
+      weatherState: connectivity === 'DISCONNECTED' ? 'STALE' : rawEnv.weatherState || 'LIVE',
+      source: connectivity === 'DISCONNECTED' ? ('Synthetic Fallback' as DataProvenance) : rawEnv.source,
+    };
     const baseEnergy = INITIAL_ENERGY[stationId];
     const baseInfra = INITIAL_INFRASTRUCTURE[stationId];
     const baseInventory = INITIAL_INVENTORY[stationId];
@@ -192,10 +284,39 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       stationId
     );
 
+    // Weather metadata & event detection attachment
+    const detectedWeatherEvents = detectWeatherEvents(evaluated.environment, rawEnv);
+    evaluated.environment.activeWeatherEvents = detectedWeatherEvents;
+    evaluated.environment.windMs = Number((evaluated.environment.windKmh / 3.6).toFixed(1));
+    evaluated.environment.windChillC = Number((evaluated.environment.temperatureC - (evaluated.environment.windKmh * 0.18)).toFixed(1));
+    evaluated.environment.weatherState = baseEnv.weatherState;
+    evaluated.environment.primarySource = baseEnv.primarySource;
+    evaluated.environment.secondarySource = baseEnv.secondarySource;
+    evaluated.environment.forecastSource = baseEnv.forecastSource;
+    evaluated.environment.sourceLatencySec = baseEnv.sourceLatencySec;
+    evaluated.environment.lastUpdated = baseEnv.lastUpdated;
+    evaluated.environment.nextUpdate = baseEnv.nextUpdate;
+
     const stationReqs = requisitions.filter(r => r.stationId === stationId);
     
     // Merge baseline alerts with active scenario dynamic alerts
     const dynamicAlerts: Alert[] = [];
+    if (detectedWeatherEvents.length > 0) {
+      detectedWeatherEvents.forEach((wev, idx) => {
+        dynamicAlerts.push({
+          alertId: `ALT-WTR-${wev.type}-${stationId}-${idx}`,
+          stationId,
+          severity: wev.severity,
+          domain: 'environment',
+          title: `Weather Alert: ${wev.title}`,
+          cause: [wev.description, wev.rateOfChange || 'Polar atmospheric shift'],
+          affectedAssets: [`${stationId}-hvac-01`],
+          recommendations: [wev.operationalImpact],
+          acknowledged: false,
+          createdAt: wev.detectedAt,
+        });
+      });
+    }
     if (activeInjectedEvents.extremeCold) {
       dynamicAlerts.push({
         alertId: `ALT-DYN-COLD-${stationId}`,
@@ -643,6 +764,15 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       actionFeedback,
       dismissActionFeedback,
       auditLogs,
+      // Real-Time Polar Weather Engine (SIH26060)
+      liveWeather,
+      updateLiveWeather,
+      activeWeatherEvents: currentStationState.environment.activeWeatherEvents || [],
+      satelliteMetadata: SATELLITE_LAYERS,
+      activeSatelliteLayer,
+      setActiveSatelliteLayer,
+      stationForecast: currentStationForecast,
+      refreshWeather,
     }}>
       {children}
     </StationContext.Provider>
