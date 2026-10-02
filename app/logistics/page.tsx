@@ -11,18 +11,22 @@ import {
   CheckCircle, 
   AlertCircle, 
   FileText, 
-  Filter,
-  Shield,
-  Plane
+  Shield, 
+  Plane,
+  AlertTriangle,
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import { RequisitionPriority } from '@/types';
+import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 
 export default function LogisticsPage() {
   const { 
     stationState, 
     currentUser, 
     createRequisition, 
-    updateRequisitionStatus 
+    updateRequisitionStatus,
+    activeInjectedEvents 
   } = useStation();
 
   const { logistics, metadata } = stationState;
@@ -61,22 +65,37 @@ export default function LogisticsPage() {
     setShowCreateModal(false);
   };
 
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'CRITICAL':
+        return 'bg-rose-500/20 text-rose-300 border-rose-500/50 font-bold';
+      case 'PROJECTED SHORTAGE':
+        return 'bg-orange-500/20 text-orange-300 border-orange-500/50 font-bold';
+      case 'WARNING':
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/50 font-semibold';
+      case 'SAFE':
+      default:
+        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-semibold';
+    }
+  };
+
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full">
+    <div className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
       {/* Header */}
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/30 uppercase">
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-400/30 uppercase font-bold">
               Domain 4: Polar Supply Chain
             </span>
+            <ProvenanceBadge source="Prototype Forecast" />
             <span className="text-xs font-mono text-slate-400">{metadata.name}</span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight mt-1">
-            Consumables Inventory Runway & Requisition Workflow
+            Predictive Logistics & Consumables Runway Engine
           </h1>
           <p className="text-xs text-slate-300 font-mono">
-            Tracks fuel, food, medical, and spares against polar sea ice accessibility windows and icebreaker routing.
+            Calculates <code className="text-cyan-300">daysRemaining = quantity / dailyConsumption</code> and projects shortages against icebreaker routing windows.
           </p>
         </div>
 
@@ -84,7 +103,7 @@ export default function LogisticsPage() {
         {permissions.canCreateRequisition && (
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 rounded-lg bg-polar-accent hover:bg-sky-400 text-polar-950 font-bold text-xs font-mono flex items-center gap-2 transition-all shadow-md shadow-sky-500/20"
+            className="px-4 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-polar-950 font-bold text-xs font-mono flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20"
           >
             <PlusCircle className="w-4 h-4" />
             Create Requisition
@@ -92,85 +111,115 @@ export default function LogisticsPage() {
         )}
       </div>
 
-      {/* Inventory Consumables Ledger */}
-      <div className="polar-card p-5 rounded-xl space-y-3">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-            Critical Consumables Ledger & Reserve Runways
-          </h2>
-          <span className="text-xs font-mono text-slate-400">
-            Resupply Buffer Target: ≥ 14 Days
+      {/* Resupply Vessel Banner */}
+      <div className="p-4 rounded-xl bg-polar-900 border border-polar-border flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+        <div className="flex items-center gap-3">
+          <Ship className="w-5 h-5 text-cyan-400 shrink-0" />
+          <div>
+            <span className="font-bold text-white text-sm">MV Vasiliy Golovnin Resupply Track</span>
+            <p className="text-slate-400 text-[11px]">
+              {activeInjectedEvents.resupplyDelay 
+                ? 'DELAYED: Fast-ice freeze in Prydz Bay has added +12 days transit. Revised ETA: 2026-11-03.' 
+                : 'ON SCHEDULE: Ice-strengthened cargo vessel navigating via Cape Town. ETA: 2026-10-22.'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-slate-400 text-[11px]">Vessel Transit Status:</span>
+          <span className={`px-2.5 py-1 rounded text-xs font-bold uppercase border ${
+            activeInjectedEvents.resupplyDelay 
+              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
+              : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+          }`}>
+            {activeInjectedEvents.resupplyDelay ? 'Delayed (+12d)' : 'Nominal Transit'}
           </span>
+        </div>
+      </div>
+
+      {/* Inventory Consumables Ledger */}
+      <div className="polar-card p-5 rounded-xl space-y-3 font-mono">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div>
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
+              Critical Consumables Ledger & Dynamic Shortage Projection
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Target Safety Threshold: ≥ 14 Days Reserve
+            </p>
+          </div>
+          <ProvenanceBadge source="Derived Calculation" />
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left font-mono text-xs">
+          <table className="w-full text-left text-xs">
             <thead>
-              <tr className="text-slate-400 border-b border-white/5">
+              <tr className="text-slate-400 border-b border-white/10 text-[11px]">
                 <th className="py-2.5">ITEM DESCRIPTION</th>
                 <th className="py-2.5">CATEGORY</th>
                 <th className="py-2.5">STOCK ON HAND</th>
                 <th className="py-2.5">DAILY BURN</th>
                 <th className="py-2.5">DAYS REMAINING</th>
                 <th className="py-2.5">SAFETY STOCK</th>
-                <th className="py-2.5">NEXT ETA</th>
-                <th className="py-2.5">RISK STATUS</th>
+                <th className="py-2.5">RESUPPLY ETA</th>
+                <th className="py-2.5">PROJECTED SHORTAGE</th>
+                <th className="py-2.5">STATUS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-slate-200">
-              {logistics.inventory.map((item) => (
-                <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                  <td className="py-3 font-semibold text-white">
-                    {item.name}
-                    <span className="block text-[10px] text-slate-500 font-normal">{item.sku}</span>
-                  </td>
-                  <td className="py-3 uppercase text-[10px] text-slate-400">{item.category}</td>
-                  <td className="py-3 font-bold text-slate-100">
-                    {item.quantity.toLocaleString()} {item.unit}
-                  </td>
-                  <td className="py-3 text-slate-300">
-                    {item.dailyConsumption} {item.unit}/day
-                  </td>
-                  <td className="py-3 font-bold">
-                    <span className={item.daysRemaining < 14 ? 'text-rose-400' : item.daysRemaining < 21 ? 'text-amber-400' : 'text-emerald-400'}>
-                      {item.daysRemaining.toFixed(1)} days
-                    </span>
-                  </td>
-                  <td className="py-3 text-slate-400">
-                    {item.safetyStock.toLocaleString()} {item.unit}
-                  </td>
-                  <td className="py-3 text-sky-300">{item.nextResupplyEta}</td>
-                  <td className="py-3">
-                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
-                      item.riskLevel === 'critical'
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                        : item.riskLevel === 'warning'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    }`}>
-                      {item.riskLevel}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {logistics.inventory.map((item) => {
+                const daysRem = Number((item.quantity / Math.max(0.1, item.dailyConsumption)).toFixed(1));
+                const status = item.inventoryStatus || (daysRem < 10 ? 'CRITICAL' : daysRem < 15 ? 'PROJECTED SHORTAGE' : daysRem < 20 ? 'WARNING' : 'SAFE');
+                const shortageDate = item.projectedShortageDate || '2026-11-15';
+
+                return (
+                  <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                    <td className="py-3 font-semibold text-white">
+                      {item.name}
+                      <span className="block text-[10px] text-slate-500 font-normal">{item.sku}</span>
+                    </td>
+                    <td className="py-3 uppercase text-[10px] text-slate-400">{item.category}</td>
+                    <td className="py-3 font-bold text-slate-100">
+                      {item.quantity.toLocaleString()} {item.unit}
+                    </td>
+                    <td className="py-3 text-slate-300">
+                      {item.dailyConsumption.toFixed(1)} {item.unit}/day
+                    </td>
+                    <td className="py-3 font-bold">
+                      <span className={daysRem < 14 ? 'text-rose-400' : daysRem < 21 ? 'text-amber-400' : 'text-emerald-400'}>
+                        {daysRem} days
+                      </span>
+                    </td>
+                    <td className="py-3 text-slate-400">
+                      {item.safetyStock.toLocaleString()} {item.unit}
+                    </td>
+                    <td className="py-3 text-cyan-300">{item.nextResupplyEta}</td>
+                    <td className="py-3 text-slate-300 text-[11px]">{shortageDate}</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${getStatusBadge(status)}`}>
+                        {status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Requisitions Lifecycle Workflow */}
-      <div className="polar-card p-5 rounded-xl space-y-4">
+      <div className="polar-card p-5 rounded-xl space-y-4 font-mono text-xs">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div>
-            <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-white uppercase tracking-wider">
               Requisition Lifecycle Workflow
             </h2>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">
+            <p className="text-slate-400 mt-0.5 text-[11px]">
               DRAFT → SUBMITTED → APPROVED → IN_TRANSIT → DELIVERED
             </p>
           </div>
-          <span className="text-xs font-mono text-slate-400">
-            Current Operator Role: <strong className="text-sky-300">{currentUser.role}</strong>
+          <span className="text-slate-400">
+            Active Role: <strong className="text-cyan-300">{currentUser.role}</strong>
           </span>
         </div>
 
@@ -178,7 +227,7 @@ export default function LogisticsPage() {
           {logistics.requisitions.map((req) => (
             <div
               key={req.id}
-              className="p-4 rounded-xl bg-polar-900/90 border border-polar-border space-y-3 font-mono text-xs"
+              className="p-4 rounded-xl bg-polar-900 border border-polar-border space-y-3"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -186,7 +235,7 @@ export default function LogisticsPage() {
                   <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
                     req.priority === 'CRITICAL_AIRLIFT' ? 'bg-rose-500 text-white' :
                     req.priority === 'ELEVATED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
-                    'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                    'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                   }`}>
                     {req.priority.replace('_', ' ')}
                   </span>
@@ -194,7 +243,7 @@ export default function LogisticsPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400">Status:</span>
-                  <span className="px-2.5 py-0.5 rounded bg-polar-800 text-polar-ice font-bold border border-polar-ice/30">
+                  <span className="px-2.5 py-0.5 rounded bg-polar-800 text-cyan-300 font-bold border border-cyan-400/30">
                     {req.status}
                   </span>
                 </div>
@@ -247,19 +296,19 @@ export default function LogisticsPage() {
 
       {/* Modal for Creating Requisition */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-          <div className="polar-card-highlight p-6 rounded-2xl max-w-lg w-full space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="polar-card-highlight p-6 rounded-2xl max-w-lg w-full space-y-4 font-mono text-xs border border-cyan-500/40">
             <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <h3 className="font-mono font-bold text-white text-base">New Station Supply Requisition</h3>
+              <h3 className="font-bold text-white text-base">New Station Supply Requisition</h3>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-slate-400 hover:text-white font-mono text-sm"
+                className="text-slate-400 hover:text-white text-base"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleCreateSubmit} className="space-y-3 font-mono text-xs">
+            <form onSubmit={handleCreateSubmit} className="space-y-3">
               <div>
                 <label className="text-slate-300 block mb-1">Requisition Title</label>
                 <input
@@ -333,7 +382,7 @@ export default function LogisticsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-polar-accent hover:bg-sky-400 text-polar-950 font-bold"
+                  className="px-4 py-2 rounded bg-cyan-400 hover:bg-cyan-300 text-polar-950 font-bold"
                 >
                   Submit Requisition
                 </button>

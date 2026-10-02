@@ -11,42 +11,62 @@ import {
   FileSpreadsheet, 
   ShieldCheck, 
   Activity,
-  Layers
+  Layers,
+  Clock,
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
+import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 
 export default function ReportsPage() {
-  const { stationState, currentStationId, allStationsState, currentUser } = useStation();
-  const { metadata, environment, energy, infrastructure, logistics, healthScore, activeAlerts } = stationState;
+  const { stationState, currentStationId, allStationsState, currentUser, activeInjectedEvents } = useStation();
+  const { metadata, environment, energy, infrastructure, logistics, healthScore, activeAlerts, derived } = stationState;
 
   const [reportType, setReportType] = useState<'daily' | 'incident' | 'energy' | 'logistics'>('daily');
   const [reportWindow, setReportWindow] = useState<'24h' | '7d' | '30d'>('24h');
 
+  // Compute functional window metrics based on reportWindow (24h, 7d, 30d)
+  const windowMultiplier = reportWindow === '24h' ? 1 : reportWindow === '7d' ? 7 : 30;
+  const windowLabel = reportWindow === '24h' ? 'Last 24 Hours' : reportWindow === '7d' ? 'Past 7 Days (Weekly)' : 'Past 30 Days (Monthly)';
+
+  const windowMetrics = {
+    cumulativeFuelBurnLitres: Math.round(derived.dailyFuelBurnLitres * windowMultiplier),
+    avgDemandKw: Math.round(derived.totalDemandKw * (reportWindow === '24h' ? 1.0 : reportWindow === '7d' ? 0.98 : 0.96)),
+    peakDemandKw: Math.round(derived.totalDemandKw * 1.15),
+    minTempRecordedC: Number((derived.effectiveTempC - (reportWindow === '30d' ? 6.5 : reportWindow === '7d' ? 3.8 : 1.5)).toFixed(1)),
+    maxWindRecordedKmh: Math.round(derived.effectiveWindKmh * (reportWindow === '30d' ? 1.4 : reportWindow === '7d' ? 1.2 : 1.05)),
+    generatorUptimePercent: activeInjectedEvents.generator2Failure ? (reportWindow === '24h' ? 68 : 82) : 99.4,
+    incidentsLoggedCount: activeAlerts.length + (reportWindow === '30d' ? 5 : reportWindow === '7d' ? 2 : 0),
+  };
+
   // CSV Generator
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "POLAR COMMAND - NCPOR ANTARCTIC RESEARCH STATIONS\n";
+    csvContent += "POLAR COMMAND PROTOTYPE REPORT - NCPOR ANTARCTIC RESEARCH STATIONS\n";
     csvContent += `Station,${metadata.name} (${metadata.stationId})\n`;
+    csvContent += `Report Type,${reportType.toUpperCase()}\n`;
+    csvContent += `Time Horizon Window,${reportWindow} (${windowLabel})\n`;
     csvContent += `Generated At,${new Date().toISOString()}\n`;
     csvContent += `Operator,${currentUser.name} (${currentUser.role})\n`;
-    csvContent += `Station Health,${healthScore.overall}%\n\n`;
+    csvContent += `Station Health,${derived.overallHealthScore}%\n\n`;
 
     if (reportType === 'daily' || reportType === 'energy') {
-      csvContent += "DOMAIN: ENERGY TELEMETRY\n";
-      csvContent += "Generation (kW),Demand (kW),Battery SoC (%),Fuel Runway (Days),Fuel Stock (Litres)\n";
-      csvContent += `${energy.generationKw},${energy.demandKw},${energy.batterySoc},${energy.fuelRunwayDays},${energy.fuelLitres}\n\n`;
+      csvContent += "DOMAIN: ENERGY TELEMETRY & HISTORICAL WINDOW\n";
+      csvContent += "Avg Demand (kW),Peak Demand (kW),Cumulative Fuel Burn (L),Battery SOC (%),Fuel Runway (Days)\n";
+      csvContent += `${windowMetrics.avgDemandKw},${windowMetrics.peakDemandKw},${windowMetrics.cumulativeFuelBurnLitres},${derived.batterySocPercent},${derived.fuelRunwayDays}\n\n`;
     }
 
     if (reportType === 'daily' || reportType === 'logistics') {
-      csvContent += "DOMAIN: CONSUMABLES LEDGER\n";
-      csvContent += "SKU,Item Name,Quantity,Unit,Days Remaining,Safety Stock,Risk\n";
+      csvContent += "DOMAIN: CONSUMABLES LEDGER & PREDICTIVE RUNWAYS\n";
+      csvContent += "SKU,Item Name,Quantity,Unit,Daily Burn,Days Remaining,Safety Stock,Status\n";
       logistics.inventory.forEach(item => {
-        csvContent += `"${item.sku}","${item.name}",${item.quantity},${item.unit},${item.daysRemaining},${item.safetyStock},${item.riskLevel}\n`;
+        csvContent += `"${item.sku}","${item.name}",${item.quantity},${item.unit},${item.dailyConsumption},${item.daysRemaining},${item.safetyStock},"${item.inventoryStatus || 'SAFE'}"\n`;
       });
       csvContent += "\n";
     }
 
     if (reportType === 'incident' || activeAlerts.length > 0) {
-      csvContent += "DOMAIN: ACTIVE ALERTS & INCIDENTS\n";
+      csvContent += "DOMAIN: ACTIVE ALERTS & CAUSAL ROOT CAUSE\n";
       csvContent += "Alert ID,Severity,Domain,Title,Created At,Acknowledged\n";
       activeAlerts.forEach(a => {
         csvContent += `"${a.alertId}","${a.severity}","${a.domain}","${a.title}","${a.createdAt}",${a.acknowledged}\n`;
@@ -56,7 +76,7 @@ export default function ReportsPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `POLAR_COMMAND_${metadata.stationId.toUpperCase()}_${reportType.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `POLAR_COMMAND_REPORT_${metadata.stationId.toUpperCase()}_${reportType.toUpperCase()}_${reportWindow}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -67,21 +87,22 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full">
+    <div className="flex-1 p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
       {/* Header */}
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-400/30 uppercase">
-              Reporting & Telemetry Audit
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-400/30 uppercase font-bold">
+              Reporting & Historical Telemetry
             </span>
+            <ProvenanceBadge source="Derived Calculation" />
             <span className="text-xs font-mono text-slate-400">{metadata.name}</span>
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight mt-1">
-            Official Operational Situation Reports (SITREP)
+            POLAR COMMAND PROTOTYPE REPORT
           </h1>
           <p className="text-xs text-slate-300 font-mono">
-            Synthesized cross-domain summaries with full cryptographic metadata and source labeling for NCPOR Command.
+            Synthesized operational situation reports computed over 24h, 7d, and 30d telemetry timeframes for NCPOR Command.
           </p>
         </div>
 
@@ -89,14 +110,14 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2 font-mono text-xs">
           <button
             onClick={handleExportCSV}
-            className="px-3.5 py-2 rounded-lg bg-polar-800 hover:bg-polar-700 text-white border border-polar-border flex items-center gap-2 transition-all"
+            className="px-3.5 py-2 rounded-lg bg-polar-900 hover:bg-polar-800 text-white border border-polar-border flex items-center gap-2 transition-all"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
             Export CSV
           </button>
           <button
             onClick={handlePrint}
-            className="px-4 py-2 rounded-lg bg-polar-accent hover:bg-sky-400 text-polar-950 font-bold flex items-center gap-2 transition-all shadow-md shadow-sky-500/20"
+            className="px-4 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-polar-950 font-bold flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20"
           >
             <Printer className="w-4 h-4" />
             Print / PDF Report
@@ -114,24 +135,24 @@ export default function ReportsPage() {
                 key={type}
                 onClick={() => setReportType(type)}
                 className={`px-3 py-1 rounded uppercase text-[11px] transition-colors ${
-                  reportType === type ? 'bg-polar-700 text-polar-ice font-bold' : 'text-slate-400 hover:text-white'
+                  reportType === type ? 'bg-cyan-400 text-polar-950 font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {type === 'daily' ? 'Daily SITREP' : type}
+                {type === 'daily' ? 'Daily SITREP' : type === 'incident' ? 'Incident Report' : type === 'energy' ? 'Energy Report' : 'Logistics Report'}
               </button>
             ))}
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">Time Window:</span>
+          <span className="text-slate-400">Historical Window:</span>
           <div className="bg-polar-900 border border-polar-border rounded-lg p-0.5 flex">
             {(['24h', '7d', '30d'] as const).map(win => (
               <button
                 key={win}
                 onClick={() => setReportWindow(win)}
                 className={`px-3 py-1 rounded uppercase text-[11px] transition-colors ${
-                  reportWindow === win ? 'bg-polar-700 text-polar-ice font-bold' : 'text-slate-400 hover:text-white'
+                  reportWindow === win ? 'bg-cyan-400 text-polar-950 font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {win}
@@ -142,81 +163,174 @@ export default function ReportsPage() {
       </div>
 
       {/* Rendered Printable Report Sheet */}
-      <div className="polar-card p-8 rounded-2xl space-y-6 font-mono border-white/20 bg-polar-950/90 shadow-2xl">
+      <div className="polar-card p-8 rounded-2xl space-y-6 font-mono border-white/10 bg-polar-950 shadow-2xl">
         {/* Document Header */}
         <div className="border-b-2 border-white/20 pb-4 flex flex-col sm:flex-row justify-between sm:items-start gap-4">
           <div>
             <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs uppercase tracking-widest">
-              <span>GOVERNMENT OF INDIA</span> • <span>MINISTRY OF EARTH SCIENCES</span>
+              <span>POLAR COMMAND PROTOTYPE REPORT</span> • <span>SIH26060 DIGITAL TWIN</span>
             </div>
             <h2 className="text-xl font-bold text-white mt-1">
               NATIONAL CENTRE FOR POLAR AND OCEAN RESEARCH (NCPOR)
             </h2>
             <p className="text-xs text-slate-300">
-              POLAR COMMAND OPERATIONAL REPORT • STATION: {metadata.name.toUpperCase()}
+              STATION: {metadata.name.toUpperCase()} ({metadata.region}) • WINDOW: {windowLabel.toUpperCase()}
             </p>
           </div>
 
           <div className="text-right text-xs text-slate-400 space-y-0.5">
-            <div>REF: NCPOR/SITREP/{metadata.stationId.toUpperCase()}/{new Date().toISOString().slice(0, 10)}</div>
+            <div>REF: POLAR-CMD/{metadata.stationId.toUpperCase()}/{reportType.toUpperCase()}/{reportWindow.toUpperCase()}</div>
             <div>Generated: {new Date().toLocaleString()}</div>
             <div>Signoff: <span className="text-white font-bold">{currentUser.name}</span> ({currentUser.role})</div>
           </div>
         </div>
 
-        {/* Section 1: Executive Overview */}
+        {/* Section 1: Window Aggregates Matrix */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider">
-            1. Executive Health & Readiness Matrix
+          <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center justify-between">
+            <span>1. Historical Telemetry Aggregates ({reportWindow} Window)</span>
+            <ProvenanceBadge source="Derived Calculation" compact />
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 rounded bg-polar-900 border border-white/10">
-              <span className="text-slate-400 text-[10px] uppercase block">Composite Health</span>
-              <span className="text-lg font-bold text-emerald-400">{healthScore.overall}% (Nominal)</span>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Cumulative Fuel Draw</span>
+              <span className="text-lg font-bold text-amber-300">{windowMetrics.cumulativeFuelBurnLitres.toLocaleString()} L</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Burn Rate: {derived.dailyFuelBurnLitres} L/day</span>
             </div>
-            <div className="p-3 rounded bg-polar-900 border border-white/10">
-              <span className="text-slate-400 text-[10px] uppercase block">Power Balance</span>
-              <span className="text-lg font-bold text-white">{energy.demandKw} kW / {energy.generationKw} kW</span>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Average Microgrid Demand</span>
+              <span className="text-lg font-bold text-white">{windowMetrics.avgDemandKw} kW</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Peak Draw: {windowMetrics.peakDemandKw} kW</span>
             </div>
-            <div className="p-3 rounded bg-polar-900 border border-white/10">
-              <span className="text-slate-400 text-[10px] uppercase block">Fuel Autonomy</span>
-              <span className="text-lg font-bold text-amber-300">{energy.fuelRunwayDays} Days</span>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Weather Envelope Window</span>
+              <span className="text-lg font-bold text-cyan-300">{windowMetrics.minTempRecordedC}°C Min</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Peak Gusts: {windowMetrics.maxWindRecordedKmh} km/h</span>
             </div>
-            <div className="p-3 rounded bg-polar-900 border border-white/10">
-              <span className="text-slate-400 text-[10px] uppercase block">Weather Envelope</span>
-              <span className="text-lg font-bold text-cyan-300">{environment.temperatureC.toFixed(1)}°C, {environment.windKmh}km/h</span>
+            <div className="p-3 rounded bg-polar-900 border border-polar-border">
+              <span className="text-slate-400 text-[10px] uppercase block">Fleet Uptime / Events</span>
+              <span className={`text-lg font-bold ${windowMetrics.generatorUptimePercent < 90 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {windowMetrics.generatorUptimePercent}% Uptime
+              </span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">{windowMetrics.incidentsLoggedCount} Events in Window</span>
             </div>
           </div>
         </div>
 
-        {/* Section 2: Domain Details */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider">
-            2. Cross-Domain Operational Observations & Provenance
-          </h3>
-          <div className="p-4 rounded-xl bg-polar-900/60 border border-white/10 text-xs space-y-2 text-slate-300">
-            <p>
-              • <strong>Environment:</strong> Ground surface temperature recorded at {environment.temperatureC.toFixed(1)}°C with wind gusts averaging {environment.windKmh} km/h from {environment.windDirectionDeg}°. Data source labeled as: <em>{environment.source}</em>.
-            </p>
-            <p>
-              • <strong>Energy & Microgrid:</strong> Current station heating load is {energy.heatingLoadKw} kW and base load is {energy.baseLoadKw} kW. Genset fleet operating with {energy.generators.filter(g => g.status === 'running').length} prime movers online. Battery BESS status at {energy.batterySoc}% SOC. Data source: <em>{energy.source}</em>.
-            </p>
-            <p>
-              • <strong>Mechanical Life-Support:</strong> Life-support and water intake extraction systems index at {infrastructure.overallHealth}%. HVAC thermal recovery functioning nominally.
-            </p>
-            <p>
-              • <strong>Supply Chain & Logistics:</strong> Next scheduled icebreaker delivery expected in {logistics.inventory[0]?.daysRemaining.toFixed(0)} days. Requisitions logged: {logistics.requisitions.length} approved/in-transit. Data source: <em>{logistics.source}</em>.
-            </p>
+        {/* Section 2: Report Template Specific Detailed Content */}
+        {reportType === 'daily' && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+              2. Operational Situation Narrative & Causal Stance
+            </h3>
+            <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
+              <p>• <strong>Station Stance:</strong> {derived.activeIncident}</p>
+              <p>• <strong>Root Cause Analysis:</strong> {derived.rootCause}</p>
+              <p>• <strong>Forecasted Trajectory:</strong> {derived.forecastedImpact}</p>
+              <p>• <strong>Recommended Mitigating Action:</strong> {derived.recommendedResponse}</p>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Section 3: Active Alerts Summary */}
+        {reportType === 'incident' && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-rose-400 uppercase tracking-wider">
+              2. Incident Investigation & Causal Chain Log
+            </h3>
+            <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs space-y-3">
+              <div className="font-bold text-white text-sm">{derived.activeIncident}</div>
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-bold">Causal Sequence:</span>
+                {derived.causalChain.map((step, idx) => (
+                  <div key={idx} className="flex items-start gap-2 text-slate-200 text-[11px]">
+                    <span className="text-rose-400 font-bold shrink-0">{idx + 1}.</span>
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="pt-2 border-t border-rose-500/20 text-rose-200 text-[11px]">
+                <strong>Operator Protocol:</strong> {derived.recommendedResponse}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {reportType === 'energy' && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              2. Microgrid Balance & Fuel Autonomy Analysis
+            </h3>
+            <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
+              <div className="grid grid-cols-3 gap-3 text-center mb-2">
+                <div className="p-2 bg-polar-950 rounded">
+                  <span className="text-[10px] text-slate-400 block">Current Capacity</span>
+                  <span className="font-bold text-white">{derived.generationCapacityKw} kW</span>
+                </div>
+                <div className="p-2 bg-polar-950 rounded">
+                  <span className="text-[10px] text-slate-400 block">Thermal Heating Draw</span>
+                  <span className="font-bold text-cyan-300">{derived.heatingLoadKw} kW</span>
+                </div>
+                <div className="p-2 bg-polar-950 rounded">
+                  <span className="text-[10px] text-slate-400 block">Fuel Autonomy Runway</span>
+                  <span className="font-bold text-amber-300">{derived.fuelRunwayDays} Days</span>
+                </div>
+              </div>
+              <p>• Genset fleet fuel rate calibrated to {derived.dailyFuelBurnLitres} Litres/day under current thermal load.</p>
+              <p>• Battery storage (BESS) state-of-charge: {derived.batterySocPercent}% ({derived.batteryStatus}).</p>
+            </div>
+          </div>
+        )}
+
+        {reportType === 'logistics' && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-purple-400 uppercase tracking-wider">
+              2. Consumables Runway & Vessel ETA Window
+            </h3>
+            <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs space-y-2 text-slate-200">
+              <p>• <strong>Resupply Vessel Schedule:</strong> {activeInjectedEvents.resupplyDelay ? 'Delayed transit (+12 days). Revised ETA: Nov 3.' : 'Nominal transit. ETA: Oct 22.'}</p>
+              <div className="overflow-x-auto mt-2">
+                <table className="w-full text-left text-[11px]">
+                  <thead>
+                    <tr className="text-slate-400 border-b border-white/10">
+                      <th className="py-1.5">ITEM</th>
+                      <th>STOCK</th>
+                      <th>DAYS LEFT</th>
+                      <th>SHORTAGE DATE</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {logistics.inventory.map(i => (
+                      <tr key={i.id}>
+                        <td className="py-1.5 font-bold text-white">{i.name}</td>
+                        <td>{i.quantity.toLocaleString()} {i.unit}</td>
+                        <td>{i.daysRemaining}d</td>
+                        <td>{i.projectedShortageDate || '2026-11-15'}</td>
+                        <td>
+                          <span className={`px-1.5 py-0.2 rounded text-[9px] uppercase font-bold ${
+                            i.inventoryStatus === 'CRITICAL' ? 'bg-rose-500 text-white' :
+                            i.inventoryStatus === 'PROJECTED SHORTAGE' ? 'bg-orange-500/20 text-orange-300' :
+                            'bg-emerald-500/20 text-emerald-300'
+                          }`}>
+                            {i.inventoryStatus || 'SAFE'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: Active Alerts Log */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-sky-400 uppercase tracking-wider">
-            3. Active Operational Risk & Alert Log
+          <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
+            3. Active Operational Risk & Alert Summary ({activeAlerts.length} Unresolved)
           </h3>
           {activeAlerts.length === 0 ? (
-            <p className="text-xs text-emerald-400 p-3 rounded bg-emerald-950/20 border border-emerald-500/20">
+            <p className="text-xs text-emerald-400 p-3 rounded bg-emerald-950/20 border border-emerald-500/30">
               All monitored telemetry channels within nominal operating envelopes. Zero unresolved critical alarms.
             </p>
           ) : (
@@ -228,7 +342,7 @@ export default function ReportsPage() {
                     <span className="text-slate-400 text-[10px]">{new Date(a.createdAt).toLocaleTimeString()}</span>
                   </div>
                   <p className="text-slate-300 text-[11px] mt-1">Causes: {a.cause.join('; ')}</p>
-                  <p className="text-sky-300 text-[11px] mt-0.5">Recommended Stance: {a.recommendations[0]}</p>
+                  <p className="text-cyan-300 text-[11px] mt-0.5">Recommended Stance: {a.recommendations[0]}</p>
                 </div>
               ))}
             </div>
@@ -237,8 +351,8 @@ export default function ReportsPage() {
 
         {/* Compliance Footer */}
         <div className="pt-4 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-500">
-          <span>Data Classification: OFFICIAL USE ONLY • NCPOR MoES</span>
-          <span>Polar Command Digital Twin Build v1.0 • SIH26060</span>
+          <span>POLAR COMMAND PROTOTYPE REPORT • NCPOR Antarctic Digital Twin</span>
+          <span>SIH26060 Build v2.0 • Deterministic Evaluation Engine</span>
         </div>
       </div>
     </div>

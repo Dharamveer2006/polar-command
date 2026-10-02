@@ -20,6 +20,12 @@ export type ConnectivityStatus = 'CONNECTED' | 'INTERMITTENT' | 'DISCONNECTED';
 
 export type RiskSeverity = 'nominal' | 'warning' | 'critical';
 
+export type DataProvenance = 
+  | 'Public Observation' 
+  | 'Synthetic Telemetry' 
+  | 'Prototype Forecast' 
+  | 'Derived Calculation';
+
 export interface StationMetadata {
   stationId: StationId;
   name: string;
@@ -47,7 +53,7 @@ export interface EnvironmentTelemetry {
   visibilityKm: number;
   humidityPercent: number;
   blizzardRisk: RiskSeverity;
-  source: 'Public observation' | 'Simulated telemetry';
+  source: DataProvenance;
   updatedAt: string;
 }
 
@@ -80,7 +86,7 @@ export interface EnergyTelemetry {
   fuelRunwayDays: number;
   batteryRunwayHours: number;
   generators: GeneratorAsset[];
-  source: 'Simulated telemetry';
+  source: DataProvenance;
   updatedAt: string;
 }
 
@@ -92,6 +98,16 @@ export type AssetType =
   | 'reverse_osmosis' 
   | 'satellite_uplink' 
   | 'greenhouse_control';
+
+export interface AssetAnomaly {
+  parameter: string;
+  expectedRange: string;
+  observedValue: string;
+  isAnomaly: boolean;
+  status?: 'ANOMALY' | 'NOMINAL';
+  explanation?: string;
+  affectedDomain: 'energy' | 'infrastructure' | 'hvac' | 'water' | 'comms';
+}
 
 export interface StationAsset {
   assetId: string;
@@ -105,12 +121,14 @@ export interface StationAsset {
     temperatureC?: number;
     pressureBar?: number;
     vibrationMmSec?: number;
+    vibrationMmS?: number;
     loadKw?: number;
     flowRateLpm?: number;
     efficiencyPercent?: number;
     runtimeHours?: number;
     fuelRateLph?: number;
   };
+  anomaly?: AssetAnomaly;
   alerts: string[];
   lastServiced: string;
   nextServiceDue: string;
@@ -124,7 +142,7 @@ export interface InfrastructureTelemetry {
   waterPumpHealth: number;
   generatorHealth: number;
   criticalAlertsCount: number;
-  source: 'Simulated telemetry';
+  source: DataProvenance;
   updatedAt: string;
 }
 
@@ -134,6 +152,8 @@ export type InventoryCategory =
   | 'medical' 
   | 'water_treatment' 
   | 'spare_parts';
+
+export type InventoryStatus = 'SAFE' | 'WARNING' | 'PROJECTED SHORTAGE' | 'CRITICAL';
 
 export interface InventoryItem {
   id: string;
@@ -146,9 +166,13 @@ export interface InventoryItem {
   dailyConsumption: number;
   daysRemaining: number;
   safetyStock: number;
+  safetyStockDays: number;
+  projectedShortageDate: string;
   burnRateTrend: 'normal' | 'elevated' | 'critical';
   riskLevel: RiskSeverity;
+  inventoryStatus: InventoryStatus;
   nextResupplyEta: string;
+  source: DataProvenance;
   updatedAt: string;
 }
 
@@ -215,6 +239,42 @@ export interface StationHealthScore {
   };
 }
 
+export interface ActiveScenarios {
+  extremeCold: boolean;
+  highWind: boolean;
+  generator2Failure: boolean;
+  resupplyDelay: boolean;
+}
+
+export interface StationDerivedState {
+  effectiveTemperatureC: number;
+  effectiveTempC: number;
+  effectiveWindKmh: number;
+  heatingLoadKw: number;
+  totalDemandKw: number;
+  generationCapacityKw: number;
+  powerBalanceKw: number;
+  powerSurplusDeficitKw: number;
+  batterySoc: number;
+  batterySocPercent: number;
+  batteryStatus: 'charging' | 'discharging' | 'nominal';
+  dailyFuelBurnLitres: number;
+  fuelRunwayDays: number;
+  infrastructureOverallHealth: number;
+  overallInfrastructureHealth: number;
+  inventoryRunways: Record<string, { daysRemaining: number; status: InventoryStatus; shortageDate: string }>;
+  crossDomainRisk: RiskSeverity;
+  activeIncidentTitle: string;
+  activeIncident: string;
+  rootCause: string;
+  causalChain: string[];
+  forecastedImpact: string;
+  recommendedResponse: string;
+  recommendedResponses: string[];
+  overallHealth: number;
+  overallHealthScore: number;
+}
+
 export interface StationFullState {
   metadata: StationMetadata;
   environment: EnvironmentTelemetry;
@@ -223,10 +283,11 @@ export interface StationFullState {
   logistics: {
     inventory: InventoryItem[];
     requisitions: Requisition[];
-    source: 'Prototype operational model';
+    source: DataProvenance;
   };
   healthScore: StationHealthScore;
   activeAlerts: Alert[];
+  derived: StationDerivedState;
   lastEvaluatedAt: string;
 }
 
@@ -237,6 +298,25 @@ export interface SimulationInputs {
   generator2Offline: boolean;
   resupplyDelayDays: number;
   degradeAssetId?: string;
+}
+
+export interface SimulationTimelinePoint {
+  timeHorizon: 'T+0h' | 'T+6h' | 'T+12h' | 'T+24h' | 'T+48h' | 'T+72h' | 'T+96h';
+  hours: number;
+  energyDemandKw: number;
+  generationKw: number;
+  powerDeficitKw: number;
+  batterySoc: number;
+  fuelRunwayDays: number;
+  criticalInventoryDays: number;
+  riskState: RiskSeverity;
+}
+
+export interface SimulationCascadeStep {
+  step: string;
+  fromDomain: string;
+  toDomain: string;
+  description: string;
 }
 
 export interface SimulationResult {
@@ -260,6 +340,10 @@ export interface SimulationResult {
     energyDeficitPercent: number;
     overallRisk: RiskSeverity;
   };
+  timeline: SimulationTimelinePoint[];
+  cascadeSteps: SimulationCascadeStep[];
+  whyExplanation: string;
+  whyDidThisHappen?: string;
   causalChain: string[];
   recommendedResponse: string[];
   createdAt: string;
@@ -275,4 +359,12 @@ export interface AuditLogEntry {
   entityId: string;
   details: string;
   timestamp: string;
+}
+
+export interface EdgeQueueItem {
+  id: string;
+  type: 'ALERT_ACK' | 'REQUISITION_CREATE' | 'REQUISITION_UPDATE' | 'TELEMETRY_LOG' | 'CONFIG_CHANGE';
+  payload: any;
+  timestamp: string;
+  status: 'PENDING' | 'SYNCED';
 }

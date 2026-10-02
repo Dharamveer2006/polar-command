@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       generatedAt: new Date().toISOString(),
       generatedBy: body.operator || 'NCPOR Operations Command',
       summary: {
-        health: calculateStationHealth(env, energy, { overallHealth: 90, assets: [], hvacHealth: 90, waterPumpHealth: 90, generatorHealth: 90, criticalAlertsCount: 0, source: 'Simulated telemetry', updatedAt: '' }, inv),
+        health: calculateStationHealth(env, energy, { overallHealth: 90, assets: [], hvacHealth: 90, waterPumpHealth: 90, generatorHealth: 90, criticalAlertsCount: 0, source: 'Synthetic Telemetry', updatedAt: '' }, inv),
         ambientTempC: env.temperatureC,
         windSpeedKmh: env.windKmh,
         powerDemandKw: energy.demandKw,
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       provenance: {
         environment: env.source,
         energy: energy.source,
-        logistics: 'Prototype operational model',
+        logistics: 'Prototype Forecast',
       },
     };
 
