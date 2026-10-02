@@ -363,6 +363,7 @@ export interface AuditLogEntry {
 
 export interface EdgeQueueItem {
   id: string;
+  stationId?: StationId;
   type: 'ALERT_ACK' | 'REQUISITION_CREATE' | 'REQUISITION_UPDATE' | 'TELEMETRY_LOG' | 'CONFIG_CHANGE';
   payload: any;
   timestamp: string;

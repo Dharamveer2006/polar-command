@@ -119,7 +119,7 @@ describe('SIH26060 Polar Command - Digital Twin State Engine & Coupling Tests', 
         ...item,
         id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
         timestamp: new Date().toISOString(),
-        status: 'queued',
+        status: 'PENDING',
       });
     };
 
@@ -130,26 +130,26 @@ describe('SIH26060 Polar Command - Digital Twin State Engine & Coupling Tests', 
     });
     pushToQueue({
       stationId: 'bharati',
-      type: 'TELEMETRY_SAMPLE',
+      type: 'TELEMETRY_LOG',
       payload: { temperature: -24.5, demand: 360 },
     });
 
     expect(edgeQueue.length).toBe(2);
-    expect(edgeQueue[0].status).toBe('queued');
-    expect(edgeQueue[1].type).toBe('TELEMETRY_SAMPLE');
+    expect(edgeQueue[0].status).toBe('PENDING');
+    expect(edgeQueue[1].type).toBe('TELEMETRY_LOG');
   });
 
   // 6. Reconnection Sync
   it('6. simulates flush and sync on reconnection', () => {
     const edgeQueue: EdgeQueueItem[] = [
-      { id: '1', stationId: 'bharati', type: 'TELEMETRY_SAMPLE', payload: {}, timestamp: '', status: 'queued' },
-      { id: '2', stationId: 'bharati', type: 'ALERT_ACK', payload: {}, timestamp: '', status: 'queued' },
-      { id: '3', stationId: 'bharati', type: 'REQUISITION_CREATE', payload: {}, timestamp: '', status: 'queued' },
+      { id: '1', stationId: 'bharati', type: 'TELEMETRY_LOG', payload: {}, timestamp: '', status: 'PENDING' },
+      { id: '2', stationId: 'bharati', type: 'ALERT_ACK', payload: {}, timestamp: '', status: 'PENDING' },
+      { id: '3', stationId: 'bharati', type: 'REQUISITION_CREATE', payload: {}, timestamp: '', status: 'PENDING' },
     ];
 
     const flushQueue = (queue: EdgeQueueItem[]) => {
-      const count = queue.filter(q => q.status === 'queued').length;
-      const flushed = queue.map(q => ({ ...q, status: 'synced' as const }));
+      const count = queue.filter(q => q.status === 'PENDING').length;
+      const flushed = queue.map(q => ({ ...q, status: 'SYNCED' as const }));
       return {
         flushed,
         message: `${count} telemetry events synchronized`,
@@ -158,7 +158,7 @@ describe('SIH26060 Polar Command - Digital Twin State Engine & Coupling Tests', 
 
     const syncResult = flushQueue(edgeQueue);
     expect(syncResult.message).toBe('3 telemetry events synchronized');
-    expect(syncResult.flushed.every(i => i.status === 'synced')).toBe(true);
+    expect(syncResult.flushed.every(i => i.status === 'SYNCED')).toBe(true);
   });
 
   // 7. Fuel Runway Calculation
