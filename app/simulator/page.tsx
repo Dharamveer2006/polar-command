@@ -190,10 +190,33 @@ export default function SimulatorPage() {
           <div className="pt-2 border-t border-white/10 space-y-2">
             <button
               onClick={handleRun}
-              className="w-full py-2.5 rounded bg-cyan-400 hover:bg-cyan-300 text-polar-950 font-bold transition-all"
+              className="w-full py-2.5 rounded-lg bg-polar-blue hover:bg-polar-blue/80 text-white font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2"
             >
-              Re-evaluate Digital Twin Timeline
+              <Play className="w-4 h-4 fill-current" />
+              [ RE-EVALUATE SIMULATION ]
             </button>
+
+            {/* Section 36 Step 7: Run Recovery Simulation */}
+            <button
+              onClick={() => {
+                setTemperatureAdjustmentC(0);
+                setWindAdjustmentKmh(0);
+                setGenerator2Offline(false);
+                setResupplyDelayDays(0);
+                runSimulation({
+                  stationId: currentStationId,
+                  temperatureAdjustmentC: 0,
+                  windAdjustmentKmh: 0,
+                  generator2Offline: false,
+                  resupplyDelayDays: 0,
+                });
+              }}
+              className="w-full py-2.5 rounded-lg bg-operational-green hover:bg-operational-green/80 text-white font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              [ RUN RECOVERY SIMULATION ]
+            </button>
+
             <button
               onClick={() => {
                 setTemperatureAdjustmentC(0);
@@ -201,9 +224,9 @@ export default function SimulatorPage() {
                 setGenerator2Offline(false);
                 setResupplyDelayDays(0);
               }}
-              className="w-full py-1.5 rounded bg-polar-900 hover:bg-polar-800 text-slate-400 hover:text-white border border-polar-border transition-all"
+              className="w-full py-1.5 rounded-lg bg-polar-900 hover:bg-polar-800 text-slate-300 hover:text-white border border-polar-border text-xs transition-all font-semibold"
             >
-              Reset to Baseline
+              Reset Inputs to Baseline
             </button>
           </div>
         </div>
@@ -395,9 +418,32 @@ export default function SimulatorPage() {
                 <p className="text-slate-200 text-xs leading-relaxed font-sans">
                   {res.whyDidThisHappen}
                 </p>
-                <div className="p-3 rounded bg-polar-900 border border-polar-border text-[11px] text-slate-300">
-                  <span className="font-bold text-cyan-300 uppercase block mb-1">Recommended Mitigating Stance</span>
-                  {res.recommendedResponse[0] || 'Prioritize cold-reserve backup generator start and load shedding.'}
+                <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs text-slate-300 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-bold text-polar-cyan uppercase text-xs">Recommended Mitigating Stance</span>
+                    <button
+                      onClick={() => {
+                        setTemperatureAdjustmentC(0);
+                        setWindAdjustmentKmh(0);
+                        setGenerator2Offline(false);
+                        setResupplyDelayDays(0);
+                        runSimulation({
+                          stationId: currentStationId,
+                          temperatureAdjustmentC: 0,
+                          windAdjustmentKmh: 0,
+                          generator2Offline: false,
+                          resupplyDelayDays: 0,
+                        });
+                      }}
+                      className="px-3 py-1 rounded-md bg-operational-green hover:bg-operational-green/80 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      [ EXECUTE RECOVERY ACTION ]
+                    </button>
+                  </div>
+                  <p className="text-white font-medium text-xs leading-relaxed">
+                    {res.recommendedResponse[0] || 'Prioritize cold-reserve backup generator start and load shedding.'}
+                  </p>
                 </div>
               </div>
             </>

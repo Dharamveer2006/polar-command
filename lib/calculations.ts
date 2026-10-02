@@ -529,6 +529,15 @@ export function evaluateStationState(
     recommendedResponses: recommendedResponse,
     overallHealth: healthScore.overall,
     overallHealthScore: healthScore.overall,
+    stationMode: 'NORMAL',
+    healthPointDelta: Math.max(0, 93 - healthScore.overall),
+    healthDeltaExplanation: Math.max(0, 93 - healthScore.overall) > 0
+      ? `↓ ${Math.max(0, 93 - healthScore.overall)} points (Primary drivers: ${(activeEvents.generator2Failure ? ['Generator lockout'] : []).concat(activeEvents.resupplyDelay ? ['Logistics shortage'] : []).concat(activeEvents.extremeCold || activeEvents.highWind ? ['Weather load'] : []).concat(activeEvents.generator2Failure || activeEvents.resupplyDelay || activeEvents.extremeCold || activeEvents.highWind ? [] : ['Nominal baseline']).join(', ')})`
+      : 'Nominal baseline across all 4 domains',
+    primaryDrivers: (activeEvents.generator2Failure ? ['Generator #2 lockout & microgrid deficit'] : [])
+      .concat(activeEvents.resupplyDelay ? ['Logistics shortage & pack-ice delay'] : [])
+      .concat(activeEvents.extremeCold || activeEvents.highWind ? ['Katabatic weather & heating load'] : [])
+      .concat(activeEvents.generator2Failure || activeEvents.resupplyDelay || activeEvents.extremeCold || activeEvents.highWind ? [] : ['Nominal operational equilibrium']),
   };
 
   return {

@@ -13,7 +13,9 @@ import {
   SimulationResult,
   AuditLogEntry,
   EdgeQueueItem,
-  ActiveScenarios
+  ActiveScenarios,
+  StationMode,
+  MissionTimelineEvent
 } from '@/types';
 import { 
   DEMO_USERS, 
@@ -58,6 +60,11 @@ interface StationContextType {
   syncNotification: string | null;
   dismissSyncNotification: () => void;
 
+  // Station Mode
+  stationMode: StationMode;
+  setStationMode: (mode: StationMode) => void;
+  missionTimeline: MissionTimelineEvent[];
+
   // Event Injections (Composable Scenarios)
   activeInjectedEvents: ActiveScenarios;
   toggleInjectedEvent: (event: keyof ActiveScenarios) => void;
@@ -95,6 +102,19 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
   const [edgeQueue, setEdgeQueue] = useState<EdgeQueueItem[]>([]);
   const [syncNotification, setSyncNotification] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Station Mode
+  const [stationMode, setStationModeState] = useState<StationMode>('NORMAL');
+
+  // Mission Event Timeline (Section 26: Telemetry -> Alert -> Analysis -> Human Action -> Follow-up)
+  const [missionTimeline, setMissionTimeline] = useState<MissionTimelineEvent[]>([
+    { id: 'mt-1', time: '06:20', category: 'TELEMETRY', title: 'Synoptic Weather Observation Received', details: 'ECMWF / IMD Synoptic station model decoded with katabatic velocity logging.', stationId: 'bharati' },
+    { id: 'mt-2', time: '06:31', category: 'ALERT', title: 'Aux Genset #2 Bearing Telemetry Advisory', details: 'Vibration 2.8 mm/s; bearing temperature delta +4.2°C logged.', stationId: 'bharati' },
+    { id: 'mt-3', time: '06:40', category: 'ANALYSIS', title: 'Cross-Domain Risk Engine Evaluated', details: 'Microgrid coupling assessed: potential 190 kW drop if Genset #2 trips.', stationId: 'bharati' },
+    { id: 'mt-4', time: '06:43', category: 'HUMAN ACTION', title: 'Station Operator Acknowledged', details: 'SOP-044 electrical pre-start sequence initialized by duty engineer.', stationId: 'bharati' },
+    { id: 'mt-5', time: '07:00', category: 'FOLLOW-UP', title: 'Preventative Maintenance Scheduled', details: 'Lubricant oil check & heat exchanger flush scheduled before katabatic window.', stationId: 'bharati' },
+    { id: 'mt-6', time: '08:30', category: 'FOLLOW-UP', title: 'Station Inspection Sortie Window', details: 'Outer perimeter thermal seal verification and radome anchor inspection.', stationId: 'bharati' },
+  ]);
 
   // Composable active scenarios state
   const [activeInjectedEvents, setActiveInjectedEvents] = useState<ActiveScenarios>({
@@ -561,6 +581,11 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     bharati: buildStationFullState('bharati'),
   }), [buildStationFullState]);
 
+  const setStationMode = useCallback((mode: StationMode) => {
+    setStationModeState(mode);
+    addAuditLog('CHANGE_STATION_MODE', 'STATION', currentStationId, `Operational stance updated to ${mode}`);
+  }, [currentStationId, addAuditLog]);
+
   return (
     <StationContext.Provider value={{
       currentStationId,
@@ -571,6 +596,9 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       stationState: currentStationState,
       derived: currentStationState.derived,
       allStationsState,
+      stationMode,
+      setStationMode,
+      missionTimeline,
       isRealtimeActive,
       setIsRealtimeActive,
       connectivity,

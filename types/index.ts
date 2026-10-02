@@ -246,6 +246,22 @@ export interface ActiveScenarios {
   resupplyDelay: boolean;
 }
 
+export type StationMode = 
+  | 'NORMAL' 
+  | 'SCIENCE OPERATIONS' 
+  | 'WEATHER ALERT' 
+  | 'POWER CONSERVATION' 
+  | 'EMERGENCY';
+
+export interface MissionTimelineEvent {
+  id: string;
+  time: string;
+  title: string;
+  category: 'TELEMETRY' | 'ALERT' | 'ANALYSIS' | 'HUMAN ACTION' | 'FOLLOW-UP';
+  details: string;
+  stationId: StationId;
+}
+
 export interface StationDerivedState {
   effectiveTemperatureC: number;
   effectiveTempC: number;
@@ -273,6 +289,10 @@ export interface StationDerivedState {
   recommendedResponses: string[];
   overallHealth: number;
   overallHealthScore: number;
+  stationMode: StationMode;
+  healthDeltaExplanation: string;
+  healthPointDelta: number;
+  primaryDrivers: string[];
 }
 
 export interface StationFullState {
