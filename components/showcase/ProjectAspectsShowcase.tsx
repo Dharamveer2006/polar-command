@@ -94,81 +94,84 @@ export default function ProjectAspectsShowcase() {
       {/* ============================================================== */}
       {/* 1. HERO & EXECUTIVE MISSION OVERVIEW                           */}
       {/* ============================================================== */}
-      <div className="relative rounded-2xl p-6 md:p-10 border border-polar-border bg-gradient-to-b from-polar-900/90 to-polar-950/95 overflow-hidden shadow-2xl">
-        {/* Subtle decorative polar grid */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-polar-cyan/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
+      <div className="relative rounded-3xl p-6 md:p-10 border border-cyan-500/25 bg-gradient-to-b from-[#092640]/90 via-[#061c2e]/95 to-[#03101c]/98 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
+        {/* Subtle decorative polar aurora / grid */}
+        <div className="absolute -top-32 -right-32 w-[450px] h-[450px] rounded-full bg-cyan-500/15 blur-[120px] pointer-events-none" />
+        <div className="absolute -bottom-32 -left-32 w-[450px] h-[450px] rounded-full bg-blue-600/15 blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none" />
 
-        <div className="relative z-10 space-y-4 max-w-4xl">
+        <div className="relative z-10 space-y-5 max-w-4xl">
           <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-            <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 uppercase font-bold flex items-center gap-1.5">
+            <span className="px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/50 uppercase font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
               <Compass className="w-3.5 h-3.5" />
               SMART INDIA HACKATHON • SIH26060
             </span>
-            <span className="px-3 py-1 rounded-full bg-polar-navy border border-polar-border text-slate-300">
+            <span className="px-3 py-1 rounded-full bg-[#051a2c] border border-cyan-500/20 text-slate-300 shadow-sm">
               National Centre for Polar and Ocean Research (NCPOR)
             </span>
-            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+            <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-400/40 font-bold flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               13/13 Vitest Tests Passed
             </span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
             POLAR COMMAND
-            <span className="block text-xl md:text-2xl font-normal text-polar-cyan mt-1">
+            <span className="block text-xl md:text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-blue-300 mt-1">
               Operational Digital Twin Framework for India&apos;s Antarctic Research Stations
             </span>
           </h1>
 
-          <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-3xl">
-            A real-time, deterministic, cross-domain command platform engineered for the remote monitoring, predictive simulation, and resource management of <strong>Maitri Station</strong> (Queen Maud Land) and <strong>Bharati Station</strong> (Larsemann Hills).
+          <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-3xl font-normal">
+            A real-time, deterministic, cross-domain command platform engineered for the remote monitoring, predictive simulation, and resource management of <strong className="text-white font-semibold">Maitri Station</strong> (Queen Maud Land) and <strong className="text-white font-semibold">Bharati Station</strong> (Larsemann Hills).
           </p>
 
           {/* Quick Stats Banner */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 font-mono text-xs">
-            <div className="p-3 rounded-xl bg-polar-950/80 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Stations Managed</span>
-              <span className="text-lg font-bold text-white mt-0.5 block">Maitri & Bharati</span>
-              <span className="text-[10px] text-cyan-300">70°S & 69°S Latitudes</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 font-mono text-xs">
+            <div className="p-3.5 rounded-2xl bg-[#061c2d]/80 border border-cyan-500/20 shadow-inner backdrop-blur-md">
+              <span className="text-slate-400 text-[10px] uppercase block tracking-wider font-semibold">Stations Managed</span>
+              <span className="text-lg font-bold text-white mt-1 block">Maitri & Bharati</span>
+              <span className="text-[11px] text-cyan-300 font-medium">70°S & 69°S Latitudes</span>
             </div>
-            <div className="p-3 rounded-xl bg-polar-950/80 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Coupled Domains</span>
-              <span className="text-lg font-bold text-white mt-0.5 block">4 Connected</span>
-              <span className="text-[10px] text-sky-300">Env ↔ Energy ↔ Infra ↔ Log</span>
+            <div className="p-3.5 rounded-2xl bg-[#061c2d]/80 border border-cyan-500/20 shadow-inner backdrop-blur-md">
+              <span className="text-slate-400 text-[10px] uppercase block tracking-wider font-semibold">Coupled Domains</span>
+              <span className="text-lg font-bold text-white mt-1 block">4 Connected</span>
+              <span className="text-[11px] text-sky-300 font-medium">Env ↔ Energy ↔ Infra ↔ Log</span>
             </div>
-            <div className="p-3 rounded-xl bg-polar-950/80 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Physics Engine</span>
-              <span className="text-lg font-bold text-emerald-400 mt-0.5 block">Deterministic</span>
-              <span className="text-[10px] text-slate-300">Zero LLM Hallucinations</span>
+            <div className="p-3.5 rounded-2xl bg-[#061c2d]/80 border border-cyan-500/20 shadow-inner backdrop-blur-md">
+              <span className="text-slate-400 text-[10px] uppercase block tracking-wider font-semibold">Physics Engine</span>
+              <span className="text-lg font-bold text-emerald-400 mt-1 block">Deterministic</span>
+              <span className="text-[11px] text-slate-300 font-medium">Zero Hallucinations</span>
             </div>
-            <div className="p-3 rounded-xl bg-polar-950/80 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Offline Mode</span>
-              <span className="text-lg font-bold text-purple-300 mt-0.5 block">Edge Autonomous</span>
-              <span className="text-[10px] text-slate-300">SATCOM Disconnect Ready</span>
+            <div className="p-3.5 rounded-2xl bg-[#061c2d]/80 border border-cyan-500/20 shadow-inner backdrop-blur-md">
+              <span className="text-slate-400 text-[10px] uppercase block tracking-wider font-semibold">Offline Mode</span>
+              <span className="text-lg font-bold text-purple-300 mt-1 block">Edge Autonomous</span>
+              <span className="text-[11px] text-slate-300 font-medium">SATCOM Disconnect Ready</span>
             </div>
           </div>
 
           {/* Primary Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-4">
+          <div className="flex flex-wrap items-center gap-3.5 pt-3">
             <Link 
               href="/dashboard"
-              className="px-6 py-3 rounded-xl bg-polar-blue hover:bg-sky-500 text-white font-bold text-sm transition-all shadow-[0_0_20px_rgba(0,184,230,0.4)] flex items-center gap-2 group"
+              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-sm transition-all shadow-[0_0_25px_rgba(0,229,255,0.45)] hover:shadow-[0_0_35px_rgba(0,229,255,0.6)] flex items-center gap-2 group"
             >
               <span>Launch Live Command Center</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform text-slate-950" />
             </Link>
 
             <Link 
               href="/digital-twin"
-              className="px-5 py-3 rounded-xl bg-polar-950 hover:bg-polar-900 border border-polar-border text-slate-200 font-semibold text-sm transition-all flex items-center gap-2"
+              className="px-5 py-3.5 rounded-xl bg-[#08243c]/80 hover:bg-[#0c3150] border border-cyan-500/30 text-slate-200 font-semibold text-sm transition-all flex items-center gap-2 shadow-sm hover:border-cyan-400"
             >
-              <Layers className="w-4 h-4 text-polar-cyan" />
+              <Layers className="w-4 h-4 text-cyan-300" />
               <span>Explore Spatial Twin</span>
             </Link>
 
             <Link 
               href="/environment"
-              className="px-5 py-3 rounded-xl bg-polar-950 hover:bg-polar-900 border border-polar-border text-slate-200 font-semibold text-sm transition-all flex items-center gap-2"
+              className="px-5 py-3.5 rounded-xl bg-[#08243c]/80 hover:bg-[#0c3150] border border-cyan-500/30 text-slate-200 font-semibold text-sm transition-all flex items-center gap-2 shadow-sm hover:border-cyan-400"
             >
               <Wind className="w-4 h-4 text-sky-400" />
               <span>Polar Weather Monitor</span>
@@ -181,10 +184,10 @@ export default function ProjectAspectsShowcase() {
       {/* 2. INTERACTIVE ASPECT TABS CONTROLLER                          */}
       {/* ============================================================== */}
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-polar-border pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
           <div>
             <h2 className="text-xl font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-polar-cyan" />
+              <Sparkles className="w-5 h-5 text-cyan-300" />
               CORE ARCHITECTURAL ASPECTS (SIH26060 SPECIFICATION)
             </h2>
             <p className="text-xs text-slate-400">
@@ -192,7 +195,7 @@ export default function ProjectAspectsShowcase() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 bg-polar-950 p-1 rounded-xl border border-polar-border font-mono text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 bg-[#061b2e]/90 p-1.5 rounded-2xl border border-cyan-500/25 font-mono text-xs shadow-inner">
             {[
               { id: 'WORKFLOW', label: '1. Core Workflow', icon: Activity },
               { id: 'DOMAINS', label: '2. 4 Coupled Domains', icon: Compass },
@@ -206,10 +209,10 @@ export default function ProjectAspectsShowcase() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveAspectTab(tab.id as any)}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-xl font-semibold transition-all flex items-center gap-1.5 ${
                     isActive
-                      ? 'bg-polar-blue text-white shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-400/60 shadow-[0_0_15px_rgba(0,229,255,0.3)]'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />

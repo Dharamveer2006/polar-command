@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,28 +6,30 @@
 
 @layer base {
   :root {
-    --bg-primary: #08243A;
-    --bg-secondary: #0C2D48;
-    --bg-card: #0F304E;
-    --border-polar: #CBD5E1;
-    --ice-cyan: #00B8E6;
-    --research-blue: #1976D2;
+    --bg-primary: #051624;
+    --bg-secondary: #08243A;
+    --bg-card: #0B2C49;
+    --border-polar: #1E466E;
+    --ice-cyan: #00E5FF;
+    --ice-cyan-dim: #00B8E6;
+    --research-blue: #1E88E5;
     --operational-green: #10B981;
     --warning-amber: #F59E0B;
-    --critical-red: #E53935;
-    --text-primary: #0F172A;
-    --text-secondary: #334155;
+    --critical-red: #EF4444;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
   }
 
   * {
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: #2A5D8F #08243A;
+    scrollbar-color: #1E466E #051624;
   }
 
   body {
-    background-color: #08243A;
-    color: #FFFFFF;
+    background: radial-gradient(circle at 50% 0%, #0c3352 0%, #061b2e 45%, #030e18 100%);
+    background-attachment: fixed;
+    color: #F8FAFC;
     font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
@@ -35,47 +37,100 @@
 }
 
 @layer components {
-  /* Antarctic Engineering Modular Card */
+  /* Ultra-Modern Antarctic Engineering Glassmorphic Card */
   .polar-card {
-    background-color: #0C2D48;
-    border: 1px solid #1D4B75;
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.25);
+    background: linear-gradient(135deg, rgba(12, 45, 74, 0.82) 0%, rgba(7, 27, 46, 0.92) 100%);
+    border: 1px solid rgba(0, 229, 255, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     color: #FFFFFF;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .polar-card:hover {
+    border-color: rgba(0, 229, 255, 0.3);
+    box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.45), 0 0 20px -4px rgba(0, 229, 255, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
   }
 
   .polar-card-light {
-    background-color: #FFFFFF;
+    background: #FFFFFF;
     border: 1px solid #CBD5E1;
     color: #0F172A;
-    box-shadow: 0 2px 6px rgba(8, 36, 58, 0.08);
+    box-shadow: 0 4px 12px rgba(8, 36, 58, 0.08);
   }
 
   .polar-card-highlight {
-    background-color: #143C60;
-    border: 1px solid #00B8E6;
-    box-shadow: 0 0 16px -2px rgba(0, 184, 230, 0.25);
+    background: linear-gradient(135deg, rgba(20, 60, 96, 0.9) 0%, rgba(10, 35, 60, 0.95) 100%);
+    border: 1px solid #00E5FF;
+    box-shadow: 0 0 24px -2px rgba(0, 229, 255, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .polar-card-danger {
+    background: linear-gradient(135deg, rgba(60, 16, 22, 0.85) 0%, rgba(30, 8, 12, 0.95) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    box-shadow: 0 0 24px -2px rgba(239, 68, 68, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .polar-card-warning {
+    background: linear-gradient(135deg, rgba(60, 42, 10, 0.85) 0%, rgba(30, 20, 5, 0.95) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    box-shadow: 0 0 24px -2px rgba(245, 158, 11, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* High-Tech HUD Telemetry Pill */
+  .hud-badge {
+    @apply font-mono text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full inline-flex items-center gap-1.5;
   }
 }
 
 @layer utilities {
   .glow-cyan {
-    text-shadow: 0 0 10px rgba(0, 184, 230, 0.6);
+    text-shadow: 0 0 12px rgba(0, 229, 255, 0.7), 0 0 24px rgba(0, 229, 255, 0.3);
+  }
+
+  .glow-cyan-sm {
+    text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
   }
 
   .glow-amber {
-    text-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    text-shadow: 0 0 12px rgba(245, 158, 11, 0.7), 0 0 24px rgba(245, 158, 11, 0.3);
   }
 
   .glow-rose {
-    text-shadow: 0 0 10px rgba(229, 57, 53, 0.6);
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.7), 0 0 24px rgba(239, 68, 68, 0.3);
+  }
+
+  .glow-green {
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.7), 0 0 24px rgba(16, 185, 129, 0.3);
+  }
+
+  .box-glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+  }
+
+  .box-glow-red {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  }
+
+  .box-glow-amber {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
   }
 
   .animate-pulse-subtle {
     animation: pulse-subtle 2.5s infinite ease-in-out;
   }
+
+  .animate-radar-sweep {
+    animation: radar-sweep 4s linear infinite;
+  }
+
+  .bg-grid-pattern {
+    background-image: linear-gradient(to right, rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
 }
-
-
 
 /* Keyframes */
 @keyframes pulse-subtle {
@@ -84,25 +139,34 @@
     transform: scale(1);
   }
   50% {
-    opacity: 0.6;
-    transform: scale(0.97);
+    opacity: 0.65;
+    transform: scale(0.98);
   }
 }
 
-/* WebKit Custom scrollbars for Light Theme */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #04101b;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: #18426b;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #00b8e6;
 }
 
 /* Print Styles for Official SITREP Reports */
