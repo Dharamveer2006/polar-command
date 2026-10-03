@@ -2,11 +2,14 @@
 ### Antarctic Operational Digital Twin & Mission Control Platform
 **Smart India Hackathon Problem Statement — SIH26060**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-00f0ff.svg?style=for-the-badge&logo=github)](https://rahulcoder-881.github.io/polar-command/)
 [![SIH26060](https://img.shields.io/badge/SIH-SIH26060-blue.svg?style=for-the-badge&logo=target)](https://sih.gov.in)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2-black.svg?style=for-the-badge&logo=next.js)](https://nextjs.org)
 [![TypeScript 5](https://img.shields.io/badge/TypeScript-5.7-blue.svg?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
-[![Vitest](https://img.shields.io/badge/Vitest-10%2F10%20Passed-brightgreen.svg?style=for-the-badge&logo=vitest)](https://vitest.dev)
+[![Vitest](https://img.shields.io/badge/Vitest-13%2F13%20Passed-brightgreen.svg?style=for-the-badge&logo=vitest)](https://vitest.dev)
 [![Status](https://img.shields.io/badge/Status-Operational%20MVP%20V3-teal.svg?style=for-the-badge)](https://github.com/Rahulcoder-881/polar-command)
+
+> **Live Deployment**: Access the operational platform online at **[https://rahulcoder-881.github.io/polar-command/](https://rahulcoder-881.github.io/polar-command/)**
 
 > **POLAR COMMAND** is a deterministic, cross-domain Operational Digital Twin and Mission Control framework engineered for the remote monitoring, predictive decision support, and logistics optimization of India's Antarctic research stations:
 > - **Maitri Station** ($70^\circ46'\text{S}, 11^\circ44'\text{E}$ — Schirmacher Oasis, Queen Maud Land)
@@ -271,7 +274,27 @@ Every metric in POLAR COMMAND displays an explicit **Data Provenance Badge**:
 
 ---
 
-## 🧪 Unit Test Suite (10/10 Vitest)
+## ❄️ Real-Time Polar Weather Engine (SIH26060)
+
+The Polar Weather Engine ingests multi-source real-time atmospheric feeds to drive downstream thermodynamic building envelope loss, HVAC heating loads, and logistics resupply windows:
+
+* **Primary Ground-Truth**: Automatic Weather Stations (AWS):
+  * **Bharati**: NCPOR Automatic Weather Station (AWS-02) at $69^\circ24'\text{S}, 76^\circ11'\text{E}$
+  * **Maitri**: NCPOR Synoptic Met Tower (IMD Polar Observatory) at $70^\circ46'\text{S}, 11^\circ44'\text{E}$
+* **Near-Real-Time Satellite Imagery**:
+  * **Terra & Aqua / MODIS**: Corrected Surface Reflectance (True Color RGB)
+  * **NOAA-21 / VIIRS**: Thermal Infrared (Band M15 Brightness Temperature $10.7\mu\text{m}$)
+  * **Suomi NPP / VIIRS**: Cloud Top Pressure and Moisture Front tracking
+  * **DMSP SSMIS & AMSR2**: Near-Real-Time Sea Ice & Snow Extent (NISE)
+* **Predictive Numerical Forecast**: ECMWF High-Resolution ($0.1^\circ$ Integrated Forecasting System) generating multi-horizon forecasts (+6H, +12H, +24H, +48H, +72H, +96H) with physical microgrid heating demand projections.
+* **Deterministic Event Detector**: Real-time detection of `Rapid Cooling` ($\Delta T \le -3^\circ\text{C}$), `High Wind` ($\ge 55\text{ km/h}$), `Low Visibility` ($\le 1.5\text{ km}$), `Pressure Drop` ($\le -4\text{ hPa}$), and compound `Blizzard Risk`.
+* **State Separation**:
+  $$\text{LIVE OBSERVATION} + \text{ACTIVE DEMO SCENARIO OFFSET} = \text{DERIVED STATE}$$
+  Live baseline observations remain strictly immutable while demo fault injections apply runtime offsets into the simulated twin.
+
+---
+
+## 🧪 Unit Test Suite (13/13 Vitest)
 
 Execute the deterministic calculation and state coupling test suite with:
 
@@ -290,6 +313,22 @@ npm test
 8. `computes daysRemaining = quantity / dailyConsumption and assigns SAFE/WARNING/PROJECTED SHORTAGE/CRITICAL`
 9. `correctly transitions risk from nominal to elevated to critical as thresholds breach`
 10. `strictly enforces role permissions at action layer`
+11. `verifies Section 14 test case: Live baseline (-17.5°C, 5.2 m/s) -> New observation (-21.0°C, 10.8 m/s) triggers downstream cascade`
+12. `deterministically detects Rapid Cooling, High Wind, Low Visibility, and Pressure Drop`
+13. `cleanly separates Live Observation from Active Scenario offsets without overwriting baseline`
+
+---
+
+## 🌐 GitHub Pages Deployment
+
+The static digital twin application is deployed to GitHub Pages and available at:
+👉 **[https://rahulcoder-881.github.io/polar-command/](https://rahulcoder-881.github.io/polar-command/)**
+
+To deploy updates to the `gh-pages` branch:
+```bash
+npm run deploy
+```
+This builds the production static export with `.nojekyll` and basePath `/polar-command`, and pushes directly to `origin/gh-pages`.
 
 ---
 
