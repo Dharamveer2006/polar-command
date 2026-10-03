@@ -19,6 +19,7 @@ api_routes_backup/
 # misc
 .DS_Store
 *.pem
+.github/
 
 # debug
 npm-debug.log*
