@@ -7,8 +7,27 @@ const apiDir = path.join(rootDir, 'app', 'api');
 const backupDir = path.join(rootDir, 'api_routes_backup');
 const outDir = path.join(rootDir, 'out');
 const nojekyllOut = path.join(outDir, '.nojekyll');
+const isWin = process.platform === 'win32';
 
 let apiMoved = false;
+
+function moveDir(src, dest) {
+  if (isWin) {
+    try {
+      execSync(`robocopy "${src}" "${dest}" /E /MOVE >nul 2>&1`, { stdio: 'ignore' });
+    } catch (e) {
+      // robocopy returns non-zero on success (1 = files copied)
+    }
+    // Clean empty src dir
+    if (fs.existsSync(src)) {
+      try {
+        fs.rmSync(src, { recursive: true, force: true });
+      } catch (e) {}
+    }
+  } else {
+    fs.renameSync(src, dest);
+  }
+}
 
 try {
   console.log('[POLAR COMMAND] Preparing static export for GitHub Pages...');
@@ -16,7 +35,7 @@ try {
   // 1. Temporarily stash app/api if present to allow static export of all client UI pages
   if (fs.existsSync(apiDir)) {
     console.log('[POLAR COMMAND] Stashing app/api -> api_routes_backup for static export...');
-    fs.renameSync(apiDir, backupDir);
+    moveDir(apiDir, backupDir);
     apiMoved = true;
   }
 
@@ -45,11 +64,7 @@ try {
   // 4. Always restore app/api so local development and API routes remain intact
   if (apiMoved && fs.existsSync(backupDir)) {
     console.log('[POLAR COMMAND] Restoring app/api from backup...');
-    if (fs.existsSync(apiDir)) {
-      // In case app/api was recreated
-      fs.rmSync(apiDir, { recursive: true, force: true });
-    }
-    fs.renameSync(backupDir, apiDir);
+    moveDir(backupDir, apiDir);
     console.log('[POLAR COMMAND] app/api restored successfully.');
   }
 }

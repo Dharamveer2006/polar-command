@@ -68,6 +68,7 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
+    { href: '/overview', label: 'Aspects' },
     { href: '/dashboard', label: 'Command' },
     { href: '/digital-twin', label: 'Spatial Twin' },
     { href: '/environment', label: 'Environment' },
