@@ -346,62 +346,62 @@ export default function DashboardPage() {
       {/* ============================================================== */}
       {/* 1. TOP HEADER: STATION IDENTITY, MODES & ANTARCTIC SWITCHER    */}
       {/* ============================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-[#061c2d]/85 backdrop-blur-xl border border-cyan-500/25 shadow-xl">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-xl bg-polar-900 border border-polar-border">
         {/* Antarctic Station Switcher */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-            <Globe2 className="w-4 h-4 text-cyan-300" />
+            <Globe2 className="w-4 h-4 text-polar-cyan" />
             <span className="uppercase tracking-wider">Antarctic Command:</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentStationId('maitri')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
                 currentStationId === 'maitri'
-                  ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/25 border border-cyan-400/60 text-white shadow-[0_0_15px_rgba(0,229,255,0.25)]'
-                  : 'bg-[#04121f]/70 border border-white/10 text-slate-300 hover:text-white hover:border-cyan-500/30'
+                  ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
+                  : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${
-                maitriState?.healthScore?.overall >= 80 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-amber-400'
+                maitriState?.healthScore?.overall >= 80 ? 'bg-operational-green' : 'bg-warning-amber'
               }`} />
               <span>MAITRI</span>
-              <span className="font-mono text-[11px] text-cyan-300 font-bold">{maitriState?.healthScore?.overall || 91}%</span>
+              <span className="font-mono text-[11px] text-slate-400 font-bold">{maitriState?.healthScore?.overall || 91}%</span>
             </button>
 
             <button
               onClick={() => setCurrentStationId('bharati')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
                 currentStationId === 'bharati'
-                  ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/25 border border-cyan-400/60 text-white shadow-[0_0_15px_rgba(0,229,255,0.25)]'
-                  : 'bg-[#04121f]/70 border border-white/10 text-slate-300 hover:text-white hover:border-cyan-500/30'
+                  ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
+                  : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${
-                derived.overallHealthScore >= 80 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                derived.overallHealthScore >= 80 ? 'bg-operational-green' : 'bg-critical-red animate-pulse'
               }`} />
               <span>BHARATI</span>
-              <span className="font-mono text-[11px] text-cyan-300 font-bold">{derived.overallHealthScore}%</span>
+              <span className="font-mono text-[11px] text-slate-400 font-bold">{derived.overallHealthScore}%</span>
             </button>
           </div>
         </div>
 
         {/* Station Operational Mode Selector (Section 9) */}
-        <div className="flex items-center gap-2 font-mono">
-          <span className="text-xs font-semibold text-slate-400 uppercase">Stance:</span>
-          <div className="flex items-center gap-1 bg-[#04121f]/80 p-1 rounded-xl border border-cyan-500/20 shadow-inner">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-400 uppercase">Operational Stance:</span>
+          <div className="flex items-center gap-1 bg-polar-950 p-1 rounded-lg border border-polar-border">
             {(['NORMAL', 'SCIENCE OPERATIONS', 'WEATHER ALERT', 'POWER CONSERVATION', 'EMERGENCY'] as StationMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setStationMode(mode)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                   stationMode === mode
                     ? mode === 'EMERGENCY'
-                      ? 'bg-rose-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)] font-bold'
+                      ? 'bg-critical-red text-white'
                       : mode === 'POWER CONSERVATION'
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-[0_0_12px_rgba(245,158,11,0.5)]'
-                      : 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/50 font-bold shadow-[0_0_12px_rgba(0,229,255,0.3)]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-warning-amber text-slate-900 font-bold'
+                      : 'bg-polar-blue text-white'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {mode}
@@ -437,11 +437,11 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-right">
-          {/* WEATHER STATUS (Section 13) */}
+          {/* WEATHER STATUS (Section 16: Command Center Compact Weather Status) */}
           <Link 
             href="/environment" 
             title="Open Polar Weather Monitor"
-            className="text-left bg-polar-950/80 px-3 py-1.5 rounded-lg border border-polar-border hover:border-polar-cyan transition-all"
+            className="text-left bg-polar-950/80 px-3.5 py-1.5 rounded-lg border border-polar-border hover:border-polar-cyan transition-all"
           >
             <div className="flex items-center gap-2">
               <span className="font-mono text-xs font-bold text-white uppercase">
@@ -451,11 +451,18 @@ export default function DashboardPage() {
                 {environment.temperatureC.toFixed(1)}°C
               </span>
               <span className="font-mono text-xs text-sky-300">
-                Wind {environment.windMs ? environment.windMs : (environment.windKmh / 3.6).toFixed(1)} m/s
+                {environment.windKmh} km/h
               </span>
-              <span className="flex items-center gap-1 font-mono text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
+              <span className="font-mono text-xs text-amber-300">
+                {environment.pressureHpa.toFixed(0)} hPa
+              </span>
+              <span className={`flex items-center gap-1 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                environment.weatherState === 'LIVE'
+                  ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                  : 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+              }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${environment.weatherState === 'LIVE' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                {environment.weatherState || 'LIVE'}
+                {environment.weatherState === 'LIVE' ? '● NCPOR LIVE' : `● NCPOR ${environment.weatherState || 'STALE'}`}
               </span>
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px]">
@@ -466,11 +473,11 @@ export default function DashboardPage() {
                     ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
                     : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                 }`}>
-                  {primaryWeatherEvent.title.split(' ')[0]} {primaryWeatherEvent.severity.toUpperCase()}
+                  {primaryWeatherEvent.title} ({primaryWeatherEvent.severity.toUpperCase()})
                 </span>
               ) : (
                 <span className="text-emerald-400 font-semibold">
-                  NONE
+                  NOMINAL (NO ANOMALY)
                 </span>
               )}
             </div>
@@ -563,17 +570,15 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Tile 1: Station Health & Explainability (Section 4) */}
-        <div className="polar-card p-4 rounded-2xl flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
-            <span className="text-xs uppercase font-bold text-slate-300 tracking-wider">Station Health</span>
-            <span className="text-[11px] text-cyan-300 font-bold font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30">
-              WHY {derived.overallHealthScore}%?
-            </span>
+        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+            <span className="text-xs uppercase font-bold text-slate-300">Station Health</span>
+            <span className="text-[11px] text-polar-cyan font-bold font-mono">WHY {derived.overallHealthScore}%?</span>
           </div>
           <div className="flex items-baseline gap-3 my-0.5">
             <span className={`text-4xl font-black font-mono ${
-              derived.overallHealthScore >= 80 ? 'text-emerald-400 glow-green' :
-              derived.overallHealthScore >= 60 ? 'text-amber-400 glow-amber' : 'text-rose-400 glow-rose animate-pulse'
+              derived.overallHealthScore >= 80 ? 'text-operational-green' :
+              derived.overallHealthScore >= 60 ? 'text-warning-amber' : 'text-critical-red animate-pulse'
             }`}>
               {derived.overallHealthScore}%
             </span>
@@ -583,14 +588,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Domain Contribution Breakdown (Section 4) */}
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] text-slate-300 pt-1.5 border-t border-white/5 font-mono">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] text-slate-300 pt-1 border-t border-white/5 font-mono">
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Env (20%):</span>
               <span className="text-white font-bold">{Math.round(((healthScore?.environmentScore ?? 95) / 100) * 20)}/20</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Energy (30%):</span>
-              <span className={isPowerDeficit ? 'text-rose-400 font-bold' : 'text-white font-bold'}>
+              <span className={isPowerDeficit ? 'text-critical-red font-bold' : 'text-white font-bold'}>
                 {Math.round(((healthScore?.energyScore ?? 90) / 100) * 30)}/30
               </span>
             </div>
@@ -600,16 +605,16 @@ export default function DashboardPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Logistics (25%):</span>
-              <span className={isLogisticsCritical ? 'text-rose-400 font-bold' : 'text-white font-bold'}>
+              <span className={isLogisticsCritical ? 'text-critical-red font-bold' : 'text-white font-bold'}>
                 {Math.round(((healthScore?.logisticsScore ?? 80) / 100) * 25)}/25
               </span>
             </div>
           </div>
 
-          <div className="space-y-0.5 text-[11px] text-slate-300 pt-1.5 border-t border-white/5">
+          <div className="space-y-0.5 text-[11px] text-slate-300 pt-1 border-t border-white/5">
             <div className="flex justify-between">
               <span className="text-slate-400">Primary Driver:</span>
-              <strong className="text-white truncate max-w-[170px] text-right font-medium">{primaryHealthDriver}</strong>
+              <strong className="text-white truncate max-w-[170px] text-right">{primaryHealthDriver}</strong>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Secondary:</span>
@@ -619,73 +624,69 @@ export default function DashboardPage() {
         </div>
 
         {/* Tile 2: Operational Status & Subsystems (Section 2) */}
-        <div className="polar-card p-4 rounded-2xl flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
-            <span className="text-xs uppercase font-bold text-slate-300 tracking-wider">Operational Status</span>
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm ${statusColorMap[operationalStatus]}`}>
+        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+            <span className="text-xs uppercase font-bold text-slate-300">Operational Status</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${statusColorMap[operationalStatus]}`}>
               {operationalStatus === 'CRITICAL' ? 'CRITICAL RISK' : operationalStatus === 'WARNING' ? 'ELEVATED RISK' : operationalStatus}
             </span>
           </div>
           <div className="text-xs text-slate-300 my-0.5 font-medium">
-            Active Alerts: <strong className={criticalCount > 0 ? 'text-rose-400 font-mono font-bold' : 'text-slate-300 font-mono'}>{criticalCount} CRITICAL</strong> • <strong className={warningCount > 0 ? 'text-amber-400 font-mono font-bold' : 'text-slate-300 font-mono'}>{warningCount} WARNING</strong>
+            Active Alerts: <strong className={criticalCount > 0 ? 'text-critical-red font-mono' : 'text-slate-300 font-mono'}>{criticalCount} CRITICAL</strong> • <strong className={warningCount > 0 ? 'text-warning-amber font-mono' : 'text-slate-300 font-mono'}>{warningCount} WARNING</strong>
           </div>
-          <div className="space-y-1 text-[10.5px] pt-1.5 border-t border-white/5 font-mono">
+          <div className="space-y-0.5 text-[10.5px] pt-1 border-t border-white/5 font-mono">
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Energy:</span>
-              <span className={subsystemStates.energy === 'CRITICAL' ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>{subsystemStates.energy}</span>
+              <span className={subsystemStates.energy === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-operational-green'}>{subsystemStates.energy}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Water:</span>
-              <span className="text-emerald-400 font-bold">{subsystemStates.water}</span>
+              <span className="text-operational-green">{subsystemStates.water}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Life Support:</span>
-              <span className={subsystemStates.lifeSupport === 'CRITICAL' ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>{subsystemStates.lifeSupport}</span>
+              <span className={subsystemStates.lifeSupport === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-operational-green'}>{subsystemStates.lifeSupport}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Comms:</span>
-              <span className="text-emerald-400 font-bold">{subsystemStates.comms}</span>
+              <span className="text-operational-green">{subsystemStates.comms}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400 font-sans">Logistics:</span>
-              <span className={subsystemStates.logistics === 'CRITICAL' ? 'text-rose-400 font-bold animate-pulse' : 'text-emerald-400 font-bold'}>{subsystemStates.logistics}</span>
+              <span className={subsystemStates.logistics === 'CRITICAL' ? 'text-critical-red font-bold animate-pulse' : 'text-operational-green'}>{subsystemStates.logistics}</span>
             </div>
           </div>
         </div>
 
         {/* Tile 3: Microgrid Net Power Hero (Section 11) */}
-        <div className={`p-4 rounded-2xl border flex flex-col justify-between space-y-2 backdrop-blur-xl ${
-          isPowerDeficit 
-            ? 'border-rose-500/60 bg-gradient-to-b from-rose-950/40 to-rose-950/80 shadow-[0_0_20px_rgba(244,63,94,0.2)]' 
-            : 'border-emerald-500/40 bg-gradient-to-b from-emerald-950/30 to-emerald-950/70 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+        <div className={`polar-card p-4 rounded-xl border flex flex-col justify-between space-y-2 ${
+          isPowerDeficit ? 'border-critical-red/60 bg-critical-red/10' : 'border-operational-green/50 bg-operational-green/10'
         }`}>
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
-            <span className="text-xs uppercase font-bold text-slate-300 tracking-wider">Microgrid Equilibrium</span>
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+            <span className="text-xs uppercase font-bold text-slate-300">Microgrid Power Balance</span>
             <ProvenanceBadge source="Derived Calculation" compact />
           </div>
           <div className="flex items-baseline justify-between my-0.5">
-            <div className={`text-3xl font-black font-mono ${isPowerDeficit ? 'text-rose-400 glow-rose animate-pulse' : 'text-emerald-400 glow-green'}`}>
+            <div className={`text-3xl font-black font-mono ${isPowerDeficit ? 'text-critical-red animate-pulse' : 'text-operational-green'}`}>
               {isPowerDeficit ? `${derived.powerSurplusDeficitKw} kW` : `+${derived.powerSurplusDeficitKw} kW`}
             </div>
-            <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-              isPowerDeficit ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-            }`}>
-              {isPowerDeficit ? 'DEFICIT' : 'RESERVE'}
+            <span className={`text-xs font-bold uppercase tracking-wider ${isPowerDeficit ? 'text-critical-red' : 'text-operational-green'}`}>
+              {isPowerDeficit ? 'POWER DEFICIT' : 'POWER RESERVE'}
             </span>
           </div>
-          <div className="flex justify-between text-[11px] text-slate-300 pt-1.5 border-t border-white/5 font-mono">
-            <span>Gen: <strong className="text-white font-bold">{derived.generationCapacityKw} kW</strong></span>
-            <span>Demand: <strong className="text-cyan-300 font-bold">{derived.totalDemandKw} kW</strong></span>
-            <span>Battery: <strong className="text-white font-bold">{derived.batterySocPercent}%</strong></span>
+          <div className="flex justify-between text-[11px] text-slate-300 pt-1 border-t border-white/5">
+            <span>Gen: <strong className="font-mono text-white">{derived.generationCapacityKw} kW</strong></span>
+            <span>Demand: <strong className="font-mono text-polar-cyan">{derived.totalDemandKw} kW</strong></span>
+            <span>Battery: <strong className="font-mono text-white">{derived.batterySocPercent}%</strong></span>
           </div>
         </div>
 
         {/* Tile 4: Cross-Domain Insight (Section 3) */}
-        <div className="polar-card p-4 rounded-2xl flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
-            <span className="text-xs uppercase font-bold text-cyan-300 tracking-wider">Cross-Domain Telemetry</span>
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-              longTermAutonomyStatus === 'CONSTRAINED' ? 'bg-amber-400 text-slate-950 font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-500 text-white font-bold'
+        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2 bg-polar-navy/90">
+          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+            <span className="text-xs uppercase font-bold text-polar-cyan">Cross-Domain Intelligence</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+              longTermAutonomyStatus === 'CONSTRAINED' ? 'bg-warning-amber text-slate-900' : 'bg-operational-green text-white'
             }`}>
               {longTermAutonomyStatus}
             </span>
@@ -693,23 +694,23 @@ export default function DashboardPage() {
           <div className="text-[12px] text-slate-200 leading-snug space-y-1">
             <div className="flex justify-between font-mono text-[11px]">
               <span className="text-slate-400">CURRENT POWER:</span>
-              <strong className={isPowerDeficit ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}>
+              <strong className={isPowerDeficit ? 'text-critical-red font-bold' : 'text-operational-green font-bold'}>
                 {currentPowerStatus}
               </strong>
             </div>
             <div className="flex justify-between font-mono text-[11px]">
-              <span className="text-slate-400">AUTONOMY RUNWAY:</span>
-              <strong className={longTermAutonomyStatus === 'CONSTRAINED' ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+              <span className="text-slate-400">LONG-TERM AUTONOMY:</span>
+              <strong className={longTermAutonomyStatus === 'CONSTRAINED' ? 'text-warning-amber font-bold' : 'text-operational-green font-bold'}>
                 {longTermAutonomyStatus}
               </strong>
             </div>
-            <p className="text-[11px] text-slate-300 pt-1.5 border-t border-white/5 font-sans leading-relaxed">
-              <strong className="text-slate-400 font-mono">Reason: </strong>{autonomyReason}
+            <p className="text-[11px] text-slate-300 pt-1 border-t border-white/5">
+              <strong className="text-slate-400">Reason: </strong>{autonomyReason}
             </p>
           </div>
-          <div className="text-[10px] text-slate-400 pt-1.5 border-t border-white/5 font-mono flex justify-between">
-            <span>Fuel: <strong className="text-cyan-300 font-bold">{derived.fuelRunwayDays.toFixed(1)}d</strong></span>
-            <span>Buffer: <strong className="text-slate-300">14d safe</strong></span>
+          <div className="text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono flex justify-between">
+            <span>Fuel: {derived.fuelRunwayDays.toFixed(1)}d runway</span>
+            <span>Buffer: 14d safe</span>
           </div>
         </div>
 

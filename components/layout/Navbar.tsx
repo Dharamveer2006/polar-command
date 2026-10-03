@@ -68,7 +68,6 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { href: '/overview', label: 'Aspects' },
     { href: '/dashboard', label: 'Command' },
     { href: '/digital-twin', label: 'Spatial Twin' },
     { href: '/environment', label: 'Environment' },
@@ -91,48 +90,45 @@ export default function Navbar() {
   const healthValue = derived?.overallHealthScore ?? stationState.healthScore.overall;
 
   return (
-    <header className="sticky top-0 z-50 bg-[#041424]/85 backdrop-blur-xl border-b border-cyan-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
+    <header className="sticky top-0 z-50 bg-polar-950/95 backdrop-blur-md border-b border-polar-border shadow-md">
       {/* Primary Compact Command Header Bar */}
-      <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+      <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
         {/* Left Side: Brand & Station Switcher */}
-        <div className="flex items-center gap-3.5">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-400/40 flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.25)] group-hover:border-cyan-400 transition-all">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-2 group">
+            <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center justify-center">
               <Compass className="w-4 h-4 text-cyan-300 group-hover:rotate-45 transition-transform duration-300" />
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-sm tracking-wider text-white">POLAR COMMAND</span>
-                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 font-bold shadow-[0_0_8px_rgba(0,229,255,0.2)]">
-                  SIH26060
-                </span>
-              </div>
-              <span className="text-[9px] text-slate-400 tracking-tight font-sans">Antarctic Digital Twin Command</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-black text-sm tracking-wider text-white">POLAR COMMAND</span>
+              <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
+                SIH26060
+              </span>
             </div>
           </Link>
 
           {/* Station Switcher (Maitri / Bharati) */}
-          <div className="flex items-center bg-[#072036]/90 border border-cyan-500/25 rounded-lg p-0.5 shadow-inner">
+          <div className="flex items-center bg-polar-900 border border-polar-border rounded-lg p-0.5">
             <button
               onClick={() => setCurrentStationId('maitri')}
-              className={`px-3 py-1 text-[11px] rounded-md transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 text-[11px] rounded transition-all flex items-center gap-1.5 ${
                 currentStationId === 'maitri'
-                  ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-400/60 font-bold shadow-[0_0_12px_rgba(0,229,255,0.3)]'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 font-bold'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Radio className={`w-3 h-3 ${currentStationId === 'maitri' ? 'animate-pulse text-cyan-300' : 'text-slate-500'}`} />
+              <Radio className={`w-3 h-3 ${currentStationId === 'maitri' ? 'animate-pulse text-cyan-400' : 'text-slate-500'}`} />
               MAITRI
             </button>
             <button
               onClick={() => setCurrentStationId('bharati')}
-              className={`px-3 py-1 text-[11px] rounded-md transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 text-[11px] rounded transition-all flex items-center gap-1.5 ${
                 currentStationId === 'bharati'
-                  ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-200 border border-cyan-400/60 font-bold shadow-[0_0_12px_rgba(0,229,255,0.3)]'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 font-bold'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Radio className={`w-3 h-3 ${currentStationId === 'bharati' ? 'animate-pulse text-cyan-300' : 'text-slate-500'}`} />
+              <Radio className={`w-3 h-3 ${currentStationId === 'bharati' ? 'animate-pulse text-cyan-400' : 'text-slate-500'}`} />
               BHARATI
             </button>
           </div>
@@ -146,16 +142,16 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1.5 ${
                   isActive
-                    ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 font-bold shadow-[0_0_12px_rgba(0,229,255,0.25)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                    ? 'bg-polar-800 text-cyan-300 border border-cyan-500/40 font-bold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-polar-900'
                 }`}
               >
                 <span>{link.label}</span>
                 {typeof link.badge === 'number' && link.badge > 0 && (
-                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
-                    criticalCount > 0 ? 'bg-rose-500 text-white animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]' : 'bg-amber-500 text-slate-950 font-bold'
+                  <span className={`px-1 py-0.2 rounded-full text-[9px] font-bold ${
+                    criticalCount > 0 ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-600 text-white'
                   }`}>
                     {link.badge}
                   </span>
@@ -198,16 +194,16 @@ export default function Navbar() {
           <div className="relative" ref={demoRef}>
             <button
               onClick={() => setIsDemoOpen(!isDemoOpen)}
-              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all border ${
+              className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all border ${
                 activeScenariosCount > 0
-                  ? 'bg-amber-500/25 text-amber-200 border-amber-400/60 shadow-[0_0_15px_rgba(245,158,11,0.35)] animate-pulse'
-                  : 'bg-[#08243c]/80 hover:bg-[#0c3150] text-cyan-300 border-cyan-500/30 shadow-sm'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm animate-pulse'
+                  : 'bg-polar-900 hover:bg-polar-800 text-cyan-300 border-polar-border'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-current" />
               <span>DEMO MODE</span>
               {activeScenariosCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black text-[9px]">
+                <span className="px-1.5 py-0.2 rounded bg-amber-500 text-polar-950 font-black text-[9px]">
                   {activeScenariosCount}
                 </span>
               )}
@@ -216,15 +212,15 @@ export default function Navbar() {
 
             {/* Compact Popover Menu */}
             {isDemoOpen && (
-              <div className="absolute right-0 mt-2 w-84 p-3.5 bg-[#061c2e]/95 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-50 space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+              <div className="absolute right-0 mt-2 w-80 p-3 bg-polar-950 border border-polar-border rounded-xl shadow-2xl z-50 space-y-3 font-mono text-xs">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                     Inject Stress Scenarios
                   </span>
                   <button
                     onClick={resetAllEvents}
-                    className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors"
+                    className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
                     title="Reset all to nominal"
                   >
                     <RotateCcw className="w-3 h-3" /> Reset

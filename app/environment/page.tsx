@@ -43,6 +43,11 @@ export default function EnvironmentPage() {
     currentStationId, 
     setCurrentStationId,
     liveWeather,
+    normalizedWeather,
+    weatherHistory,
+    isWeatherLoading,
+    lastWeatherSync,
+    nextWeatherSync,
     updateLiveWeather,
     activeWeatherEvents,
     satelliteMetadata,
@@ -56,17 +61,20 @@ export default function EnvironmentPage() {
   } = useStation();
 
   const [activeTab, setActiveTab] = useState<'OBSERVATION' | 'SATELLITE' | 'FORECAST'>('OBSERVATION');
+  const [historyHorizon, setHistoryHorizon] = useState<'24H' | '7D'>('24H');
   const [testTempInput, setTestTempInput] = useState<number>(-21.0);
   const [testWindInput, setTestWindInput] = useState<number>(10.8); // in m/s
 
   const { metadata, environment } = stationState;
   const currentObs = liveWeather[currentStationId] || environment;
+  const currentNorm = normalizedWeather[currentStationId];
+  const stationHistory = weatherHistory[currentStationId] || [];
 
-  // Real weather + active scenario separation (Section 9)
+  // Real weather + active scenario separation (Section 9 & 11)
   const separation = calculateEffectiveWeather(currentObs, activeInjectedEvents);
 
   // Status mapping
-  const weatherState = connectivity === 'DISCONNECTED' ? 'STALE' : (currentObs.weatherState || 'LIVE');
+  const weatherState = connectivity === 'DISCONNECTED' ? 'STALE' : (currentNorm?.status || currentObs.weatherState || 'LIVE');
 
   const stateBadgeMap = {
     LIVE: { bg: 'bg-emerald-500/20', text: 'text-emerald-300', border: 'border-emerald-500/40', dot: 'bg-emerald-400 animate-pulse' },
@@ -75,7 +83,7 @@ export default function EnvironmentPage() {
     ERROR: { bg: 'bg-rose-500/20', text: 'text-rose-300', border: 'border-rose-500/40', dot: 'bg-rose-400' }
   };
 
-  const currentBadge = stateBadgeMap[weatherState] || stateBadgeMap.LIVE;
+  const currentBadge = stateBadgeMap[weatherState as keyof typeof stateBadgeMap] || stateBadgeMap.LIVE;
   const activeSatMeta = satelliteMetadata[activeSatelliteLayer];
 
   // Handler for Section 14 test case injection (-21.0°C, 10.8 m/s)
@@ -169,47 +177,63 @@ export default function EnvironmentPage() {
         </div>
       </div>
 
-      {/* Provenance & Telemetry Metadata Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 font-mono text-xs">
-        {/* Weather State */}
-        <div className="polar-card p-3 rounded-lg border border-polar-border flex items-center justify-between">
-          <div>
-            <span className="text-[10px] text-slate-400 uppercase block">Weather State</span>
-            <span className="text-sm font-bold text-white flex items-center gap-1.5 mt-0.5">
-              <span className={`w-2 h-2 rounded-full ${currentBadge.dot}`} />
-              {weatherState}
-            </span>
-          </div>
-          <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-bold ${currentBadge.bg} ${currentBadge.text} ${currentBadge.border}`}>
-            {weatherState === 'LIVE' ? 'NCPOR LIVE' : weatherState}
+      {/* Provenance & Telemetry Metadata Banner (Sections 4, 5, 6) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono text-xs">
+        {/* 1. SOURCE */}
+        <div className="polar-card p-3 rounded-lg border border-polar-border">
+          <span className="text-[10px] text-slate-400 uppercase block font-semibold">SOURCE</span>
+          <span className="text-sm font-bold text-polar-cyan block mt-0.5 truncate">
+            {currentNorm?.source || (connectivity === 'DISCONNECTED' ? 'SYNTHETIC FALLBACK' : 'NCPOR')}
           </span>
+          <span className="text-[10px] text-slate-400 truncate block">Public AWS Ingestion</span>
         </div>
 
-        {/* Primary Source */}
+        {/* 2. STATUS */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block">Primary Observation Source</span>
-          <span className="text-xs font-semibold text-polar-cyan truncate block mt-0.5" title={currentObs.primarySource || 'NCPOR Automatic Weather Station'}>
-            {currentStationId === 'bharati' ? 'NCPOR / Bharati AWS-02' : 'NCPOR / Maitri Synoptic Met Tower'}
+          <span className="text-[10px] text-slate-400 uppercase block font-semibold">STATUS</span>
+          <span className={`text-xs px-2 py-0.5 mt-1 inline-flex items-center gap-1.5 rounded border uppercase font-bold ${currentBadge.bg} ${currentBadge.text} ${currentBadge.border}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${currentBadge.dot}`} />
+            {currentNorm?.status || weatherState}
           </span>
-          <span className="text-[10px] text-slate-400">Latency: {currentObs.sourceLatencySec || 42}s • 10m Mast</span>
+          <span className="text-[10px] text-slate-400 block mt-1">Freshness Engine</span>
         </div>
 
-        {/* Secondary Satellite Source */}
+        {/* 3. OBSERVED */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block">Secondary Satellite Layer</span>
-          <span className="text-xs font-semibold text-sky-300 truncate block mt-0.5">
-            {activeSatMeta.satelliteName} ({activeSatMeta.layerName.split('(')[0]})
+          <span className="text-[10px] text-slate-400 uppercase block font-semibold">OBSERVED</span>
+          <span className="text-xs font-bold text-white block mt-0.5 truncate" title={currentNorm?.observedAt || currentObs.observedAt || currentObs.lastUpdated}>
+            {currentNorm?.observedAt 
+              ? new Date(currentNorm.observedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC'
+              : currentObs.lastUpdated ? new Date(currentObs.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' UTC' : 'Recent'}
           </span>
-          <span className="text-[10px] text-slate-400">Status: {activeSatMeta.status} • {activeSatMeta.latency}</span>
+          <span className="text-[10px] text-slate-400 block">Antarctic Sensor Mast</span>
         </div>
 
-        {/* Forecast Model Cycle */}
+        {/* 4. LAST SYNCED */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block">Forecast Ingestion Cycle</span>
-          <span className="text-xs font-semibold text-purple-300 truncate block mt-0.5">
-            ECMWF High-Res (0.1° IFS)
+          <span className="text-[10px] text-slate-400 uppercase block font-semibold">LAST SYNCED</span>
+          <span className="text-xs font-bold text-emerald-400 block mt-0.5 truncate">
+            {lastWeatherSync ? new Date(lastWeatherSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Synchronized'}
           </span>
-          <span className="text-[10px] text-slate-400">Next Update: in ~2m 45s (00Z Cycle)</span>
+          <span className="text-[10px] text-slate-400 block">Server Ingestion</span>
+        </div>
+
+        {/* 5. NEXT CHECK */}
+        <div className="polar-card p-3 rounded-lg border border-polar-border">
+          <span className="text-[10px] text-slate-400 uppercase block font-semibold">NEXT CHECK</span>
+          <span className="text-xs font-bold text-purple-300 block mt-0.5 truncate">
+            {nextWeatherSync ? new Date(nextWeatherSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'in ~3 min'}
+          </span>
+          <span className="text-[10px] text-slate-400 block">Auto-Poll (3m)</span>
+        </div>
+
+        {/* 6. LATENCY */}
+        <div className="polar-card p-3 rounded-lg border border-polar-border">
+          <span className="text-[10px] text-slate-400 uppercase block font-semibold">LATENCY</span>
+          <span className="text-sm font-bold text-amber-300 block mt-0.5">
+            {currentNorm?.latencySeconds !== undefined ? `${currentNorm.latencySeconds}s` : (currentObs.sourceLatencySec ? `${currentObs.sourceLatencySec}s` : '42s')}
+          </span>
+          <span className="text-[10px] text-slate-400 block">rcv - obs delta</span>
         </div>
       </div>
 
@@ -360,16 +384,17 @@ export default function EnvironmentPage() {
               </div>
             </div>
 
-            {/* 2. Katabatic Wind Speed (both km/h and m/s) */}
+            {/* 2. Katabatic Wind Speed (knots, km/h, and m/s per Section 3 & 6) */}
             <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border">
               <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
                 <span className="uppercase font-semibold">Katabatic Wind Speed</span>
                 <Wind className="w-4 h-4 text-sky-400" />
               </div>
               <div className="my-3">
-                <div className="text-3xl font-mono font-bold text-white tracking-tight flex items-baseline gap-2">
-                  <span>{currentObs.windKmh} <span className="text-lg font-normal text-sky-300">km/h</span></span>
-                  <span className="text-base font-normal text-slate-400">({(currentObs.windKmh / 3.6).toFixed(1)} m/s)</span>
+                <div className="text-2xl lg:text-3xl font-mono font-bold text-white tracking-tight flex flex-wrap items-baseline gap-2">
+                  <span>{currentObs.windKmh} <span className="text-base font-normal text-sky-300">km/h</span></span>
+                  <span className="text-lg font-semibold text-slate-300">({currentNorm?.windKnots !== undefined ? currentNorm.windKnots : (currentObs.windKnots || Number((currentObs.windKmh / 1.852).toFixed(1)))} kts)</span>
+                  <span className="text-xs font-normal text-slate-400">({(currentObs.windKmh / 3.6).toFixed(1)} m/s)</span>
                 </div>
                 <p className="text-xs font-mono text-slate-400 mt-1 flex items-center gap-1">
                   <Compass className="w-3.5 h-3.5 text-slate-400" /> 
@@ -377,7 +402,7 @@ export default function EnvironmentPage() {
                 </p>
               </div>
               <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-slate-400 flex justify-between">
-                <span>Gale Cutoff: 55 km/h</span>
+                <span>Gale Cutoff: 55 km/h (29.7 kts)</span>
                 <span className={currentObs.windKmh >= 55 ? 'text-rose-400 font-semibold' : 'text-emerald-400'}>
                   {currentObs.windKmh >= 55 ? 'High Wind Alert' : 'Safe Window'}
                 </span>
@@ -622,19 +647,54 @@ export default function EnvironmentPage() {
             </div>
           </div>
 
-          {/* 24-Hour Continuous Met Trend Chart */}
+          {/* Continuous Historical Met Trend Chart (Section 13) */}
           <div className="polar-card p-5 rounded-xl space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
+              <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-400" />
+                HISTORICAL OBSERVATIONS TREND ({historyHorizon} HORIZON)
+              </span>
+              <div className="flex items-center gap-1 bg-polar-950 p-1 rounded-lg border border-polar-border font-mono text-xs">
+                <button
+                  onClick={() => setHistoryHorizon('24H')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                    historyHorizon === '24H'
+                      ? 'bg-polar-blue text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  24H Trend
+                </button>
+                <button
+                  onClick={() => setHistoryHorizon('7D')}
+                  className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
+                    historyHorizon === '7D'
+                      ? 'bg-polar-blue text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  7D Trend
+                </button>
+              </div>
+            </div>
+
             <TelemetryChart
-              title="24-Hour Continuous Meteorological & Katabatic Wind Synoptic Trend"
-              data={Array.from({ length: 12 }).map((_, i) => {
-                const hour = `${(i * 2).toString().padStart(2, '0')}:00`;
-                return {
-                  time: hour,
-                  temperature: Number((currentObs.temperatureC + Math.sin(i * 0.7) * 2.2).toFixed(1)),
-                  windSpeed: Math.round(currentObs.windKmh + Math.cos(i * 0.8) * 8),
-                  pressure: Math.round(currentObs.pressureHpa + Math.sin(i * 0.4) * 4),
-                };
-              })}
+              title={`${historyHorizon} Synoptic Meteorological Trend • ${metadata.name}`}
+              data={stationHistory.length > 0 ? (
+                historyHorizon === '24H'
+                  ? stationHistory.slice(0, 24).reverse().map(h => ({
+                      time: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      temperature: h.temperatureC,
+                      windSpeed: h.windKmh,
+                      pressure: h.pressureHpa,
+                    }))
+                  : stationHistory.slice(0, 48).reverse().map(h => ({
+                      time: new Date(h.timestamp).toLocaleDateString([], { weekday: 'short', hour: '2-digit' }),
+                      temperature: h.temperatureC,
+                      windSpeed: h.windKmh,
+                      pressure: h.pressureHpa,
+                    }))
+              ) : []}
               series={[
                 { key: 'temperature', label: 'Air Temp (°C)', color: '#00f0ff' },
                 { key: 'windSpeed', label: 'Wind Velocity (km/h)', color: '#38bdf8' },

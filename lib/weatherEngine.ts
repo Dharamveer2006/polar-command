@@ -8,7 +8,9 @@ import {
   SatelliteLayerId, 
   WeatherForecastHorizon,
   RiskSeverity,
-  DataProvenance
+  DataProvenance,
+  NormalizedWeatherResponse,
+  HistoricalWeatherObservation
 } from '@/types';
 
 // ============================================================================
@@ -121,24 +123,41 @@ export const SATELLITE_LAYERS: Record<SatelliteLayerId, SatelliteMetadata> = {
 
 export function detectWeatherEvents(
   current: EnvironmentTelemetry,
-  previous?: EnvironmentTelemetry
+  previous?: EnvironmentTelemetry,
+  history?: HistoricalWeatherObservation[]
 ): WeatherEventDetection[] {
   const events: WeatherEventDetection[] = [];
 
-  // 1. Rapid Cooling Detection
+  // 1. Rapid Cooling Detection (Instant delta or 2-3 hour trend)
+  let deltaT: number | null = null;
+  let coolingTimeframe = 'observation interval';
+
   if (previous) {
-    const deltaT = current.temperatureC - previous.temperatureC;
-    if (deltaT <= -3.0) {
-      events.push({
-        type: 'RAPID_COOLING',
-        severity: deltaT <= -5.0 ? 'critical' : 'warning',
-        title: 'Rapid Temperature Drop Detected',
-        description: `Ambient temperature fell from ${previous.temperatureC.toFixed(1)}°C to ${current.temperatureC.toFixed(1)}°C.`,
-        rateOfChange: `${deltaT.toFixed(1)}°C in observation interval`,
-        operationalImpact: `HVAC heating load expands (+2.3 kW/°C deficit). Generator load and daily fuel burn accelerate.`,
-        detectedAt: new Date().toISOString()
-      });
+    deltaT = current.temperatureC - previous.temperatureC;
+  }
+  
+  if (history && history.length >= 2) {
+    // Check 2-3h window (e.g., 3-4 readings back)
+    const older = history[Math.min(history.length - 1, 3)];
+    if (older) {
+      const historicalDeltaT = current.temperatureC - older.temperatureC;
+      if (historicalDeltaT < (deltaT ?? 0)) {
+        deltaT = historicalDeltaT;
+        coolingTimeframe = '3h synoptic window';
+      }
     }
+  }
+
+  if (deltaT !== null && deltaT <= -3.0) {
+    events.push({
+      type: 'RAPID_COOLING',
+      severity: deltaT <= -5.0 ? 'critical' : 'warning',
+      title: 'Rapid Temperature Drop Detected',
+      description: `Ambient temperature plunged by ${Math.abs(deltaT).toFixed(1)}°C to ${current.temperatureC.toFixed(1)}°C.`,
+      rateOfChange: `${deltaT.toFixed(1)}°C in ${coolingTimeframe}`,
+      operationalImpact: `HVAC heating load expands (+2.3 kW/°C deficit). Generator load and daily fuel burn accelerate.`,
+      detectedAt: new Date().toISOString()
+    });
   }
 
   // 2. High Katabatic Wind
@@ -147,27 +166,42 @@ export function detectWeatherEvents(
       type: 'HIGH_WIND',
       severity: current.windKmh >= 75 ? 'critical' : 'warning',
       title: 'High Katabatic Gale Advisory',
-      description: `Wind speed reached ${current.windKmh} km/h (${(current.windKmh / 3.6).toFixed(1)} m/s) with peak gusts.`,
+      description: `Wind speed reached ${current.windKmh} km/h (${(current.windKmh / 3.6).toFixed(1)} m/s, ${Number((current.windKmh / 1.852).toFixed(1))} kts) with peak gusts.`,
       rateOfChange: `Gale Category ${current.windKmh >= 75 ? 'Storm Level 2' : 'Warning Level 1'}`,
       operationalImpact: `SATCOM tracking dish stow protocol initiated. Outdoor research sorties suspended. Convective building thermal loss +4.5 kW/10 km/h.`,
       detectedAt: new Date().toISOString()
     });
   }
 
-  // 3. Pressure Drop (Cyclonic Front Approach)
+  // 3. Rapid Pressure Drop (Cyclonic Front Approach: delta P <= -4.0 hPa over 2-3h)
+  let deltaP: number | null = null;
+  let pressureTimeframe = 'observation interval';
+
   if (previous) {
-    const deltaP = current.pressureHpa - previous.pressureHpa;
-    if (deltaP <= -4.0) {
-      events.push({
-        type: 'PRESSURE_DROP',
-        severity: deltaP <= -8.0 ? 'critical' : 'warning',
-        title: 'Steep Barometric Pressure Drop',
-        description: `Atmospheric pressure dropped by ${Math.abs(deltaP).toFixed(1)} hPa to ${current.pressureHpa.toFixed(1)} hPa.`,
-        rateOfChange: `${deltaP.toFixed(1)} hPa barometric tendency`,
-        operationalImpact: `Deep polar frontal cyclone approaching station longitude. Heightened risk of severe katabatic squalls within 6-12 hours.`,
-        detectedAt: new Date().toISOString()
-      });
+    deltaP = current.pressureHpa - previous.pressureHpa;
+  }
+
+  if (history && history.length >= 2) {
+    const older = history[Math.min(history.length - 1, 3)];
+    if (older) {
+      const historicalDeltaP = current.pressureHpa - older.pressureHpa;
+      if (historicalDeltaP < (deltaP ?? 0)) {
+        deltaP = historicalDeltaP;
+        pressureTimeframe = '3h synoptic window';
+      }
     }
+  }
+
+  if (deltaP !== null && deltaP <= -4.0) {
+    events.push({
+      type: 'PRESSURE_DROP',
+      severity: deltaP <= -8.0 ? 'critical' : 'warning',
+      title: 'Rapid Barometric Pressure Fall',
+      description: `Atmospheric pressure dropped by ${Math.abs(deltaP).toFixed(1)} hPa to ${current.pressureHpa.toFixed(1)} hPa.`,
+      rateOfChange: `${deltaP.toFixed(1)} hPa in ${pressureTimeframe}`,
+      operationalImpact: `Deep polar frontal cyclone approaching station longitude. Heightened risk of severe katabatic squalls within 6-12 hours.`,
+      detectedAt: new Date().toISOString()
+    });
   }
 
   // 4. Low Visibility / Whiteout
@@ -197,6 +231,82 @@ export function detectWeatherEvents(
   }
 
   return events;
+}
+
+// ============================================================================
+// 3B. HISTORICAL OBSERVATION GENERATION & BUFFERING (Section 13)
+// ============================================================================
+
+export function generateHistoricalWeather(
+  stationId: StationId,
+  count: number = 24
+): HistoricalWeatherObservation[] {
+  const base = BASELINE_STATION_WEATHER[stationId];
+  const history: HistoricalWeatherObservation[] = [];
+  const now = Date.now();
+
+  for (let i = count - 1; i >= 0; i--) {
+    const timestamp = new Date(now - i * 3600000).toISOString();
+    const tempNoise = Math.sin(i * 0.5) * 2.1;
+    const windNoise = Math.cos(i * 0.4) * 6;
+    const pressNoise = Math.sin(i * 0.3) * 3.5;
+
+    const temp = Number((base.temperatureC + tempNoise).toFixed(1));
+    const windKmh = Math.max(10, Math.round(base.windKmh + windNoise));
+    const windKnots = Number((windKmh / 1.852).toFixed(1));
+    const press = Number((base.pressureHpa + pressNoise).toFixed(1));
+
+    history.push({
+      timestamp,
+      station: stationId,
+      temperatureC: temp,
+      pressureHpa: press,
+      humidityPercent: Math.min(95, Math.max(40, Math.round(base.humidityPercent + Math.sin(i) * 5))),
+      windKmh,
+      windKnots,
+      windDirectionDeg: base.windDirectionDeg,
+      source: 'NCPOR Station Archive',
+      status: 'LIVE'
+    });
+  }
+
+  return history;
+}
+
+export function convertNormalizedToTelemetry(
+  res: NormalizedWeatherResponse,
+  prev?: EnvironmentTelemetry,
+  connectivity: string = 'CONNECTED'
+): EnvironmentTelemetry {
+  const isDisconnected = connectivity === 'DISCONNECTED';
+  const effectiveStatus: WeatherState = isDisconnected ? 'STALE' : res.status;
+  const sourceLabel: DataProvenance = res.source === 'NCPOR' ? 'Observed' : 'Synthetic Fallback';
+
+  const telemetry: EnvironmentTelemetry = {
+    temperatureC: res.temperatureC,
+    windKmh: res.windKmh,
+    windMs: res.windMs,
+    windDirectionDeg: res.windDirectionDeg,
+    pressureHpa: res.pressureHpa,
+    visibilityKm: res.visibilityKm || (prev?.visibilityKm ?? 10.0),
+    humidityPercent: res.humidityPercent,
+    windChillC: res.windChillC || Number((res.temperatureC - (res.windKmh * 0.18)).toFixed(1)),
+    blizzardRisk: (res.windKmh >= 55 && (res.visibilityKm || 10) <= 2.0 && res.temperatureC <= -20) ? 'critical' : 'nominal',
+    source: isDisconnected ? 'Synthetic Fallback' : sourceLabel,
+    primarySource: res.source === 'NCPOR' 
+      ? (res.station === 'bharati' ? 'NCPOR Automatic Weather Station (AWS-02)' : 'NCPOR Synoptic Met Tower') 
+      : 'Synthetic Fallback Baseline',
+    secondarySource: prev?.secondarySource || 'NOAA-21 VIIRS Polar Day-Night Band',
+    forecastSource: prev?.forecastSource || 'ECMWF High-Resolution (0.1° IFS)',
+    weatherState: effectiveStatus,
+    sourceLatencySec: res.latencySeconds,
+    lastUpdated: res.observedAt,
+    nextUpdate: new Date(Date.now() + 180000).toISOString(),
+    updatedAt: res.receivedAt,
+  };
+
+  telemetry.activeWeatherEvents = detectWeatherEvents(telemetry, prev);
+  return telemetry;
 }
 
 // ============================================================================

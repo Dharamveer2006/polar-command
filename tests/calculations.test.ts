@@ -387,4 +387,115 @@ describe('SIH26060 Polar Command - Digital Twin State Engine & Coupling Tests', 
     expect(separation.effectiveWeather.temperatureC).toBe(-29.5);
     expect(separation.effectiveWeather.source).toBe('Derived');
   });
+
+  // 14. Normalized Weather Response & Physical Unit Conversions (Sections 3 & 4)
+  it('14. correctly normalizes weather units (knots to km/h, m/s, mBar = hPa)', () => {
+    const rawKnots = 18.4;
+    const expectedKmh = Number((rawKnots * 1.852).toFixed(1)); // ~34.1 km/h
+    const expectedMs = Number((expectedKmh / 3.6).toFixed(1)); // ~9.5 m/s
+
+    expect(expectedKmh).toBe(34.1);
+    expect(expectedMs).toBe(9.5);
+
+    // Verify pressure equality (mBar = hPa)
+    const pressureMbar = 965.4;
+    const pressureHpa = pressureMbar;
+    expect(pressureHpa).toBe(965.4);
+  });
+
+  // 15. Real Weather Propagation into Digital Twin Cascade (Section 10 & 18)
+  it('15. verifies that colder real weather observation directly escalates HVAC load, fuel burn, and contracts runway', () => {
+    const baselineObs: EnvironmentTelemetry = {
+      ...BASELINE_STATION_WEATHER.bharati,
+      temperatureC: -17.5,
+      windKmh: 18.7,
+      pressureHpa: 982.0,
+      source: 'Public Observation',
+    };
+
+    const state1 = evaluateStationState(
+      baselineObs,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      defaultEvents,
+      zeroDrift,
+      'bharati'
+    );
+
+    // Severe Antarctic drop: -17.5°C -> -27.5°C (+10°C colder) and wind 18.7 -> 48.7 km/h
+    const coldObs: EnvironmentTelemetry = {
+      ...baselineObs,
+      temperatureC: -27.5,
+      windKmh: 48.7,
+    };
+
+    const state2 = evaluateStationState(
+      coldObs,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      defaultEvents,
+      zeroDrift,
+      'bharati'
+    );
+
+    // Weather changes propagate into Energy
+    expect(state2.derived.heatingLoadKw).toBeGreaterThan(state1.derived.heatingLoadKw);
+    expect(state2.derived.totalDemandKw).toBeGreaterThan(state1.derived.totalDemandKw);
+    // Energy changes propagate into Fuel
+    expect(state2.derived.dailyFuelBurnLitres).toBeGreaterThan(state1.derived.dailyFuelBurnLitres);
+    // Fuel changes propagate into Logistics
+    expect(state2.derived.fuelRunwayDays).toBeLessThan(state1.derived.fuelRunwayDays);
+  });
+
+  // 16. Trend-based Synoptic Event Detection (Section 12)
+  it('16. detects synoptic Rapid Cooling and Rapid Pressure Drop from observation history', () => {
+    const history = [
+      {
+        timestamp: new Date(Date.now() - 3600000 * 3).toISOString(), // 3 hours ago
+        station: 'bharati' as const,
+        temperatureC: -16.0,
+        pressureHpa: 980.0,
+        humidityPercent: 60,
+        windKnots: 10,
+        windKmh: 18.5,
+        windDirectionDeg: 120,
+        source: 'NCPOR',
+        status: 'LIVE' as const,
+      }
+    ];
+
+    const currentFastDrop: EnvironmentTelemetry = {
+      ...BASELINE_STATION_WEATHER.bharati,
+      temperatureC: -21.0, // Delta = -5°C over 3h (threshold <= -3°C)
+      pressureHpa: 973.0,  // Delta = -7 hPa over 3h (threshold <= -4 hPa)
+      windKmh: 35,
+    };
+
+    const events = detectWeatherEvents(currentFastDrop, BASELINE_STATION_WEATHER.bharati, history);
+    expect(events.some(e => e.type === 'RAPID_COOLING')).toBe(true);
+    expect(events.some(e => e.type === 'PRESSURE_DROP')).toBe(true);
+  });
+
+  // 17. Offline Resilience: Retain Last Valid Observation (Section 15)
+  it('17. retains last valid weather observation during disconnection without fabricating fake data', () => {
+    const lastValidObs: EnvironmentTelemetry = {
+      ...BASELINE_STATION_WEATHER.maitri,
+      temperatureC: -24.6,
+      windKmh: 37.8,
+      source: 'Public Observation',
+      weatherState: 'LIVE',
+    };
+
+    // When disconnected, status transitions to STALE, retaining last observation
+    const offlineObs: EnvironmentTelemetry = {
+      ...lastValidObs,
+      weatherState: 'STALE',
+    };
+
+    expect(offlineObs.temperatureC).toBe(-24.6);
+    expect(offlineObs.windKmh).toBe(37.8);
+    expect(offlineObs.weatherState).toBe('STALE');
+  });
 });

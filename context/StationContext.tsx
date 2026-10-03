@@ -35,7 +35,9 @@ import {
   BASELINE_STATION_WEATHER, 
   SATELLITE_LAYERS, 
   detectWeatherEvents, 
-  generateStationForecast 
+  generateStationForecast,
+  generateHistoricalWeather,
+  convertNormalizedToTelemetry
 } from '@/lib/weatherEngine';
 import { 
   SatelliteLayerId, 
@@ -44,7 +46,9 @@ import {
   WeatherEventDetection, 
   WeatherState,
   EnvironmentTelemetry,
-  DataProvenance
+  DataProvenance,
+  NormalizedWeatherResponse,
+  HistoricalWeatherObservation
 } from '@/types';
 import { hasPermission } from '@/lib/permissions';
 
@@ -100,6 +104,12 @@ interface StationContextType {
   
   // Real-Time Polar Weather Engine (SIH26060)
   liveWeather: Record<StationId, EnvironmentTelemetry>;
+  normalizedWeather: Record<StationId, NormalizedWeatherResponse | null>;
+  weatherHistory: Record<StationId, HistoricalWeatherObservation[]>;
+  isWeatherLoading: boolean;
+  lastWeatherSync: string | null;
+  nextWeatherSync: string | null;
+  fetchStationWeather: (targetId?: StationId) => Promise<void>;
   updateLiveWeather: (stationId: StationId, patch: Partial<EnvironmentTelemetry>) => void;
   activeWeatherEvents: WeatherEventDetection[];
   satelliteMetadata: Record<SatelliteLayerId, SatelliteMetadata>;
@@ -190,6 +200,77 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
   // Real-Time Polar Weather Engine
   const [liveWeather, setLiveWeather] = useState<Record<StationId, EnvironmentTelemetry>>(BASELINE_STATION_WEATHER);
   const [activeSatelliteLayer, setActiveSatelliteLayer] = useState<SatelliteLayerId>('true-color');
+  const [normalizedWeather, setNormalizedWeather] = useState<Record<StationId, NormalizedWeatherResponse | null>>({
+    maitri: null,
+    bharati: null,
+  });
+  const [weatherHistory, setWeatherHistory] = useState<Record<StationId, HistoricalWeatherObservation[]>>({
+    maitri: generateHistoricalWeather('maitri'),
+    bharati: generateHistoricalWeather('bharati'),
+  });
+  const [isWeatherLoading, setIsWeatherLoading] = useState<boolean>(false);
+  const [lastWeatherSync, setLastWeatherSync] = useState<string | null>(null);
+  const [nextWeatherSync, setNextWeatherSync] = useState<string | null>(null);
+
+  const fetchStationWeather = useCallback(async (targetId?: StationId) => {
+    if (connectivity === 'DISCONNECTED') {
+      // Offline behavior (Req 15): retain last valid observation, mark as STALE
+      setLiveWeather(prev => ({
+        maitri: { ...prev.maitri, weatherState: 'STALE' },
+        bharati: { ...prev.bharati, weatherState: 'STALE' },
+      }));
+      return;
+    }
+
+    const stationsToFetch: StationId[] = targetId ? [targetId] : ['maitri', 'bharati'];
+    setIsWeatherLoading(true);
+    try {
+      for (const sId of stationsToFetch) {
+        const res = await fetch(`/api/weather/${sId}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data: NormalizedWeatherResponse = await res.json();
+          setNormalizedWeather(prev => ({ ...prev, [sId]: data }));
+          const telemetry = convertNormalizedToTelemetry(data);
+          setLiveWeather(prev => ({ ...prev, [sId]: telemetry }));
+
+          const newObs: HistoricalWeatherObservation = {
+            timestamp: data.observedAt || data.receivedAt,
+            station: sId,
+            temperatureC: data.temperatureC,
+            pressureHpa: data.pressureHpa,
+            humidityPercent: data.humidityPercent,
+            windKnots: data.windKnots,
+            windKmh: data.windKmh,
+            windDirectionDeg: data.windDirectionDeg,
+            source: data.source,
+            status: data.status,
+          };
+
+          setWeatherHistory(prev => {
+            const currentHist = prev[sId] || [];
+            const updated = [newObs, ...currentHist.filter(h => h.timestamp !== newObs.timestamp)].slice(0, 48);
+            return { ...prev, [sId]: updated };
+          });
+        }
+      }
+      const now = new Date();
+      setLastWeatherSync(now.toISOString());
+      setNextWeatherSync(new Date(now.getTime() + 180000).toISOString());
+    } catch (err) {
+      console.error('Failed to fetch station weather:', err);
+    } finally {
+      setIsWeatherLoading(false);
+    }
+  }, [connectivity]);
+
+  // Initial fetch and 3-minute polling (2-5 minutes requirement)
+  useEffect(() => {
+    fetchStationWeather();
+    const interval = setInterval(() => {
+      fetchStationWeather();
+    }, 180000);
+    return () => clearInterval(interval);
+  }, [fetchStationWeather]);
 
   const updateLiveWeather = useCallback((stationId: StationId, patch: Partial<EnvironmentTelemetry>) => {
     setLiveWeather(prev => {
@@ -207,42 +288,27 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
         temperatureC: newT,
         windKmh: newW,
         windMs: newMs,
+        windKnots: patch.windKnots !== undefined ? patch.windKnots : Number((newW / 1.852).toFixed(1)),
         pressureHpa: newP,
         visibilityKm: newVis,
         windChillC: newChill,
         source: patch.source || current.source,
-        weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : 'LIVE') as WeatherState,
+        weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : (patch.weatherState || current.weatherState || 'LIVE')) as WeatherState,
         lastUpdated: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      const detected = detectWeatherEvents(updated, current);
+      const detected = detectWeatherEvents(updated, current, weatherHistory[stationId]);
       updated.activeWeatherEvents = detected;
 
       addAuditLog('WEATHER_UPDATE', 'STATION', stationId, `Weather updated: ${newT}°C, ${newW} km/h (${newMs} m/s)`);
       return { ...prev, [stationId]: updated };
     });
-  }, [connectivity, addAuditLog]);
+  }, [connectivity, addAuditLog, weatherHistory]);
 
   const refreshWeather = useCallback(() => {
-    setLiveWeather(prev => {
-      const now = new Date();
-      return {
-        maitri: {
-          ...prev.maitri,
-          lastUpdated: now.toISOString(),
-          nextUpdate: new Date(now.getTime() + 180000).toISOString(),
-          weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : 'LIVE') as WeatherState,
-        },
-        bharati: {
-          ...prev.bharati,
-          lastUpdated: now.toISOString(),
-          nextUpdate: new Date(now.getTime() + 180000).toISOString(),
-          weatherState: (connectivity === 'DISCONNECTED' ? 'STALE' : 'LIVE') as WeatherState,
-        },
-      };
-    });
-  }, [connectivity]);
+    fetchStationWeather();
+  }, [fetchStationWeather]);
 
   const currentStationForecast = useMemo(() => {
     const curEnv = liveWeather[currentStationId] || BASELINE_STATION_WEATHER[currentStationId];
@@ -285,15 +351,19 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Weather metadata & event detection attachment
-    const detectedWeatherEvents = detectWeatherEvents(evaluated.environment, rawEnv);
+    const detectedWeatherEvents = detectWeatherEvents(evaluated.environment, rawEnv, weatherHistory[stationId]);
     evaluated.environment.activeWeatherEvents = detectedWeatherEvents;
     evaluated.environment.windMs = Number((evaluated.environment.windKmh / 3.6).toFixed(1));
+    evaluated.environment.windKnots = baseEnv.windKnots || Number((evaluated.environment.windKmh / 1.852).toFixed(1));
     evaluated.environment.windChillC = Number((evaluated.environment.temperatureC - (evaluated.environment.windKmh * 0.18)).toFixed(1));
     evaluated.environment.weatherState = baseEnv.weatherState;
     evaluated.environment.primarySource = baseEnv.primarySource;
     evaluated.environment.secondarySource = baseEnv.secondarySource;
     evaluated.environment.forecastSource = baseEnv.forecastSource;
     evaluated.environment.sourceLatencySec = baseEnv.sourceLatencySec;
+    evaluated.environment.observedAt = baseEnv.observedAt;
+    evaluated.environment.receivedAt = baseEnv.receivedAt;
+    evaluated.environment.latency = baseEnv.latency;
     evaluated.environment.lastUpdated = baseEnv.lastUpdated;
     evaluated.environment.nextUpdate = baseEnv.nextUpdate;
 
@@ -766,6 +836,12 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       auditLogs,
       // Real-Time Polar Weather Engine (SIH26060)
       liveWeather,
+      normalizedWeather,
+      weatherHistory,
+      isWeatherLoading,
+      lastWeatherSync,
+      nextWeatherSync,
+      fetchStationWeather,
       updateLiveWeather,
       activeWeatherEvents: currentStationState.environment.activeWeatherEvents || [],
       satelliteMetadata: SATELLITE_LAYERS,

@@ -313,9 +313,29 @@ export function evaluateStationState(
     ...baselineEnv,
     temperatureC: effectiveTemperatureC,
     windKmh: effectiveWindKmh,
+    windMs: Number((effectiveWindKmh / 3.6).toFixed(1)),
+    windKnots: Number((effectiveWindKmh / 1.852).toFixed(1)),
     visibilityKm: effectiveVisibility,
     blizzardRisk,
-    source: (activeEvents.extremeCold || activeEvents.highWind) ? 'Synthetic Telemetry' : 'Public Observation',
+    source: (activeEvents.extremeCold || activeEvents.highWind) ? 'Synthetic Telemetry' : (baselineEnv.source || 'Public Observation'),
+    liveObservation: {
+      temperatureC: baselineEnv.temperatureC,
+      windKmh: baselineEnv.windKmh,
+      windKnots: baselineEnv.windKnots || Number((baselineEnv.windKmh / 1.852).toFixed(1)),
+      pressureHpa: baselineEnv.pressureHpa,
+      observedAt: baselineEnv.observedAt || baselineEnv.lastUpdated || new Date().toISOString(),
+      source: baselineEnv.primarySource || baselineEnv.source || 'NCPOR',
+      status: baselineEnv.weatherState || 'LIVE',
+    },
+    demoScenarioOffset: {
+      temperatureOffset: tempOffset,
+      windOffset,
+      active: activeEvents.extremeCold || activeEvents.highWind,
+    },
+    simulatedState: {
+      temperatureC: effectiveTemperatureC,
+      windKmh: effectiveWindKmh,
+    },
     updatedAt: new Date().toISOString(),
   };
 

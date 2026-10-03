@@ -97,10 +97,44 @@ export interface WeatherForecastHorizon {
   modelCycle: string;
 }
 
+export interface NormalizedWeatherResponse {
+  station: StationId;
+  source: 'NCPOR' | 'SYNTHETIC FALLBACK';
+  status: WeatherState;
+  observedAt: string;
+  receivedAt: string;
+  latencySeconds: number;
+  temperatureC: number;
+  pressureHpa: number;
+  humidityPercent: number;
+  windKnots: number;
+  windKmh: number;
+  windMs: number;
+  windDirectionDeg: number;
+  visibilityKm?: number;
+  windChillC?: number;
+  rawUpstreamStatus?: string;
+  rawUpstreamUrl?: string;
+}
+
+export interface HistoricalWeatherObservation {
+  timestamp: string;
+  station: StationId;
+  temperatureC: number;
+  pressureHpa: number;
+  humidityPercent: number;
+  windKmh: number;
+  windKnots: number;
+  windDirectionDeg: number;
+  source: string;
+  status: WeatherState;
+}
+
 export interface EnvironmentTelemetry {
   temperatureC: number;
   windKmh: number;
   windMs?: number;
+  windKnots?: number;
   windDirectionDeg: number;
   pressureHpa: number;
   visibilityKm: number;
@@ -113,9 +147,30 @@ export interface EnvironmentTelemetry {
   forecastSource?: string;
   weatherState?: WeatherState;
   sourceLatencySec?: number;
+  observedAt?: string;
+  receivedAt?: string;
+  latency?: string;
   lastUpdated?: string;
   nextUpdate?: string;
   activeWeatherEvents?: WeatherEventDetection[];
+  liveObservation?: {
+    temperatureC: number;
+    windKmh: number;
+    windKnots?: number;
+    pressureHpa: number;
+    observedAt: string;
+    source: string;
+    status: WeatherState;
+  };
+  demoScenarioOffset?: {
+    temperatureOffset: number;
+    windOffset: number;
+    active: boolean;
+  };
+  simulatedState?: {
+    temperatureC: number;
+    windKmh: number;
+  };
   updatedAt: string;
 }
 
