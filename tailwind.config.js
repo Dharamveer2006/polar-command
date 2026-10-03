@@ -1,13 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./context/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
+        'operational-green': '#10B981',
+        'warning-amber': '#F59E0B',
+        'critical-red': '#E53935',
         polar: {
           navy: '#08243A',
           glacier: '#EAF7FC',
@@ -16,7 +21,10 @@ module.exports = {
           green: '#10B981',
           amber: '#F59E0B',
           red: '#E53935',
-          border: '#CBD5E1',
+          ice: '#00B8E6',
+          accent: '#00B8E6',
+          border: '#1D4B75',
+          subtle: '#64748B',
           textPrimary: '#0F172A',
           textSecondary: '#334155',
           950: '#08243A',
