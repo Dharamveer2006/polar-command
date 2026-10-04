@@ -21,11 +21,12 @@ try {
   execSync('git init', { stdio: 'inherit', cwd: outDir });
   execSync('git checkout -B gh-pages', { stdio: 'inherit', cwd: outDir });
   execSync('git add -A', { stdio: 'inherit', cwd: outDir });
-  execSync('git remote add origin https://github.com/Dharamveer2006/polar-command.git', { stdio: 'inherit', cwd: outDir });
+  execSync('git commit -m "deploy: update github pages build"', { stdio: 'inherit', cwd: outDir });
+  execSync('git remote add origin https://github.com/Rahulcoder-881/polar-command.git', { stdio: 'inherit', cwd: outDir });
   execSync('git push -u -f origin gh-pages', { stdio: 'inherit', cwd: outDir });
 
   console.log('[POLAR COMMAND] Deployment to gh-pages branch complete!');
-  console.log('[POLAR COMMAND] Site URL: https://dharamveer2006.github.io/polar-command/');
+  console.log('[POLAR COMMAND] Site URL: https://rahulcoder-881.github.io/polar-command/');
 } catch (err) {
   console.error('[POLAR COMMAND] Deployment failed:', err);
   process.exitCode = 1;
