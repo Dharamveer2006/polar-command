@@ -412,6 +412,50 @@ export interface StationDerivedState {
   primaryDrivers: string[];
 }
 
+export interface EffectiveFuelState {
+  stockLitres: number;
+  capacityLitres: number;
+  burnLitresPerDay: number;
+  runwayDays: number;
+  safetyBufferDays: number;
+  resupplyEtaDays: number;
+  resupplyArrivalDate: string;
+  projectedDepletionDate: string;
+  hasPhysicalShortage: boolean;
+  marginDays: number;
+  status: InventoryStatus;
+}
+
+export interface EffectiveStationState {
+  stationId: StationId;
+  metadata: StationMetadata;
+  health: StationHealthScore;
+  energy: EnergyTelemetry;
+  fuel: EffectiveFuelState;
+  infrastructure: InfrastructureTelemetry;
+  logistics: {
+    inventory: InventoryItem[];
+    requisitions: Requisition[];
+    resupplyVesselStatus: string;
+    resupplyEtaDays: number;
+    criticalConsumablesCount: number;
+  };
+  environment: EnvironmentTelemetry;
+  risk: {
+    severity: RiskSeverity;
+    activeIncidentTitle: string;
+    rootCause: string;
+    causalChain: string[];
+    forecastedImpact: string;
+    recommendedResponses: string[];
+  };
+  forecast: WeatherForecastHorizon[];
+  alerts: Alert[];
+  resolvedAlerts: Alert[];
+  derived: StationDerivedState;
+  lastUpdated: string;
+}
+
 export interface StationFullState {
   metadata: StationMetadata;
   environment: EnvironmentTelemetry;
@@ -424,6 +468,7 @@ export interface StationFullState {
   };
   healthScore: StationHealthScore;
   activeAlerts: Alert[];
+  resolvedAlerts?: Alert[];
   derived: StationDerivedState;
   lastEvaluatedAt: string;
 }

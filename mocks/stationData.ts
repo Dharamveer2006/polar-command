@@ -700,10 +700,11 @@ export const INITIAL_ALERTS: Alert[] = [
     stationId: 'maitri',
     severity: 'warning',
     domain: 'infrastructure',
-    title: 'Lake Priyadarshini Pump #1 Suction Pressure Advisory',
+    title: 'PROTOTYPE ADVISORY: Lake Priyadarshini Pump #1 Suction Pressure Deviation',
     cause: [
-      'Minor line freezing resistance at intake manifold',
-      'Ambient temperature -24.6 C below normal threshold',
+      'Telemetry within operating tolerances: pressure 3.4 bar (baseline 3.8 bar, -0.4 bar deviation)',
+      'Vibration nominal at 2.1 mm/s, health 82%, status operational',
+      'Early prototype advisory for intake line pressure drift against 3.8 bar nominal baseline',
     ],
     affectedAssets: ['maitri-pump-01'],
     recommendations: [
@@ -711,6 +712,7 @@ export const INITIAL_ALERTS: Alert[] = [
       'Schedule visual inspection during daytime window',
     ],
     acknowledged: false,
+    status: 'active',
     createdAt: '2026-10-02T04:12:00Z',
   },
   {
@@ -729,6 +731,7 @@ export const INITIAL_ALERTS: Alert[] = [
       'Prepare seal replacement kit from inventory',
     ],
     acknowledged: true,
+    status: 'acknowledged',
     acknowledgedBy: 'Vikram Joshi (Bharati Lead)',
     acknowledgedAt: '2026-10-02T04:45:00Z',
     createdAt: '2026-10-02T03:30:00Z',

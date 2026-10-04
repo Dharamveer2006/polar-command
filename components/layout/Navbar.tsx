@@ -112,6 +112,8 @@ export default function Navbar() {
           <div className="flex items-center bg-white/70 border border-slate-300/80 rounded-lg p-0.5 shadow-xs">
             <button
               onClick={() => setCurrentStationId('maitri')}
+              aria-label="Switch to Maitri Station"
+              title="Switch to Maitri Station (Schirmacher Oasis)"
               className={`px-2.5 py-1 text-[11px] rounded transition-all flex items-center gap-1.5 ${
                 currentStationId === 'maitri'
                   ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50 font-bold shadow-xs'
@@ -123,6 +125,8 @@ export default function Navbar() {
             </button>
             <button
               onClick={() => setCurrentStationId('bharati')}
+              aria-label="Switch to Bharati Station"
+              title="Switch to Bharati Station (Larsemann Hills)"
               className={`px-2.5 py-1 text-[11px] rounded transition-all flex items-center gap-1.5 ${
                 currentStationId === 'bharati'
                   ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50 font-bold shadow-xs'
@@ -135,8 +139,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Center: Visually Light Navigation Links */}
-        <nav className="hidden xl:flex items-center gap-1">
+        {/* Center: Visually Light Navigation Links (>=1536 Desktop Full Nav) */}
+        <nav className="hidden 2xl:flex items-center gap-1">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -195,6 +199,8 @@ export default function Navbar() {
           <div className="relative" ref={demoRef}>
             <button
               onClick={() => setIsDemoOpen(!isDemoOpen)}
+              aria-label="Open Demo Scenarios & Stress Testing Menu"
+              title="Open Demo Scenarios & Stress Testing Menu"
               className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all border ${
                 activeScenariosCount > 0
                   ? 'bg-amber-500/20 text-amber-900 border-amber-500/50 shadow-xs animate-pulse'
@@ -336,6 +342,8 @@ export default function Navbar() {
                       <span className="font-semibold">Coupled Realtime Drift:</span>
                       <button
                         onClick={() => setIsRealtimeActive(!isRealtimeActive)}
+                        aria-label={isRealtimeActive ? "Pause Realtime Telemetry Drift" : "Resume Realtime Telemetry Drift"}
+                        title={isRealtimeActive ? "Pause Realtime Telemetry Drift" : "Resume Realtime Telemetry Drift"}
                         className={`px-2 py-0.5 rounded font-bold flex items-center gap-1 ${
                           isRealtimeActive ? 'bg-cyan-100 text-[#006A8C] border border-cyan-300' : 'bg-slate-100 text-[#36546D]'
                         }`}
@@ -392,8 +400,8 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Lightweight Secondary Navigation Bar for mobile / smaller screens */}
-      <div className="xl:hidden px-4 py-1 flex items-center gap-1 overflow-x-auto border-t border-slate-200/80 scrollbar-none font-mono text-[11px]">
+      {/* Lightweight Secondary Navigation Bar for mobile / smaller screens (< 1536px) */}
+      <div className="2xl:hidden px-4 py-1 flex items-center gap-1 overflow-x-auto border-t border-slate-200/80 scrollbar-none font-mono text-[11px]">
         {navLinks.map((link) => {
           const isActive = pathname === link.href;
           return (

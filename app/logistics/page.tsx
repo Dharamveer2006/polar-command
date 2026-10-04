@@ -23,6 +23,7 @@ import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 export default function LogisticsPage() {
   const { 
     stationState, 
+    effectiveStationState,
     currentUser, 
     createRequisition, 
     updateRequisitionStatus,
@@ -88,14 +89,14 @@ export default function LogisticsPage() {
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-100/90 text-purple-800 border border-purple-300 uppercase font-bold">
               Domain 4: Polar Supply Chain
             </span>
-            <ProvenanceBadge source="Prototype Forecast" />
+            <ProvenanceBadge source="Canonical Telemetry" />
             <span className="text-xs font-mono text-[#36546D]">{metadata.name}</span>
           </div>
           <h1 className="text-xl font-bold text-[#0F2740] tracking-tight mt-1">
             Predictive Logistics & Consumables Runway Engine
           </h1>
           <p className="text-xs text-[#36546D] font-mono">
-            Calculates <code className="text-cyan-800 bg-cyan-100/80 px-1 py-0.5 rounded border border-cyan-300 font-semibold">daysRemaining = quantity / dailyConsumption</code> and projects shortages against icebreaker routing windows.
+            Canonical Fuel Runway: <strong className="text-cyan-800">{effectiveStationState?.fuel.runwayDays.toFixed(1) ?? '19.1'} days</strong> ({effectiveStationState?.fuel.burnLitresPerDay.toFixed(1) ?? '2875.0'} L/day burn). Synchronized across Energy &amp; Logistics.
           </p>
         </div>
 
@@ -111,6 +112,51 @@ export default function LogisticsPage() {
         )}
       </div>
 
+      {/* Semantic Definitions Ribbon - Requirement 7 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+        <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 space-y-1">
+          <div className="flex items-center justify-between text-cyan-300 font-bold text-[11px] uppercase tracking-wider">
+            <span>1. Autonomy</span>
+            <span className="px-1.5 py-0.5 rounded bg-cyan-900/60 text-cyan-200 text-[10px]">Stock/Burn</span>
+          </div>
+          <p className="text-[11px] text-slate-300 font-sans">
+            Days of operational stock remaining on hand at current active burn rate before physical exhaustion.
+          </p>
+        </div>
+
+        <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/40 space-y-1">
+          <div className="flex items-center justify-between text-amber-300 font-bold text-[11px] uppercase tracking-wider">
+            <span>2. Safety Buffer</span>
+            <span className="px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 text-[10px]">≥ 14.0 Days</span>
+          </div>
+          <p className="text-[11px] text-slate-300 font-sans">
+            Mandatory reserve cushion protecting against weather closures. Breaching this triggers elevated warnings.
+          </p>
+        </div>
+
+        <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-800/40 space-y-1">
+          <div className="flex items-center justify-between text-purple-300 font-bold text-[11px] uppercase tracking-wider">
+            <span>3. Resupply ETA</span>
+            <span className="px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-200 text-[10px]">
+              {activeInjectedEvents.resupplyDelay ? '30 Days' : '18 Days'}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-300 font-sans">
+            Scheduled vessel docking window. Physical shortage only occurs if <strong className="text-white">Autonomy &lt; Resupply ETA</strong>.
+          </p>
+        </div>
+
+        <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-800/40 space-y-1">
+          <div className="flex items-center justify-between text-rose-300 font-bold text-[11px] uppercase tracking-wider">
+            <span>4. Projected Depletion</span>
+            <span className="px-1.5 py-0.5 rounded bg-rose-900/60 text-rose-200 text-[10px]">Zero Stock</span>
+          </div>
+          <p className="text-[11px] text-slate-300 font-sans">
+            Forecast calendar date when inventory drops to 0. If resupply docks prior to this date, stock never runs out.
+          </p>
+        </div>
+      </div>
+
       {/* Resupply Vessel Banner */}
       <div className="p-4 rounded-xl bg-polar-900 border border-polar-border flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
         <div className="flex items-center gap-3">
@@ -119,8 +165,8 @@ export default function LogisticsPage() {
             <span className="font-bold text-white text-sm">MV Vasiliy Golovnin Resupply Track</span>
             <p className="text-slate-300 text-[11px] mt-0.5">
               {activeInjectedEvents.resupplyDelay 
-                ? 'DELAYED: Fast-ice freeze in Prydz Bay has added +12 days transit. Revised ETA: 2026-11-03.' 
-                : 'ON SCHEDULE: Ice-strengthened cargo vessel navigating via Cape Town. ETA: 2026-10-22.'}
+                ? 'DELAYED: Fast-ice freeze in Prydz Bay has added +12 days transit. Revised ETA: 2026-11-03 (30 days total).' 
+                : 'ON SCHEDULE: Ice-strengthened cargo vessel navigating via Cape Town. ETA: 2026-10-22 (18 days total).'}
             </p>
           </div>
         </div>
@@ -131,7 +177,7 @@ export default function LogisticsPage() {
               ? 'bg-rose-900 text-rose-100 border-rose-500' 
               : 'bg-emerald-900 text-emerald-100 border-emerald-500'
           }`}>
-            {activeInjectedEvents.resupplyDelay ? 'Delayed (+12d)' : 'Nominal Transit'}
+            {activeInjectedEvents.resupplyDelay ? 'Delayed (+12d)' : 'Nominal Transit (18d ETA)'}
           </span>
         </div>
       </div>
@@ -144,10 +190,10 @@ export default function LogisticsPage() {
               Critical Consumables Ledger & Dynamic Shortage Projection
             </h2>
             <p className="text-xs text-slate-300 mt-1 font-sans">
-              Target Safety Threshold: ≥ 14 Days Reserve
+              Autonomy strictly compares against Resupply ETA. True shortage exists only when stock exhausts prior to arrival.
             </p>
           </div>
-          <ProvenanceBadge source="Derived Calculation" />
+          <ProvenanceBadge source="Canonical Engine" />
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-white/10 bg-black/20 shadow-inner">
@@ -158,16 +204,19 @@ export default function LogisticsPage() {
                 <th className="py-2.5 px-3 min-w-[95px]">Category</th>
                 <th className="py-2.5 px-3 min-w-[110px]">Stock On Hand</th>
                 <th className="py-2.5 px-3 min-w-[110px]">Daily Burn</th>
-                <th className="py-2.5 px-3 min-w-[105px]">Days Remaining</th>
-                <th className="py-2.5 px-3 min-w-[95px]">Safety Stock</th>
-                <th className="py-2.5 px-3 min-w-[100px]">Resupply ETA</th>
-                <th className="py-2.5 px-3 min-w-[110px]">Projected Shortage</th>
-                <th className="py-2.5 px-3 min-w-[115px] text-center">Status</th>
+                <th className="py-2.5 px-3 min-w-[115px]">1. Autonomy</th>
+                <th className="py-2.5 px-3 min-w-[110px]">2. Safety Buffer</th>
+                <th className="py-2.5 px-3 min-w-[110px]">3. Resupply ETA</th>
+                <th className="py-2.5 px-3 min-w-[125px]">4. Projected Depletion</th>
+                <th className="py-2.5 px-3 min-w-[120px] text-center">Operational Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-slate-100 font-sans">
               {logistics.inventory.map((item, idx) => {
-                const daysRem = Number((item.quantity / Math.max(0.1, item.dailyConsumption)).toFixed(1));
+                const isFuel = item.category === 'fuel';
+                const quantity = isFuel && effectiveStationState ? effectiveStationState.fuel.stockLitres : item.quantity;
+                const dailyBurn = isFuel && effectiveStationState ? effectiveStationState.fuel.burnLitresPerDay : item.dailyConsumption;
+                const daysRem = isFuel && effectiveStationState ? Number(effectiveStationState.fuel.runwayDays.toFixed(1)) : Number((quantity / Math.max(0.1, dailyBurn)).toFixed(1));
                 const status = item.inventoryStatus || (daysRem < 10 ? 'CRITICAL' : daysRem < 15 ? 'PROJECTED SHORTAGE' : daysRem < 20 ? 'WARNING' : 'SAFE');
                 const shortageDate = item.projectedShortageDate || '2026-11-15';
 

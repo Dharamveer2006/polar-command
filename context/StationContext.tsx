@@ -48,7 +48,9 @@ import {
   EnvironmentTelemetry,
   DataProvenance,
   NormalizedWeatherResponse,
-  HistoricalWeatherObservation
+  HistoricalWeatherObservation,
+  EffectiveStationState,
+  EffectiveFuelState
 } from '@/types';
 import { hasPermission } from '@/lib/permissions';
 
@@ -60,10 +62,13 @@ interface StationContextType {
   setCurrentUser: (user: User) => void;
   allUsers: User[];
   
-  // Station State (Derived from Central Pipeline)
+  // Single Source of Truth: Canonical Station State
+  effectiveStationState: EffectiveStationState;
+  allEffectiveStationsState: Record<StationId, EffectiveStationState>;
   stationState: StationFullState;
   derived: StationFullState['derived'];
   allStationsState: Record<StationId, StationFullState>;
+  resolvedAlerts: Alert[];
   
   // Realtime & Offline status
   isRealtimeActive: boolean;
@@ -251,13 +256,39 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
             const updated = [newObs, ...currentHist.filter(h => h.timestamp !== newObs.timestamp)].slice(0, 48);
             return { ...prev, [sId]: updated };
           });
+        } else {
+          // Upstream API routes not available on static hosting (e.g. GitHub Pages)
+          // Explicitly label as FALLBACK / SYNTHETIC PROTOTYPE - do not label as LIVE
+          setLiveWeather(prev => ({
+            ...prev,
+            [sId]: {
+              ...prev[sId],
+              weatherState: 'FALLBACK',
+              source: 'Synthetic Telemetry',
+              primarySource: 'NCPOR Synthetic Baseline Model',
+            }
+          }));
         }
       }
       const now = new Date();
       setLastWeatherSync(now.toISOString());
       setNextWeatherSync(new Date(now.getTime() + 180000).toISOString());
-    } catch (err) {
-      console.error('Failed to fetch station weather:', err);
+    } catch {
+      // Static export or client network catch: fallback to synthetic baseline
+      setLiveWeather(prev => ({
+        maitri: {
+          ...prev.maitri,
+          weatherState: 'FALLBACK',
+          source: 'Synthetic Telemetry',
+          primarySource: 'NCPOR Synthetic Baseline Model',
+        },
+        bharati: {
+          ...prev.bharati,
+          weatherState: 'FALLBACK',
+          source: 'Synthetic Telemetry',
+          primarySource: 'NCPOR Synthetic Baseline Model',
+        }
+      }));
     } finally {
       setIsWeatherLoading(false);
     }
@@ -473,10 +504,44 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
-    const stationAlerts = [
-      ...dynamicAlerts,
-      ...alerts.filter(a => a.stationId === stationId && a.status !== 'resolved'),
-    ];
+    // Merge dynamic alerts with state overrides to support complete workflow: ACTIVE -> ACKNOWLEDGED -> RESOLVED
+    const candidateMap = new Map<string, Alert>();
+    
+    // 1. Persistent alerts from alerts state (includes acknowledgements & resolutions)
+    alerts.filter(a => a.stationId === stationId).forEach(a => {
+      candidateMap.set(a.alertId, a);
+    });
+
+    // 2. Dynamic alerts from active scenarios and weather triggers
+    dynamicAlerts.forEach(dAlert => {
+      const existing = candidateMap.get(dAlert.alertId);
+      if (existing) {
+        candidateMap.set(dAlert.alertId, {
+          ...dAlert,
+          acknowledged: existing.acknowledged,
+          status: existing.status || (existing.acknowledged ? 'acknowledged' : 'active'),
+          acknowledgedBy: existing.acknowledgedBy,
+          acknowledgedAt: existing.acknowledgedAt,
+        });
+      } else {
+        candidateMap.set(dAlert.alertId, {
+          ...dAlert,
+          acknowledged: false,
+          status: 'active',
+        });
+      }
+    });
+
+    const activeStationAlerts: Alert[] = [];
+    const resolvedStationAlerts: Alert[] = [];
+
+    candidateMap.forEach(al => {
+      if (al.status === 'resolved') {
+        resolvedStationAlerts.push(al);
+      } else {
+        activeStationAlerts.push(al);
+      }
+    });
 
     // Section 9: Station Mode Operational Effects
     if (stationMode === 'POWER CONSERVATION') {
@@ -510,7 +575,8 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
         source: 'Derived Calculation',
       },
       healthScore: evaluated.healthScore,
-      activeAlerts: stationAlerts,
+      activeAlerts: activeStationAlerts,
+      resolvedAlerts: resolvedStationAlerts,
       derived: evaluated.derived,
       lastEvaluatedAt: new Date().toISOString(),
     };
@@ -640,50 +706,100 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       setEdgeQueue(q => [queueItem, ...q]);
     }
 
-    setAlerts(prev => prev.map(a => {
-      if (a.alertId === alertId) {
-        return {
+    setAlerts(prev => {
+      const exists = prev.some(a => a.alertId === alertId);
+      if (exists) {
+        return prev.map(a => a.alertId === alertId ? {
           ...a,
           acknowledged: true,
-          status: 'acknowledged',
+          status: 'acknowledged' as const,
           acknowledgedBy: currentUser.name,
           acknowledgedAt: new Date().toISOString(),
-        };
+        } : a);
+      } else {
+        return [...prev, {
+          alertId,
+          stationId: currentStationId,
+          severity: 'warning',
+          domain: 'cross-domain',
+          title: `Alert ${alertId}`,
+          cause: ['Operational event trigger acknowledged by operator'],
+          affectedAssets: [],
+          recommendations: ['Active monitoring'],
+          acknowledged: true,
+          status: 'acknowledged' as const,
+          acknowledgedBy: currentUser.name,
+          acknowledgedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        }];
       }
-      return a;
-    }));
+    });
 
     setActionFeedback({
       type: 'success',
-      message: `Alert acknowledged successfully by ${currentUser.name}.`,
+      message: `Alert acknowledged successfully by ${currentUser.name} (${currentUser.role}).`,
     });
-    addAuditLog('ACKNOWLEDGE_ALERT', 'ALERT', alertId, `Acknowledged by ${currentUser.name}`);
+    addAuditLog('ACKNOWLEDGE_ALERT', 'ALERT', alertId, `Acknowledged by ${currentUser.name} (${currentUser.role})`);
     return true;
-  }, [currentUser, connectivity, addAuditLog]);
+  }, [currentUser, connectivity, currentStationId, addAuditLog]);
 
   const resolveAlert = useCallback((alertId: string): boolean => {
     if (!hasPermission(currentUser.role, 'canAcknowledgeAlerts')) {
       setActionFeedback({
         type: 'error',
-        message: `RBAC Permission Denied: Role "${currentUser.role}" is not authorized to resolve alerts.`,
+        message: `RBAC Permission Denied: Role "${currentUser.role}" is not authorized to resolve operational alerts.`,
       });
+      addAuditLog('UNAUTHORIZED_ACTION', 'ALERT', alertId, `User ${currentUser.name} (${currentUser.role}) denied alert resolution.`);
       return false;
     }
 
-    setAlerts(prev => prev.map(a => {
-      if (a.alertId === alertId) {
-        return { ...a, status: 'resolved' };
+    if (connectivity === 'DISCONNECTED') {
+      const queueItem: EdgeQueueItem = {
+        id: `q-res-${Date.now()}`,
+        type: 'ALERT_ACK',
+        payload: { alertId, resolvedBy: currentUser.name },
+        timestamp: new Date().toISOString(),
+        status: 'PENDING',
+      };
+      setEdgeQueue(q => [queueItem, ...q]);
+    }
+
+    setAlerts(prev => {
+      const exists = prev.some(a => a.alertId === alertId);
+      if (exists) {
+        return prev.map(a => a.alertId === alertId ? {
+          ...a,
+          acknowledged: true,
+          status: 'resolved' as const,
+          acknowledgedBy: a.acknowledgedBy || currentUser.name,
+          acknowledgedAt: a.acknowledgedAt || new Date().toISOString(),
+        } : a);
+      } else {
+        return [...prev, {
+          alertId,
+          stationId: currentStationId,
+          severity: 'warning',
+          domain: 'cross-domain',
+          title: `Alert ${alertId}`,
+          cause: ['Incident resolved by operator'],
+          affectedAssets: [],
+          recommendations: ['Triage completed'],
+          acknowledged: true,
+          status: 'resolved' as const,
+          acknowledgedBy: currentUser.name,
+          acknowledgedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        }];
       }
-      return a;
-    }));
+    });
 
     setActionFeedback({
       type: 'success',
-      message: `Alert resolved by ${currentUser.name}.`,
+      message: `Alert resolved successfully by ${currentUser.name} (${currentUser.role}).`,
     });
-    addAuditLog('RESOLVE_ALERT', 'ALERT', alertId, `Resolved by ${currentUser.name}`);
+    addAuditLog('RESOLVE_ALERT', 'ALERT', alertId, `Resolved by ${currentUser.name} (${currentUser.role})`);
     return true;
-  }, [currentUser, addAuditLog]);
+  }, [currentUser, connectivity, currentStationId, addAuditLog]);
 
   const createRequisition = useCallback((req: Omit<Requisition, 'id' | 'createdAt' | 'status' | 'requesterId' | 'requesterName' | 'requesterRole'>): boolean => {
     if (!hasPermission(currentUser.role, 'canCreateRequisition')) {
@@ -793,6 +909,74 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     bharati: buildStationFullState('bharati'),
   }), [buildStationFullState]);
 
+  // Requirement 5 & 6 — Single Source of Truth: Canonical Effective Station State
+  const buildEffectiveState = useCallback((
+    state: StationFullState,
+    forecast: WeatherForecastHorizon[]
+  ): EffectiveStationState => {
+    const fuelItem = state.logistics.inventory.find(i => i.category === 'fuel' || i.sku.includes('FUEL')) || state.logistics.inventory[0];
+    const baseEtaDays = 18 + (activeInjectedEvents.resupplyDelay ? 12 : 0);
+    const today = new Date();
+    const resupplyDate = new Date(today.getTime() + baseEtaDays * 86400000);
+    const shortageDate = new Date(today.getTime() + state.derived.fuelRunwayDays * 86400000);
+    const marginDays = Number((state.derived.fuelRunwayDays - baseEtaDays).toFixed(1));
+    const hasPhysicalShortage = state.derived.fuelRunwayDays < baseEtaDays;
+
+    const effectiveFuel: EffectiveFuelState = {
+      stockLitres: state.energy.fuelLitres,
+      capacityLitres: state.energy.fuelCapacityLitres,
+      burnLitresPerDay: state.derived.dailyFuelBurnLitres,
+      runwayDays: state.derived.fuelRunwayDays,
+      safetyBufferDays: 14,
+      resupplyEtaDays: baseEtaDays,
+      resupplyArrivalDate: resupplyDate.toISOString().split('T')[0],
+      projectedDepletionDate: shortageDate.toISOString().split('T')[0],
+      hasPhysicalShortage,
+      marginDays,
+      status: fuelItem?.inventoryStatus || (hasPhysicalShortage ? 'CRITICAL' : marginDays < 4 ? 'PROJECTED SHORTAGE' : 'SAFE'),
+    };
+
+    return {
+      stationId: state.metadata.stationId,
+      metadata: state.metadata,
+      health: state.healthScore,
+      energy: state.energy,
+      fuel: effectiveFuel,
+      infrastructure: state.infrastructure,
+      logistics: {
+        inventory: state.logistics.inventory,
+        requisitions: state.logistics.requisitions,
+        resupplyVesselStatus: activeInjectedEvents.resupplyDelay ? 'DELAYED (+12d Pack Ice)' : 'ON SCHEDULE',
+        resupplyEtaDays: baseEtaDays,
+        criticalConsumablesCount: state.logistics.inventory.filter(i => i.inventoryStatus === 'CRITICAL').length,
+      },
+      environment: state.environment,
+      risk: {
+        severity: state.derived.crossDomainRisk,
+        activeIncidentTitle: state.derived.activeIncidentTitle,
+        rootCause: state.derived.rootCause,
+        causalChain: state.derived.causalChain,
+        forecastedImpact: state.derived.forecastedImpact,
+        recommendedResponses: state.derived.recommendedResponses || [state.derived.recommendedResponse],
+      },
+      forecast,
+      alerts: state.activeAlerts,
+      resolvedAlerts: state.resolvedAlerts || [],
+      derived: state.derived,
+      lastUpdated: state.lastEvaluatedAt,
+    };
+  }, [activeInjectedEvents]);
+
+  const currentEffectiveStationState = useMemo(() => 
+    buildEffectiveState(currentStationState, currentStationForecast),
+    [buildEffectiveState, currentStationState, currentStationForecast]
+  );
+
+  const allEffectiveStationsState = useMemo(() => ({
+    maitri: buildEffectiveState(allStationsState.maitri, generateStationForecast(allStationsState.maitri.environment, 'maitri')),
+    bharati: buildEffectiveState(allStationsState.bharati, generateStationForecast(allStationsState.bharati.environment, 'bharati')),
+  }), [buildEffectiveState, allStationsState]);
+
   const setStationMode = useCallback((mode: StationMode) => {
     setStationModeState(mode);
     addAuditLog('CHANGE_STATION_MODE', 'STATION', currentStationId, `Operational stance updated to ${mode}`);
@@ -805,9 +989,12 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       currentUser,
       setCurrentUser,
       allUsers: DEMO_USERS,
+      effectiveStationState: currentEffectiveStationState,
+      allEffectiveStationsState,
       stationState: currentStationState,
       derived: currentStationState.derived,
       allStationsState,
+      resolvedAlerts: currentStationState.resolvedAlerts || [],
       stationMode,
       setStationMode,
       missionTimeline,

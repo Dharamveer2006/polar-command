@@ -11,7 +11,8 @@ import {
   INITIAL_ENVIRONMENT, 
   INITIAL_ENERGY, 
   INITIAL_INFRASTRUCTURE, 
-  INITIAL_INVENTORY 
+  INITIAL_INVENTORY,
+  INITIAL_ALERTS 
 } from '../mocks/stationData';
 import { hasPermission, ROLE_PERMISSIONS } from '../lib/permissions';
 import { ActiveScenarios, EdgeQueueItem, EnvironmentTelemetry } from '../types';
@@ -498,4 +499,206 @@ describe('SIH26060 Polar Command - Digital Twin State Engine & Coupling Tests', 
     expect(offlineObs.windKmh).toBe(37.8);
     expect(offlineObs.weatherState).toBe('STALE');
   });
+
+  // 18. Fuel Runway Consistency Across Domains (Requirement 6)
+  it('18. guarantees canonical fuel runway equality across Energy and Logistics', () => {
+    const evaluated = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      defaultEvents,
+      zeroDrift,
+      'bharati'
+    );
+
+    const energyBurn = evaluated.energy.averageFuelBurnLitresPerDay;
+    const energyRunway = evaluated.energy.fuelRunwayDays;
+    const derivedBurn = evaluated.derived.dailyFuelBurnLitres;
+    const derivedRunway = evaluated.derived.fuelRunwayDays;
+
+    const fuelItem = evaluated.inventory.find(i => i.category === 'fuel');
+    expect(fuelItem).toBeDefined();
+
+    // Must be mathematically identical
+    expect(derivedBurn).toBe(energyBurn);
+    expect(derivedRunway).toBe(energyRunway);
+    expect(fuelItem!.dailyConsumption).toBe(energyBurn);
+    expect(fuelItem!.daysRemaining).toBe(energyRunway);
+  });
+
+  // 19. Logistics Semantics: Physical Shortage vs Safety Buffer (Requirement 7)
+  it('19. differentiates Autonomy, Safety Buffer, Resupply ETA, and Projected Depletion without false physical shortage', () => {
+    // Nominal state: 9400L / 460L/day = 20.4 days runway. Resupply ETA = 18 days.
+    const nominal = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      defaultEvents,
+      zeroDrift,
+      'bharati'
+    );
+
+    const fuelItem = nominal.inventory.find(i => i.category === 'fuel')!;
+    // Resupply arrives at Day 18, stock runs out at Day 20.4 -> NEVER physical shortage
+    expect(fuelItem.daysRemaining).toBeGreaterThanOrEqual(18);
+    expect(fuelItem.inventoryStatus).not.toBe('CRITICAL');
+
+    // When Resupply is delayed (+12d -> 30 days ETA), stock (20.4d) exhausts BEFORE vessel arrives (30d) -> TRUE CRITICAL
+    const delayed = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { ...defaultEvents, resupplyDelay: true },
+      zeroDrift,
+      'bharati'
+    );
+
+    const delayedFuel = delayed.inventory.find(i => i.category === 'fuel')!;
+    expect(delayedFuel.inventoryStatus).toBe('CRITICAL');
+  });
+
+  // 20. Maitri Pump Advisory Classification (Requirement 8)
+  it('20. labels Maitri pump suction deviation as PROTOTYPE ADVISORY with baseline comparison', () => {
+    const pumpAlert = INITIAL_ALERTS.find(a => a.alertId === 'ALT-MTR-001' || (a as any).id === 'ALT-MTR-001');
+    expect(pumpAlert).toBeDefined();
+    expect(pumpAlert!.title).toContain('PROTOTYPE ADVISORY');
+    const fullText = (pumpAlert!.cause || []).join(' ') + ' ' + ((pumpAlert as any)!.message || '');
+    expect(fullText).toContain('3.4 bar');
+    expect(fullText).toContain('3.8 bar');
+    expect(fullText).toContain('operational');
+    expect(['warning', 'low', 'info'].includes(pumpAlert!.severity)).toBe(true);
+  });
+
+  // 21. Threshold Validation for Nominal Weather (Requirement 9)
+  it('21. validates nominal weather does not trigger false critical weather alerts', () => {
+    const nominalMaitri = BASELINE_STATION_WEATHER.maitri;
+    const history = [{
+      timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
+      station: 'maitri' as const,
+      temperatureC: nominalMaitri.temperatureC,
+      pressureHpa: nominalMaitri.pressureHpa,
+      humidityPercent: 65,
+      windKnots: nominalMaitri.windKnots || 20,
+      windKmh: nominalMaitri.windKmh,
+      windDirectionDeg: 110,
+      source: 'NCPOR',
+      status: 'FALLBACK' as const,
+    }];
+
+    const events = detectWeatherEvents(nominalMaitri, nominalMaitri, history);
+    expect(events.filter(e => e.severity === 'critical').length).toBe(0);
+  });
+
+  // 22. Compound Scenarios & Multi-Event Combinations (Requirement 14)
+  it('22. verifies composable scenario combinations without accidental clearing', () => {
+    // Cold + Blizzard
+    const coldBlizzard = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { ...defaultEvents, extremeCold: true, highWind: true },
+      zeroDrift,
+      'bharati'
+    );
+    expect(coldBlizzard.derived.activeIncident.toUpperCase()).toContain('BLIZZARD');
+    expect(coldBlizzard.derived.activeIncident.toUpperCase()).toContain('COLD');
+
+    // Cold + Generator
+    const coldGen = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { ...defaultEvents, extremeCold: true, generator2Failure: true },
+      zeroDrift,
+      'bharati'
+    );
+    expect(coldGen.derived.powerSurplusDeficitKw).toBeLessThan(0);
+    expect(coldGen.derived.batteryStatus).toBe('discharging');
+
+    // Generator + Resupply
+    const genResupply = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { ...defaultEvents, generator2Failure: true, resupplyDelay: true },
+      zeroDrift,
+      'bharati'
+    );
+    expect(genResupply.derived.crossDomainRisk).toBe('critical');
+
+    // Cold + Generator + Resupply
+    const trio = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { extremeCold: true, highWind: false, generator2Failure: true, resupplyDelay: true },
+      zeroDrift,
+      'bharati'
+    );
+    expect(trio.derived.crossDomainRisk).toBe('critical');
+    expect(trio.derived.fuelRunwayDays).toBeLessThan(INITIAL_ENERGY.bharati.fuelRunwayDays);
+
+    // Full Cascade
+    const cascade = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { extremeCold: true, highWind: true, generator2Failure: true, resupplyDelay: true },
+      zeroDrift,
+      'bharati'
+    );
+    expect(cascade.derived.crossDomainRisk).toBe('critical');
+    expect(cascade.derived.overallHealthScore).toBeLessThan(65);
+  });
+
+  // 23. Reset Idempotency (Requirement 15)
+  it('23. resets to exact nominal baseline after any scenario sequence', () => {
+    const nominal = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      defaultEvents,
+      zeroDrift,
+      'bharati'
+    );
+
+    // Run Full Cascade
+    const cascade = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      { extremeCold: true, highWind: true, generator2Failure: true, resupplyDelay: true },
+      zeroDrift,
+      'bharati'
+    );
+    expect(cascade.derived.overallHealthScore).not.toBe(nominal.derived.overallHealthScore);
+
+    // Reset back to nominal
+    const afterReset = evaluateStationState(
+      INITIAL_ENVIRONMENT.bharati,
+      INITIAL_ENERGY.bharati,
+      INITIAL_INFRASTRUCTURE.bharati,
+      INITIAL_INVENTORY.bharati,
+      defaultEvents,
+      zeroDrift,
+      'bharati'
+    );
+
+    expect(afterReset.derived.overallHealthScore).toBe(nominal.derived.overallHealthScore);
+    expect(afterReset.derived.fuelRunwayDays).toBe(nominal.derived.fuelRunwayDays);
+    expect(afterReset.derived.generationCapacityKw).toBe(nominal.derived.generationCapacityKw);
+    expect(afterReset.derived.powerSurplusDeficitKw).toBe(nominal.derived.powerSurplusDeficitKw);
+    expect(afterReset.derived.crossDomainRisk).toBe(nominal.derived.crossDomainRisk);
+  });
 });
+

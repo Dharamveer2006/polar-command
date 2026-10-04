@@ -52,33 +52,48 @@ export function calculateEnergyDemand(
 export function calculateFuelRunway(
   fuelLitres: number,
   generationKw: number,
-  activeGeneratorCount: number = 2
+  activeGeneratorCount: number = 2,
+  baseBurnLitresPerDay?: number
 ): { dailyBurnLitres: number; runwayDays: number } {
-  const hourlyLitres = generationKw * 0.245;
-  const dailyBurnLitres = Math.round(hourlyLitres * 24);
+  let dailyBurnLitres: number;
+  if (baseBurnLitresPerDay && baseBurnLitresPerDay > 0) {
+    dailyBurnLitres = Math.round(baseBurnLitresPerDay);
+  } else {
+    const hourlyLitres = generationKw * 0.245;
+    dailyBurnLitres = Math.round(hourlyLitres * 24);
+  }
   const runwayDays = dailyBurnLitres > 0 ? Number((fuelLitres / dailyBurnLitres).toFixed(1)) : 999;
   return { dailyBurnLitres, runwayDays };
 }
 
 /**
  * Phase 9 — Predictive Logistics Intelligence
- * For each consumable calculate:
- * daysRemaining = quantity / dailyConsumption
- * shortageDate = today + daysRemaining
- * compare shortage date against resupply ETA to categorize:
- * SAFE | WARNING | PROJECTED SHORTAGE | CRITICAL
+ * Canonical fuel runway and consumables runway engine.
+ * Semantics:
+ * - AUTONOMY = daysRemaining = quantity / dailyConsumption
+ * - RESUPPLY ETA = effectiveEtaDays
+ * - SAFETY BUFFER = mandatory reserve (typically 14 days)
+ * - PROJECTED DEPLETION = date when stock reaches 0
+ * 
+ * Physical shortage occurs ONLY when depletion occurs before resupply arrives (daysRemaining < effectiveEtaDays).
  */
 export function calculatePredictiveLogistics(
   inventory: InventoryItem[],
-  resupplyDelayDays: number = 0
+  resupplyDelayDays: number = 0,
+  canonicalFuelBurn?: number,
+  canonicalFuelLitres?: number
 ): InventoryItem[] {
   const today = new Date();
 
   return inventory.map(item => {
-    const dailyConsumption = Math.max(0.1, item.dailyConsumption);
-    const daysRemaining = Number((item.quantity / dailyConsumption).toFixed(1));
+    const isFuel = item.category === 'fuel' || item.sku.includes('FUEL');
+    const quantity = (isFuel && canonicalFuelLitres !== undefined) ? canonicalFuelLitres : item.quantity;
+    const dailyConsumption = (isFuel && canonicalFuelBurn !== undefined)
+      ? Math.max(0.1, canonicalFuelBurn)
+      : Math.max(0.1, item.dailyConsumption);
+    const daysRemaining = Number((quantity / dailyConsumption).toFixed(1));
 
-    // Base resupply ETA in days from now (typically 18 days baseline)
+    // Base resupply ETA in days from now (18 days baseline)
     const baseEtaDays = 18;
     const effectiveEtaDays = baseEtaDays + resupplyDelayDays;
     const resupplyDate = new Date(today.getTime() + effectiveEtaDays * 86400000);
@@ -87,14 +102,15 @@ export function calculatePredictiveLogistics(
     let status: InventoryStatus = 'SAFE';
     let riskLevel: RiskSeverity = 'nominal';
 
+    // Differentiate physical shortage vs safety buffer breach
     if (daysRemaining < effectiveEtaDays) {
-      status = 'CRITICAL';
+      status = 'CRITICAL'; // True physical shortage before resupply arrival
       riskLevel = 'critical';
     } else if (daysRemaining < effectiveEtaDays + 4) {
-      status = 'PROJECTED SHORTAGE';
+      status = 'PROJECTED SHORTAGE'; // Tight margin (< 4 days buffer upon arrival)
       riskLevel = 'warning';
     } else if (daysRemaining < item.safetyStockDays || daysRemaining < effectiveEtaDays + 8) {
-      status = 'WARNING';
+      status = 'WARNING'; // Buffer degraded, but resupply arrives BEFORE physical stock-out
       riskLevel = 'warning';
     } else {
       status = 'SAFE';
@@ -103,6 +119,8 @@ export function calculatePredictiveLogistics(
 
     return {
       ...item,
+      quantity,
+      dailyConsumption,
       daysRemaining,
       projectedShortageDate: shortageDate.toISOString().split('T')[0],
       nextResupplyEta: resupplyDate.toISOString().split('T')[0],
@@ -380,17 +398,15 @@ export function evaluateStationState(
     batterySoc = Math.max(40, baselineEnergy.batterySoc - 10);
   }
 
-  // Fuel calculation
-  const genForBurn = Math.min(generationCapacityKw, totalDemandKw);
-  const activeGenCount = updatedGenerators.filter(g => g.status === 'running').length;
-  const { dailyBurnLitres, runwayDays: baseRunway } = calculateFuelRunway(
-    baselineEnergy.fuelLitres,
-    genForBurn,
-    activeGenCount
-  );
-  const fuelRunwayDays = activeEvents.extremeCold 
-    ? Number((baseRunway * 0.85).toFixed(1)) 
-    : baseRunway;
+  // Fuel calculation (Requirement 6: Canonical fuel burn and runway)
+  // Generator 2 failure pushes remaining unit to non-optimal high load (+12% fuel burn penalty)
+  const baseFuelBurn = baselineEnergy.averageFuelBurnLitresPerDay || (stationId === 'maitri' ? 430 : 460);
+  const demandRatio = totalDemandKw / Math.max(180, baselineEnergy.demandKw || 382);
+  const coldBurnMultiplier = activeEvents.extremeCold ? 1.15 : 1.0;
+  const genFailureBurnMultiplier = activeEvents.generator2Failure ? 1.12 : 1.0;
+  const fuelBurnLitresPerDay = Math.round(baseFuelBurn * demandRatio * coldBurnMultiplier * genFailureBurnMultiplier);
+  const fuelLitres = baselineEnergy.fuelLitres;
+  const fuelRunwayDays = Number((fuelLitres / Math.max(1, fuelBurnLitresPerDay)).toFixed(1));
 
   const derivedEnergy: EnergyTelemetry = {
     ...baselineEnergy,
@@ -399,8 +415,9 @@ export function evaluateStationState(
     heatingLoadKw,
     batterySoc,
     generators: updatedGenerators,
-    averageFuelBurnLitresPerDay: dailyBurnLitres,
+    averageFuelBurnLitresPerDay: fuelBurnLitresPerDay,
     fuelRunwayDays,
+    fuelLitres,
     source: (activeEvents.extremeCold || activeEvents.highWind || activeEvents.generator2Failure)
       ? 'Synthetic Telemetry'
       : 'Derived Calculation',
@@ -433,9 +450,14 @@ export function evaluateStationState(
     updatedAt: new Date().toISOString(),
   };
 
-  // 4. Predictive Logistics
+  // 4. Predictive Logistics (Synced with canonical fuel runway)
   const resupplyDelayDays = activeEvents.resupplyDelay ? 12 : 0;
-  const derivedInventory = calculatePredictiveLogistics(baselineInventory, resupplyDelayDays);
+  const derivedInventory = calculatePredictiveLogistics(
+    baselineInventory, 
+    resupplyDelayDays, 
+    fuelBurnLitresPerDay, 
+    fuelLitres
+  );
 
   // 5. Overall Health Calculation
   const healthScore = calculateStationHealth(
@@ -501,8 +523,15 @@ export function evaluateStationState(
     forecastedImpact = `Station battery bank discharging rapidly; fuel burn per operational cylinder increases.`;
     recommendedResponse.push('Start auxiliary genset immediately to restore positive microgrid balance.');
     recommendedResponse.push('Isolate non-critical accommodation circuits.');
+  } else if (activeEvents.extremeCold && activeEvents.highWind) {
+    crossDomainRisk = 'warning';
+    activeIncidentTitle = `WEATHER ADVISORY: Compound Polar Cold Snap & Katabatic Blizzard (${effectiveTemperatureC}°C, ${effectiveWindKmh} km/h)`;
+    rootCause = `Severe Antarctic front with sub-zero freezing and katabatic gale propagating through ${stationId === 'bharati' ? 'Larsemann Hills' : 'Schirmacher Oasis'}.`;
+    forecastedImpact = `Accelerated thermal leakage increases daily fuel consumption by +15% with zero outdoor visibility.`;
+    recommendedResponse.push('Enact mandatory station lockdown and outdoor curfew.');
+    recommendedResponse.push('Engage auxiliary heat exchangers on main HVAC loop.');
   } else if (activeEvents.extremeCold || activeEvents.highWind) {
-    crossDomainRisk = activeEvents.extremeCold ? 'warning' : 'warning';
+    crossDomainRisk = 'warning';
     activeIncidentTitle = `WEATHER ADVISORY: ${activeEvents.extremeCold ? 'Extreme Polar Cold Snap' : 'Blizzard Conditions'} (${effectiveTemperatureC}°C, ${effectiveWindKmh} km/h)`;
     rootCause = `Katabatic storm front propagating through ${stationId === 'bharati' ? 'Larsemann Hills' : 'Schirmacher Oasis'}.`;
     forecastedImpact = `Accelerated thermal leakage increases daily fuel consumption by +15%.`;
@@ -538,7 +567,7 @@ export function evaluateStationState(
     batterySoc,
     batterySocPercent: batterySoc,
     batteryStatus,
-    dailyFuelBurnLitres: dailyBurnLitres,
+    dailyFuelBurnLitres: fuelBurnLitresPerDay,
     fuelRunwayDays,
     infrastructureOverallHealth: avgHealth,
     overallInfrastructureHealth: avgHealth,
