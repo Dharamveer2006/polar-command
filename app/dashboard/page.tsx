@@ -460,11 +460,11 @@ export default function DashboardPage() {
               <span className="font-mono text-xs text-[#007A9E] font-bold">
                 {environment.temperatureC.toFixed(1)}°C
               </span>
+              <span className="font-mono text-xs text-amber-800 font-semibold">
+                {environment.pressureHpa.toFixed(1)} hPa
+              </span>
               <span className="font-mono text-xs text-sky-700 font-semibold">
                 {environment.windKmh} km/h
-              </span>
-              <span className="font-mono text-xs text-amber-800 font-semibold">
-                {environment.pressureHpa.toFixed(0)} hPa
               </span>
               <span className={`flex items-center gap-1 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border ${
                 environment.weatherState === 'LIVE'
