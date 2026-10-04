@@ -32,12 +32,12 @@ export default function EnergyPage() {
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 uppercase">
               Domain 2: Power & Microgrid
             </span>
-            <span className="text-xs font-mono text-slate-400">{metadata.name}</span>
+            <span className="text-xs font-mono text-[#36546D]">{metadata.name}</span>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight mt-1">
+          <h1 className="text-xl font-bold text-[#0F2740] tracking-tight mt-1">
             Station Energy Generation, Battery Bank & Fuel Runway
           </h1>
-          <p className="text-xs text-slate-300 font-mono">
+          <p className="text-xs text-[#36546D] font-mono">
             Autonomous cogeneration load balancing, diesel genset telemetry, battery buffer discharge, and reserve autonomy.
           </p>
         </div>
@@ -50,7 +50,7 @@ export default function EnergyPage() {
         }`}>
           <Zap className={`w-5 h-5 ${isDeficit ? 'text-rose-400 animate-bounce' : 'text-emerald-400'}`} />
           <div>
-            <span className="text-[10px] uppercase block text-slate-400">Station Net Power</span>
+            <span className="text-[10px] uppercase block text-slate-300">Station Net Power</span>
             <span className="text-sm font-bold">
               {netPower >= 0 ? `+${netPower} kW Surplus` : `${netPower} kW DEFICIT`}
             </span>
@@ -62,60 +62,60 @@ export default function EnergyPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Generation */}
         <div className="polar-card p-4 rounded-xl">
-          <div className="flex justify-between items-center text-xs font-mono text-slate-400">
-            <span>ACTIVE GENERATION</span>
-            <Zap className="w-4 h-4 text-cyan-400" />
+          <div className="flex justify-between items-center text-xs font-mono text-[#36546D]">
+            <span className="font-semibold">ACTIVE GENERATION</span>
+            <Zap className="w-4 h-4 text-cyan-600" />
           </div>
-          <div className="mt-2 text-3xl font-mono font-bold text-white">
-            {energy.generationKw} <span className="text-lg font-normal text-cyan-300">kW</span>
+          <div className="mt-2 text-3xl font-mono font-bold text-[#08243A]">
+            {energy.generationKw} <span className="text-lg font-normal text-cyan-600">kW</span>
           </div>
-          <div className="mt-2 text-xs font-mono text-slate-400">
+          <div className="mt-2 text-xs font-mono text-[#36546D]">
             {energy.generators.filter(g => g.status === 'running').length} of {energy.generators.length} gensets online
           </div>
         </div>
 
         {/* Total Demand */}
         <div className="polar-card p-4 rounded-xl">
-          <div className="flex justify-between items-center text-xs font-mono text-slate-400">
-            <span>TOTAL LOAD DEMAND</span>
-            <Cpu className="w-4 h-4 text-amber-400" />
+          <div className="flex justify-between items-center text-xs font-mono text-[#36546D]">
+            <span className="font-semibold">TOTAL LOAD DEMAND</span>
+            <Cpu className="w-4 h-4 text-amber-600" />
           </div>
-          <div className="mt-2 text-3xl font-mono font-bold text-white">
-            {energy.demandKw} <span className="text-lg font-normal text-amber-300">kW</span>
+          <div className="mt-2 text-3xl font-mono font-bold text-[#08243A]">
+            {energy.demandKw} <span className="text-lg font-normal text-amber-600">kW</span>
           </div>
-          <div className="mt-2 text-xs font-mono text-slate-400 flex justify-between">
+          <div className="mt-2 text-xs font-mono text-[#36546D] flex justify-between">
             <span>Base: {energy.baseLoadKw}kW</span>
-            <span className="text-amber-300">Heating: {energy.heatingLoadKw}kW</span>
+            <span className="text-amber-700 font-semibold">Heating: {energy.heatingLoadKw}kW</span>
           </div>
         </div>
 
         {/* Battery SOC */}
         <div className="polar-card p-4 rounded-xl">
-          <div className="flex justify-between items-center text-xs font-mono text-slate-400">
-            <span>BATTERY STORAGE (BESS)</span>
-            <BatteryCharging className="w-4 h-4 text-emerald-400" />
+          <div className="flex justify-between items-center text-xs font-mono text-[#36546D]">
+            <span className="font-semibold">BATTERY STORAGE (BESS)</span>
+            <BatteryCharging className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="mt-2 text-3xl font-mono font-bold text-white">
-            {energy.batterySoc}% <span className="text-lg font-normal text-emerald-300">SOC</span>
+          <div className="mt-2 text-3xl font-mono font-bold text-[#08243A]">
+            {energy.batterySoc}% <span className="text-lg font-normal text-emerald-600">SOC</span>
           </div>
-          <div className="mt-2 text-xs font-mono text-slate-400 flex justify-between">
+          <div className="mt-2 text-xs font-mono text-[#36546D] flex justify-between">
             <span>Capacity: {energy.batteryCapacityKwh} kWh</span>
-            <span className="text-emerald-400">{energy.batteryRunwayHours}h buffer</span>
+            <span className="text-emerald-700 font-semibold">{energy.batteryRunwayHours}h buffer</span>
           </div>
         </div>
 
         {/* Fuel Runway */}
         <div className="polar-card p-4 rounded-xl">
-          <div className="flex justify-between items-center text-xs font-mono text-slate-400">
-            <span>POLAR FUEL RUNWAY</span>
-            <Fuel className="w-4 h-4 text-purple-400" />
+          <div className="flex justify-between items-center text-xs font-mono text-[#36546D]">
+            <span className="font-semibold">POLAR FUEL RUNWAY</span>
+            <Fuel className="w-4 h-4 text-purple-600" />
           </div>
-          <div className="mt-2 text-3xl font-mono font-bold text-white">
-            {energy.fuelRunwayDays} <span className="text-lg font-normal text-purple-300">Days</span>
+          <div className="mt-2 text-3xl font-mono font-bold text-[#08243A]">
+            {energy.fuelRunwayDays} <span className="text-lg font-normal text-purple-600">Days</span>
           </div>
-          <div className="mt-2 text-xs font-mono text-slate-400 flex justify-between">
+          <div className="mt-2 text-xs font-mono text-[#36546D] flex justify-between">
             <span>Stock: {energy.fuelLitres.toLocaleString()} L</span>
-            <span className="text-slate-300">{energy.averageFuelBurnLitresPerDay} L/day</span>
+            <span className="text-[#36546D] font-medium">{energy.averageFuelBurnLitresPerDay} L/day</span>
           </div>
         </div>
       </div>
@@ -143,8 +143,8 @@ export default function EnergyPage() {
         />
       </div>
 
-      {/* Generators Fleet Table */}
-      <div className="polar-card p-5 rounded-xl space-y-3">
+      {/* Generators Fleet Table - Technical Dark Translucent Panel */}
+      <div className="polar-glass-dark p-5 rounded-xl space-y-3">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
             Station Generator & Cogeneration Units Telemetry

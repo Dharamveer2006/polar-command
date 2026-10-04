@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStation } from '@/context/StationContext';
 import Link from 'next/link';
 import { 
@@ -60,6 +60,16 @@ export default function DashboardPage() {
   const [selectedAssetId, setSelectedAssetId] = useState<string>('bhr-gen-2');
   const [showExplainModal, setShowExplainModal] = useState<boolean>(false);
   const [activeExplainAlert, setActiveExplainAlert] = useState<any>(null);
+  const [stationTime, setStationTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateTime = () => {
+      setStationTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { metadata, environment, energy, infrastructure, logistics, healthScore, activeAlerts } = stationState;
 
@@ -341,16 +351,16 @@ export default function DashboardPage() {
   const medItem = logistics.inventory.find(i => i.category === 'medical');
 
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full font-sans text-slate-100">
+    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full font-sans text-[#0F2740]">
       
       {/* ============================================================== */}
       {/* 1. TOP HEADER: STATION IDENTITY, MODES & ANTARCTIC SWITCHER    */}
       {/* ============================================================== */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-xl bg-polar-900 border border-polar-border">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-xl polar-glass">
         {/* Antarctic Station Switcher */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
-            <Globe2 className="w-4 h-4 text-polar-cyan" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#36546D]">
+            <Globe2 className="w-4 h-4 text-[#007A9E]" />
             <span className="uppercase tracking-wider">Antarctic Command:</span>
           </div>
           <div className="flex items-center gap-2">
@@ -358,38 +368,38 @@ export default function DashboardPage() {
               onClick={() => setCurrentStationId('maitri')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
                 currentStationId === 'maitri'
-                  ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
-                  : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
+                  ? 'bg-cyan-500/20 border border-cyan-400/50 text-[#006A8C] font-bold shadow-xs'
+                  : 'bg-white/80 border border-slate-300/80 text-[#36546D] hover:text-[#0F2740] shadow-xs'
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${
-                maitriState?.healthScore?.overall >= 80 ? 'bg-operational-green' : 'bg-warning-amber'
+                maitriState?.healthScore?.overall >= 80 ? 'bg-emerald-600' : 'bg-amber-600'
               }`} />
               <span>MAITRI</span>
-              <span className="font-mono text-[11px] text-slate-400 font-bold">{maitriState?.healthScore?.overall || 91}%</span>
+              <span className="font-mono text-[11px] text-[#08243A] font-bold">{maitriState?.healthScore?.overall || 91}%</span>
             </button>
 
             <button
               onClick={() => setCurrentStationId('bharati')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
                 currentStationId === 'bharati'
-                  ? 'bg-polar-navy border border-polar-cyan text-white shadow-md'
-                  : 'bg-polar-950/60 border border-polar-border text-slate-300 hover:text-white'
+                  ? 'bg-cyan-500/20 border border-cyan-400/50 text-[#006A8C] font-bold shadow-xs'
+                  : 'bg-white/80 border border-slate-300/80 text-[#36546D] hover:text-[#0F2740] shadow-xs'
               }`}
             >
               <span className={`w-2 h-2 rounded-full ${
-                derived.overallHealthScore >= 80 ? 'bg-operational-green' : 'bg-critical-red animate-pulse'
+                derived.overallHealthScore >= 80 ? 'bg-emerald-600' : 'bg-critical-red animate-pulse'
               }`} />
               <span>BHARATI</span>
-              <span className="font-mono text-[11px] text-slate-400 font-bold">{derived.overallHealthScore}%</span>
+              <span className="font-mono text-[11px] text-[#08243A] font-bold">{derived.overallHealthScore}%</span>
             </button>
           </div>
         </div>
 
         {/* Station Operational Mode Selector (Section 9) */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase">Operational Stance:</span>
-          <div className="flex items-center gap-1 bg-polar-950 p-1 rounded-lg border border-polar-border">
+          <span className="text-xs font-semibold text-[#36546D] uppercase">Operational Stance:</span>
+          <div className="flex items-center gap-1 bg-white/70 p-1 rounded-lg border border-slate-300/80 shadow-xs">
             {(['NORMAL', 'SCIENCE OPERATIONS', 'WEATHER ALERT', 'POWER CONSERVATION', 'EMERGENCY'] as StationMode[]).map((mode) => (
               <button
                 key={mode}
@@ -397,11 +407,11 @@ export default function DashboardPage() {
                 className={`px-2.5 py-1 rounded text-xs font-semibold transition-all ${
                   stationMode === mode
                     ? mode === 'EMERGENCY'
-                      ? 'bg-critical-red text-white'
+                      ? 'bg-critical-red text-white font-bold'
                       : mode === 'POWER CONSERVATION'
-                      ? 'bg-warning-amber text-slate-900 font-bold'
-                      : 'bg-polar-blue text-white'
-                    : 'text-slate-400 hover:text-white'
+                      ? 'bg-warning-amber text-slate-950 font-bold'
+                      : 'bg-[#0F2740] text-white font-bold shadow-xs'
+                    : 'text-[#36546D] hover:text-[#0F2740]'
                 }`}
               >
                 {mode}
@@ -412,26 +422,26 @@ export default function DashboardPage() {
       </div>
 
       {/* Station Coordinates & Telemetry Status Bar */}
-      <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="polar-glass p-4 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-polar-cyan/15 text-polar-cyan border border-polar-cyan/30 flex items-center justify-center font-mono font-bold text-base shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-cyan-500/15 text-[#007A9E] border border-cyan-400/40 flex items-center justify-center font-mono font-bold text-base shrink-0 shadow-xs">
             {metadata.stationId === 'maitri' ? 'MTR' : 'BHR'}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white uppercase">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#0F2740] uppercase">
                 {metadata.name} Antarctic Research Station
               </h1>
-              <span className="text-slate-400 font-medium">({metadata.hindiName})</span>
+              <span className="text-[#36546D] font-medium">({metadata.hindiName})</span>
             </div>
-            <p className="text-slate-300 mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[13px]">
+            <p className="text-[#36546D] mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[13px]">
               <span>{metadata.region}</span>
-              <span className="text-slate-500">•</span>
-              <span className="font-mono">{metadata.coordinates.lat}°S, {metadata.coordinates.lng}°E</span>
-              <span className="text-slate-500">•</span>
-              <span>Elevation: <strong className="font-mono text-white">{metadata.coordinates.elevationM}m</strong></span>
-              <span className="text-slate-500">•</span>
-              <span>Personnel: <strong className="font-mono text-white">{metadata.currentPersonnel}</strong></span>
+              <span className="text-slate-400">•</span>
+              <span className="font-mono text-[#08243A] font-semibold">{metadata.coordinates.lat}°S, {metadata.coordinates.lng}°E</span>
+              <span className="text-slate-400">•</span>
+              <span>Elevation: <strong className="font-mono text-[#08243A]">{metadata.coordinates.elevationM}m</strong></span>
+              <span className="text-slate-400">•</span>
+              <span>Personnel: <strong className="font-mono text-[#08243A]">{metadata.currentPersonnel}</strong></span>
             </p>
           </div>
         </div>
@@ -441,42 +451,42 @@ export default function DashboardPage() {
           <Link 
             href="/environment" 
             title="Open Polar Weather Monitor"
-            className="text-left bg-polar-950/80 px-3.5 py-1.5 rounded-lg border border-polar-border hover:border-polar-cyan transition-all"
+            className="text-left bg-white/80 px-3.5 py-1.5 rounded-lg border border-slate-300/80 hover:border-cyan-500 shadow-xs transition-all"
           >
             <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-white uppercase">
+              <span className="font-mono text-xs font-bold text-[#0F2740] uppercase">
                 {metadata.stationId === 'maitri' ? 'MAITRI' : 'BHARATI'}
               </span>
-              <span className="font-mono text-xs text-polar-cyan font-bold">
+              <span className="font-mono text-xs text-[#007A9E] font-bold">
                 {environment.temperatureC.toFixed(1)}°C
               </span>
-              <span className="font-mono text-xs text-sky-300">
+              <span className="font-mono text-xs text-sky-700 font-semibold">
                 {environment.windKmh} km/h
               </span>
-              <span className="font-mono text-xs text-amber-300">
+              <span className="font-mono text-xs text-amber-800 font-semibold">
                 {environment.pressureHpa.toFixed(0)} hPa
               </span>
               <span className={`flex items-center gap-1 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border ${
                 environment.weatherState === 'LIVE'
-                  ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
-                  : 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+                  ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
+                  : 'text-amber-800 bg-amber-100 border-amber-300'
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${environment.weatherState === 'LIVE' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span className={`w-1.5 h-1.5 rounded-full ${environment.weatherState === 'LIVE' ? 'bg-emerald-600 animate-pulse' : 'bg-amber-600'}`} />
                 {environment.weatherState === 'LIVE' ? '● NCPOR LIVE' : `● NCPOR ${environment.weatherState || 'STALE'}`}
               </span>
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px]">
-              <span className="text-slate-400">Weather Event:</span>
+              <span className="text-[#36546D]">Weather Event:</span>
               {primaryWeatherEvent ? (
                 <span className={`font-bold px-1.5 py-0.2 rounded uppercase ${
                   primaryWeatherEvent.severity === 'critical' 
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    ? 'bg-rose-100 text-rose-800 border border-rose-300' 
+                    : 'bg-amber-100 text-amber-800 border border-amber-300'
                 }`}>
                   {primaryWeatherEvent.title} ({primaryWeatherEvent.severity.toUpperCase()})
                 </span>
               ) : (
-                <span className="text-emerald-400 font-semibold">
+                <span className="text-emerald-700 font-semibold">
                   NOMINAL (NO ANOMALY)
                 </span>
               )}
@@ -484,15 +494,15 @@ export default function DashboardPage() {
           </Link>
 
           <div>
-            <span className="text-slate-400 block text-[11px] font-medium">Station Time</span>
-            <span className="font-mono text-sm font-bold text-white">
-              {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC+5
+            <span className="text-[#36546D] block text-[11px] font-semibold">Station Time</span>
+            <span suppressHydrationWarning className="font-mono text-sm font-bold text-[#08243A]">
+              {stationTime ?? new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC+5
             </span>
           </div>
-          <div className="border-l border-polar-border pl-4">
-            <span className="text-slate-400 block text-[11px] font-medium">Telemetry Uplink</span>
-            <span className="font-mono text-sm font-bold text-operational-green flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-operational-green animate-pulse" />
+          <div className="border-l border-slate-300/80 pl-4">
+            <span className="text-[#36546D] block text-[11px] font-semibold">Telemetry Uplink</span>
+            <span className="font-mono text-sm font-bold text-emerald-700 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
               {metadata.connectivityState === 'CONNECTED' ? 'CONNECTED (100%)' : metadata.connectivityState}
             </span>
           </div>
@@ -503,11 +513,11 @@ export default function DashboardPage() {
       {/* ANTARCTIC SCENARIO INJECTOR (SIH26060 CRITICAL DEMO CONTROLLER) */}
       {/* Section 15: Trip Gen #2 → Cold Snap → Resupply Delay → Reset   */}
       {/* ============================================================== */}
-      <div className="p-3 rounded-xl bg-polar-900 border border-polar-border flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="p-3 rounded-xl polar-glass flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-polar-cyan" />
-          <span className="font-bold text-white uppercase tracking-wider">Antarctic Stress Injector:</span>
-          <span className="text-slate-400 hidden sm:inline">(Trigger connected cross-domain cascades)</span>
+          <SlidersHorizontal className="w-4 h-4 text-[#007A9E]" />
+          <span className="font-bold text-[#0F2740] uppercase tracking-wider">Antarctic Stress Injector:</span>
+          <span className="text-[#36546D] hidden sm:inline">(Trigger connected cross-domain cascades)</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -515,7 +525,7 @@ export default function DashboardPage() {
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
               activeInjectedEvents.generator2Failure
                 ? 'bg-critical-red text-white shadow-lg shadow-critical-red/30 animate-pulse'
-                : 'bg-polar-950 border border-polar-border text-slate-300 hover:text-white hover:border-slate-500'
+                : 'bg-white/80 border border-slate-300/80 text-[#36546D] hover:text-[#0F2740] hover:border-slate-500 shadow-xs'
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
@@ -526,8 +536,8 @@ export default function DashboardPage() {
             onClick={() => toggleInjectedEvent('extremeCold')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
               activeInjectedEvents.extremeCold
-                ? 'bg-polar-cyan text-slate-950 font-bold shadow-lg shadow-polar-cyan/30'
-                : 'bg-polar-950 border border-polar-border text-slate-300 hover:text-white hover:border-slate-500'
+                ? 'bg-cyan-600 text-white font-bold shadow-lg shadow-cyan-600/30'
+                : 'bg-white/80 border border-slate-300/80 text-[#36546D] hover:text-[#0F2740] hover:border-slate-500 shadow-xs'
             }`}
           >
             <Thermometer className="w-3.5 h-3.5" />
@@ -538,8 +548,8 @@ export default function DashboardPage() {
             onClick={() => toggleInjectedEvent('resupplyDelay')}
             className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${
               activeInjectedEvents.resupplyDelay
-                ? 'bg-warning-amber text-slate-950 font-bold shadow-lg shadow-warning-amber/30'
-                : 'bg-polar-950 border border-polar-border text-slate-300 hover:text-white hover:border-slate-500'
+                ? 'bg-amber-600 text-white font-bold shadow-lg shadow-amber-600/30'
+                : 'bg-white/80 border border-slate-300/80 text-[#36546D] hover:text-[#0F2740] hover:border-slate-500 shadow-xs'
             }`}
           >
             <Package className="w-3.5 h-3.5" />
@@ -548,15 +558,15 @@ export default function DashboardPage() {
 
           <button
             onClick={triggerFullCascade}
-            className="px-3 py-1.5 rounded-lg font-semibold bg-rose-950 border border-rose-600/70 text-rose-200 hover:bg-rose-900 transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg font-semibold bg-rose-100 border border-rose-300 text-rose-800 hover:bg-rose-200 transition-all flex items-center gap-1.5 shadow-xs"
           >
-            <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+            <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
             <span>FULL CRISIS</span>
           </button>
 
           <button
             onClick={resetAllEvents}
-            className="px-3 py-1.5 rounded-lg font-semibold bg-polar-950 border border-polar-border text-slate-400 hover:text-white transition-all"
+            className="px-3 py-1.5 rounded-lg font-semibold bg-white/80 border border-slate-300/80 text-[#36546D] hover:text-[#0F2740] transition-all shadow-xs"
           >
             RESET BASELINE
           </button>
@@ -570,146 +580,151 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Tile 1: Station Health & Explainability (Section 4) */}
-        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-slate-300">Station Health</span>
-            <span className="text-[11px] text-polar-cyan font-bold font-mono">WHY {derived.overallHealthScore}%?</span>
+        <div className="polar-glass p-4 rounded-xl flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="text-xs uppercase font-bold text-[#36546D]">Station Health</span>
+            <span className="text-[11px] text-[#007A9E] font-bold font-mono">WHY {derived.overallHealthScore}%?</span>
           </div>
           <div className="flex items-baseline gap-3 my-0.5">
             <span className={`text-4xl font-black font-mono ${
-              derived.overallHealthScore >= 80 ? 'text-operational-green' :
-              derived.overallHealthScore >= 60 ? 'text-warning-amber' : 'text-critical-red animate-pulse'
+              derived.overallHealthScore >= 80 ? 'text-emerald-700' :
+              derived.overallHealthScore >= 60 ? 'text-amber-700' : 'text-rose-700 animate-pulse'
             }`}>
               {derived.overallHealthScore}%
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono text-[#36546D]">
               {derived.healthPointDelta > 0 ? `↓ ${derived.healthPointDelta} pts from nominal` : 'Nominal baseline'}
             </span>
           </div>
 
           {/* Domain Contribution Breakdown (Section 4) */}
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] text-slate-300 pt-1 border-t border-white/5 font-mono">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10.5px] text-[#36546D] pt-1 border-t border-slate-200 font-mono">
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Env (20%):</span>
-              <span className="text-white font-bold">{Math.round(((healthScore?.environmentScore ?? 95) / 100) * 20)}/20</span>
+              <span className="text-[#36546D] font-sans">Env (20%):</span>
+              <span className="text-[#08243A] font-bold">{Math.round(((healthScore?.environmentScore ?? 95) / 100) * 20)}/20</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Energy (30%):</span>
-              <span className={isPowerDeficit ? 'text-critical-red font-bold' : 'text-white font-bold'}>
+              <span className="text-[#36546D] font-sans">Energy (30%):</span>
+              <span className={isPowerDeficit ? 'text-rose-700 font-bold' : 'text-[#08243A] font-bold'}>
                 {Math.round(((healthScore?.energyScore ?? 90) / 100) * 30)}/30
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Infra (25%):</span>
-              <span className="text-white font-bold">{Math.round(((healthScore?.infrastructureScore ?? 92) / 100) * 25)}/25</span>
+              <span className="text-[#36546D] font-sans">Infra (25%):</span>
+              <span className="text-[#08243A] font-bold">{Math.round(((healthScore?.infrastructureScore ?? 92) / 100) * 25)}/25</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Logistics (25%):</span>
-              <span className={isLogisticsCritical ? 'text-critical-red font-bold' : 'text-white font-bold'}>
+              <span className="text-[#36546D] font-sans">Logistics (25%):</span>
+              <span className={isLogisticsCritical ? 'text-rose-700 font-bold' : 'text-[#08243A] font-bold'}>
                 {Math.round(((healthScore?.logisticsScore ?? 80) / 100) * 25)}/25
               </span>
             </div>
           </div>
 
-          <div className="space-y-0.5 text-[11px] text-slate-300 pt-1 border-t border-white/5">
+          <div className="space-y-0.5 text-[11px] text-[#36546D] pt-1 border-t border-slate-200">
             <div className="flex justify-between">
-              <span className="text-slate-400">Primary Driver:</span>
-              <strong className="text-white truncate max-w-[170px] text-right">{primaryHealthDriver}</strong>
+              <span className="text-[#36546D]">Primary Driver:</span>
+              <strong className="text-[#0F2740] truncate max-w-[170px] text-right">{primaryHealthDriver}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Secondary:</span>
-              <span className="text-slate-300 truncate max-w-[170px] text-right">{secondaryHealthDriver}</span>
+              <span className="text-[#36546D]">Secondary:</span>
+              <span className="text-[#0F2740] truncate max-w-[170px] text-right">{secondaryHealthDriver}</span>
             </div>
           </div>
         </div>
 
         {/* Tile 2: Operational Status & Subsystems (Section 2) */}
-        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2">
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-slate-300">Operational Status</span>
-            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${statusColorMap[operationalStatus]}`}>
+        <div className="polar-glass p-4 rounded-xl flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="text-xs uppercase font-bold text-[#36546D]">Operational Status</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+              operationalStatus === 'CRITICAL' ? 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse' :
+              operationalStatus === 'WARNING' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+              operationalStatus === 'WATCH' ? 'bg-sky-100 text-sky-800 border-sky-300' :
+              'bg-emerald-100 text-emerald-800 border-emerald-300'
+            }`}>
               {operationalStatus === 'CRITICAL' ? 'CRITICAL RISK' : operationalStatus === 'WARNING' ? 'ELEVATED RISK' : operationalStatus}
             </span>
           </div>
-          <div className="text-xs text-slate-300 my-0.5 font-medium">
-            Active Alerts: <strong className={criticalCount > 0 ? 'text-critical-red font-mono' : 'text-slate-300 font-mono'}>{criticalCount} CRITICAL</strong> • <strong className={warningCount > 0 ? 'text-warning-amber font-mono' : 'text-slate-300 font-mono'}>{warningCount} WARNING</strong>
+          <div className="text-xs text-[#36546D] my-0.5 font-medium">
+            Active Alerts: <strong className={criticalCount > 0 ? 'text-rose-700 font-mono' : 'text-[#08243A] font-mono'}>{criticalCount} CRITICAL</strong> • <strong className={warningCount > 0 ? 'text-amber-700 font-mono' : 'text-[#08243A] font-mono'}>{warningCount} WARNING</strong>
           </div>
-          <div className="space-y-0.5 text-[10.5px] pt-1 border-t border-white/5 font-mono">
+          <div className="space-y-0.5 text-[10.5px] pt-1 border-t border-slate-200 font-mono">
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Energy:</span>
-              <span className={subsystemStates.energy === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-operational-green'}>{subsystemStates.energy}</span>
+              <span className="text-[#36546D] font-sans">Energy:</span>
+              <span className={subsystemStates.energy === 'CRITICAL' ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}>{subsystemStates.energy}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Water:</span>
-              <span className="text-operational-green">{subsystemStates.water}</span>
+              <span className="text-[#36546D] font-sans">Water:</span>
+              <span className="text-emerald-700 font-bold">{subsystemStates.water}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Life Support:</span>
-              <span className={subsystemStates.lifeSupport === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-operational-green'}>{subsystemStates.lifeSupport}</span>
+              <span className="text-[#36546D] font-sans">Life Support:</span>
+              <span className={subsystemStates.lifeSupport === 'CRITICAL' ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}>{subsystemStates.lifeSupport}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Comms:</span>
-              <span className="text-operational-green">{subsystemStates.comms}</span>
+              <span className="text-[#36546D] font-sans">Comms:</span>
+              <span className="text-emerald-700 font-bold">{subsystemStates.comms}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400 font-sans">Logistics:</span>
-              <span className={subsystemStates.logistics === 'CRITICAL' ? 'text-critical-red font-bold animate-pulse' : 'text-operational-green'}>{subsystemStates.logistics}</span>
+              <span className="text-[#36546D] font-sans">Logistics:</span>
+              <span className={subsystemStates.logistics === 'CRITICAL' ? 'text-rose-700 font-bold animate-pulse' : 'text-emerald-700 font-bold'}>{subsystemStates.logistics}</span>
             </div>
           </div>
         </div>
 
         {/* Tile 3: Microgrid Net Power Hero (Section 11) */}
-        <div className={`polar-card p-4 rounded-xl border flex flex-col justify-between space-y-2 ${
-          isPowerDeficit ? 'border-critical-red/60 bg-critical-red/10' : 'border-operational-green/50 bg-operational-green/10'
+        <div className={`polar-glass p-4 rounded-xl flex flex-col justify-between space-y-2 ${
+          isPowerDeficit ? 'border-rose-300 bg-rose-50/70' : 'border-emerald-300 bg-emerald-50/70'
         }`}>
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-slate-300">Microgrid Power Balance</span>
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="text-xs uppercase font-bold text-[#36546D]">Microgrid Power Balance</span>
             <ProvenanceBadge source="Derived Calculation" compact />
           </div>
           <div className="flex items-baseline justify-between my-0.5">
-            <div className={`text-3xl font-black font-mono ${isPowerDeficit ? 'text-critical-red animate-pulse' : 'text-operational-green'}`}>
+            <div className={`text-3xl font-black font-mono ${isPowerDeficit ? 'text-rose-700 animate-pulse' : 'text-emerald-700'}`}>
               {isPowerDeficit ? `${derived.powerSurplusDeficitKw} kW` : `+${derived.powerSurplusDeficitKw} kW`}
             </div>
-            <span className={`text-xs font-bold uppercase tracking-wider ${isPowerDeficit ? 'text-critical-red' : 'text-operational-green'}`}>
+            <span className={`text-xs font-bold uppercase tracking-wider ${isPowerDeficit ? 'text-rose-800' : 'text-emerald-800'}`}>
               {isPowerDeficit ? 'POWER DEFICIT' : 'POWER RESERVE'}
             </span>
           </div>
-          <div className="flex justify-between text-[11px] text-slate-300 pt-1 border-t border-white/5">
-            <span>Gen: <strong className="font-mono text-white">{derived.generationCapacityKw} kW</strong></span>
-            <span>Demand: <strong className="font-mono text-polar-cyan">{derived.totalDemandKw} kW</strong></span>
-            <span>Battery: <strong className="font-mono text-white">{derived.batterySocPercent}%</strong></span>
+          <div className="flex justify-between text-[11px] text-[#36546D] pt-1 border-t border-slate-200">
+            <span>Gen: <strong className="font-mono text-[#08243A]">{derived.generationCapacityKw} kW</strong></span>
+            <span>Demand: <strong className="font-mono text-[#007A9E]">{derived.totalDemandKw} kW</strong></span>
+            <span>Battery: <strong className="font-mono text-[#08243A]">{derived.batterySocPercent}%</strong></span>
           </div>
         </div>
 
         {/* Tile 4: Cross-Domain Insight (Section 3) */}
-        <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-2 bg-polar-navy/90">
-          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
-            <span className="text-xs uppercase font-bold text-polar-cyan">Cross-Domain Intelligence</span>
+        <div className="polar-glass p-4 rounded-xl flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+            <span className="text-xs uppercase font-bold text-[#007A9E]">Cross-Domain Intelligence</span>
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-              longTermAutonomyStatus === 'CONSTRAINED' ? 'bg-warning-amber text-slate-900' : 'bg-operational-green text-white'
+              longTermAutonomyStatus === 'CONSTRAINED' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
             }`}>
               {longTermAutonomyStatus}
             </span>
           </div>
-          <div className="text-[12px] text-slate-200 leading-snug space-y-1">
+          <div className="text-[12px] text-[#36546D] leading-snug space-y-1">
             <div className="flex justify-between font-mono text-[11px]">
-              <span className="text-slate-400">CURRENT POWER:</span>
-              <strong className={isPowerDeficit ? 'text-critical-red font-bold' : 'text-operational-green font-bold'}>
+              <span className="text-[#36546D]">CURRENT POWER:</span>
+              <strong className={isPowerDeficit ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}>
                 {currentPowerStatus}
               </strong>
             </div>
             <div className="flex justify-between font-mono text-[11px]">
-              <span className="text-slate-400">LONG-TERM AUTONOMY:</span>
-              <strong className={longTermAutonomyStatus === 'CONSTRAINED' ? 'text-warning-amber font-bold' : 'text-operational-green font-bold'}>
+              <span className="text-[#36546D]">LONG-TERM AUTONOMY:</span>
+              <strong className={longTermAutonomyStatus === 'CONSTRAINED' ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold'}>
                 {longTermAutonomyStatus}
               </strong>
             </div>
-            <p className="text-[11px] text-slate-300 pt-1 border-t border-white/5">
-              <strong className="text-slate-400">Reason: </strong>{autonomyReason}
+            <p className="text-[11px] text-[#36546D] pt-1 border-t border-slate-200">
+              <strong className="text-[#0F2740]">Reason: </strong>{autonomyReason}
             </p>
           </div>
-          <div className="text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono flex justify-between">
-            <span>Fuel: {derived.fuelRunwayDays.toFixed(1)}d runway</span>
+          <div className="text-[10px] text-[#36546D] pt-1 border-t border-slate-200 font-mono flex justify-between">
+            <span>Fuel: <strong className="text-[#08243A]">{derived.fuelRunwayDays.toFixed(1)}d runway</strong></span>
             <span>Buffer: 14d safe</span>
           </div>
         </div>
@@ -723,27 +738,27 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
         {/* LEFT 65%: Operational Spatial Digital Twin (Section 1) */}
-        <div className="lg:col-span-8 polar-card p-5 rounded-xl border border-polar-border space-y-4 shadow-xl">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <div className="lg:col-span-8 polar-glass p-5 rounded-xl space-y-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block">
+                <span className="text-xs uppercase tracking-wider text-[#36546D] font-semibold block">
                   Core Visual Operational Twin
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-polar-cyan/20 text-polar-cyan border border-polar-cyan/40 font-bold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-[#007A9E] border border-cyan-400/40 font-bold">
                   CONNECTED SYSTEM TOPOLOGY
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-white mt-0.5">
+              <h2 className="text-xl font-bold text-[#0F2740] mt-0.5">
                 Spatial Relationship & Asset Dependency Graph
               </h2>
             </div>
             
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400 hidden sm:inline">Select asset to highlight relationships:</span>
+              <span className="text-xs text-[#36546D] hidden sm:inline">Select asset to highlight relationships:</span>
               <Link
                 href="/digital-twin"
-                className="text-xs text-polar-cyan hover:underline font-semibold flex items-center gap-1"
+                className="text-xs text-[#007A9E] hover:underline font-semibold flex items-center gap-1"
               >
                 <span>Full Blueprint</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -752,7 +767,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Connected Spatial 2D Digital Twin SVG */}
-          <div className="rounded-xl overflow-hidden border border-polar-border bg-polar-950">
+          <div className="rounded-xl overflow-hidden border border-slate-300/80 bg-polar-950 shadow-md">
             <StationTwin2D
               stationId={currentStationId}
               assets={infrastructure.assets}
@@ -762,12 +777,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Connected Operational Path Highlight Strip (Section 1) */}
-          <div className="p-3.5 rounded-xl bg-polar-950 border border-polar-border space-y-2 text-xs">
+          <div className="p-3.5 rounded-xl polar-glass-dark border border-cyan-800/40 space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-slate-300 font-semibold">
+              <span className="text-slate-200 font-semibold">
                 Connected Systems for <strong className="text-white font-sans">{selectedDependency.system}</strong>:
               </span>
-              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-polar-900 border border-polar-border text-polar-cyan">
+              <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-polar-900 border border-polar-border text-cyan-300">
                 {selectedDependency.risk}
               </span>
             </div>
@@ -778,7 +793,7 @@ export default function DashboardPage() {
                 <React.Fragment key={node}>
                   <span className={`px-2.5 py-1 rounded text-xs font-semibold ${
                     i === 0 
-                      ? 'bg-polar-cyan/20 text-polar-cyan border border-polar-cyan/40 font-bold'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 font-bold'
                       : i === selectedDependency.cascade.length - 1
                       ? 'bg-critical-red/20 text-critical-red border border-critical-red/40 font-bold'
                       : 'bg-polar-900 border border-polar-border text-slate-300'
@@ -786,34 +801,38 @@ export default function DashboardPage() {
                     {node}
                   </span>
                   {i < selectedDependency.cascade.length - 1 && (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   )}
                 </React.Fragment>
               ))}
             </div>
 
-            <div className="text-[12px] text-slate-300 pt-1">
-              <strong className="text-slate-400">Mitigation SOP: </strong>
+            <div className="text-[12px] text-slate-200 pt-1">
+              <strong className="text-slate-300">Mitigation SOP: </strong>
               <span>{selectedDependency.action}</span>
             </div>
           </div>
         </div>
 
         {/* RIGHT 35%: Dominant Cross-Domain Risk Engine (Section 5) */}
-        <div className="lg:col-span-4 polar-card p-5 rounded-xl border border-polar-border space-y-4 shadow-xl flex flex-col justify-between">
-          <div className="border-b border-white/10 pb-3 flex items-center justify-between">
+        <div className={`lg:col-span-4 polar-glass p-5 rounded-xl space-y-4 shadow-sm flex flex-col justify-between ${
+          riskSeverity === 'critical' ? 'border-rose-400 bg-rose-50/80 shadow-rose-500/10' :
+          riskSeverity === 'warning' ? 'border-amber-400 bg-amber-50/80 shadow-amber-500/10' :
+          'border-emerald-300 bg-emerald-50/70'
+        }`}>
+          <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertOctagon className={`w-5 h-5 ${
                 riskSeverity === 'critical' ? 'text-critical-red animate-pulse' :
-                riskSeverity === 'warning' ? 'text-warning-amber' : 'text-operational-green'
+                riskSeverity === 'warning' ? 'text-warning-amber' : 'text-emerald-600'
               }`} />
-              <h3 className="text-lg font-bold text-white uppercase tracking-wider">
+              <h3 className="text-lg font-bold text-[#0F2740] uppercase tracking-wider">
                 Cross-Domain Risk Engine
               </h3>
             </div>
             <span className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${
               riskSeverity === 'critical' ? 'bg-critical-red text-white' :
-              riskSeverity === 'warning' ? 'bg-warning-amber text-slate-900' : 'bg-operational-green text-white'
+              riskSeverity === 'warning' ? 'bg-warning-amber text-slate-950 font-bold' : 'bg-emerald-600 text-white'
             }`}>
               {riskSeverity}
             </span>
@@ -821,23 +840,23 @@ export default function DashboardPage() {
 
           <div className="space-y-3.5 text-xs">
             {/* EVENT */}
-            <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Active Event:</span>
-              <p className="font-bold text-white text-sm leading-tight">{riskEventTitle}</p>
+            <div className="p-3 rounded-lg bg-white/90 border border-slate-200/90 shadow-xs space-y-1">
+              <span className="text-[#36546D] uppercase text-[11px] font-bold block">Active Event:</span>
+              <p className="font-bold text-[#0F2740] text-sm leading-tight">{riskEventTitle}</p>
             </div>
 
             {/* WHY IT HAPPENED */}
-            <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Why It Happened:</span>
-              <p className="text-slate-200 leading-relaxed font-medium">{riskWhy}</p>
+            <div className="p-3 rounded-lg bg-white/90 border border-slate-200/90 shadow-xs space-y-1">
+              <span className="text-[#36546D] uppercase text-[11px] font-bold block">Why It Happened:</span>
+              <p className="text-[#36546D] leading-relaxed font-medium">{riskWhy}</p>
             </div>
 
             {/* AFFECTED SYSTEMS */}
-            <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1.5">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Affected Connected Systems:</span>
+            <div className="p-3 rounded-lg bg-white/90 border border-slate-200/90 shadow-xs space-y-1.5">
+              <span className="text-[#36546D] uppercase text-[11px] font-bold block">Affected Connected Systems:</span>
               <div className="flex flex-wrap gap-1.5">
                 {riskAffected.map((sys) => (
-                  <span key={sys} className="px-2 py-0.5 rounded bg-polar-900 border border-polar-border text-slate-200 font-semibold text-[11px]">
+                  <span key={sys} className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-[#0F2740] font-semibold text-[11px]">
                     {sys}
                   </span>
                 ))}
@@ -845,20 +864,20 @@ export default function DashboardPage() {
             </div>
 
             {/* EXPECTED IMPACT */}
-            <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
-              <span className="text-slate-400 uppercase text-[11px] font-bold block">Expected Impact:</span>
-              <p className="text-slate-200 leading-relaxed font-medium">{riskImpact}</p>
+            <div className="p-3 rounded-lg bg-white/90 border border-slate-200/90 shadow-xs space-y-1">
+              <span className="text-[#36546D] uppercase text-[11px] font-bold block">Expected Impact:</span>
+              <p className="text-[#36546D] leading-relaxed font-medium">{riskImpact}</p>
             </div>
 
             {/* OPERATOR ACTION */}
-            <div className="p-3.5 rounded-lg bg-polar-cyan/10 border border-polar-cyan/30 space-y-1">
-              <span className="text-polar-cyan uppercase text-[11px] font-bold block">Recommended Operator Action:</span>
-              <p className="text-white font-semibold leading-relaxed">{riskAction}</p>
+            <div className="p-3.5 rounded-lg bg-cyan-50/90 border border-cyan-300 shadow-xs space-y-1">
+              <span className="text-[#006685] uppercase text-[11px] font-bold block">Recommended Operator Action:</span>
+              <p className="text-[#0F2740] font-semibold leading-relaxed">{riskAction}</p>
             </div>
           </div>
 
           {/* Action Buttons: [ EXPLAIN RISK ] & [ SIMULATE IMPACT ] */}
-          <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row gap-2.5">
+          <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row gap-2.5">
             <button
               onClick={() => {
                 setActiveExplainAlert({
@@ -871,14 +890,14 @@ export default function DashboardPage() {
                 });
                 setShowExplainModal(true);
               }}
-              className="flex-1 py-2.5 rounded-lg bg-polar-cyan/20 hover:bg-polar-cyan/30 text-polar-cyan border border-polar-cyan/50 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
             >
               [ EXPLAIN RISK ]
             </button>
 
             <Link
               href="/simulator"
-              className="flex-1 py-2.5 rounded-lg bg-polar-blue hover:bg-polar-blue/80 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 rounded-lg bg-[#0F2740] hover:bg-[#1A3D60] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
             >
               [ SIMULATE IMPACT ]
             </Link>
@@ -890,15 +909,15 @@ export default function DashboardPage() {
       {/* ============================================================== */}
       {/* 4. LIVE CAUSAL FLOW COMPONENT (Section 6)                      */}
       {/* ============================================================== */}
-      <div className="polar-card p-4 rounded-xl border border-polar-border space-y-3">
-        <div className="flex items-center justify-between text-xs border-b border-white/10 pb-2">
+      <div className="polar-glass p-4 rounded-xl space-y-3 shadow-sm">
+        <div className="flex items-center justify-between text-xs border-b border-slate-200 pb-2">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-polar-cyan" />
-            <h3 className="font-bold text-white uppercase tracking-wider text-xs">
+            <Activity className="w-4 h-4 text-[#007A9E]" />
+            <h3 className="font-bold text-[#0F2740] uppercase tracking-wider text-xs">
               Live Cross-Domain Physical Causal Flow
             </h3>
           </div>
-          <span className="text-slate-400 text-[11px] font-mono">Dynamic Physical Propagation</span>
+          <span className="text-[#36546D] text-[11px] font-mono">Dynamic Physical Propagation</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -907,17 +926,17 @@ export default function DashboardPage() {
               key={node.label}
               className={`p-3 rounded-lg border text-center transition-all ${
                 node.active 
-                  ? 'bg-critical-red/20 border-critical-red text-white shadow-md shadow-critical-red/20 animate-pulse'
-                  : 'bg-polar-950 border-polar-border text-slate-300'
+                  ? 'bg-rose-100 border-critical-red text-rose-800 shadow-md shadow-critical-red/20 animate-pulse font-bold'
+                  : 'bg-white/80 border-slate-200/90 text-[#36546D] shadow-xs'
               }`}
             >
-              <div className="text-[10px] text-slate-400 uppercase font-semibold mb-1 truncate">{node.label}</div>
-              <div className={`font-mono font-bold text-sm ${node.active ? 'text-critical-red' : 'text-polar-cyan'}`}>
+              <div className="text-[10px] text-[#36546D] uppercase font-semibold mb-1 truncate">{node.label}</div>
+              <div className={`font-mono font-bold text-sm ${node.active ? 'text-critical-red' : 'text-[#007A9E]'}`}>
                 {node.value}
               </div>
               <div className="mt-1 flex justify-center">
                 {i < causalFlow.length - 1 && (
-                  <span className="text-slate-600 text-xs hidden lg:inline">↓</span>
+                  <span className="text-slate-400 text-xs hidden lg:inline">↓</span>
                 )}
               </div>
             </div>
@@ -932,11 +951,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         {/* Next 24 Hours Timeline (Section 7) */}
-        <div className="polar-card p-5 rounded-xl border border-polar-border space-y-3">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <div className="polar-glass p-5 rounded-xl space-y-3 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-polar-cyan" />
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+              <Clock className="w-4 h-4 text-[#007A9E]" />
+              <h3 className="font-bold text-[#0F2740] text-xs uppercase tracking-wider">
                 Next 24 Hours Projections
               </h3>
             </div>
@@ -947,19 +966,19 @@ export default function DashboardPage() {
             {next24hTimeline.map((item) => (
               <div 
                 key={item.label}
-                className="p-2.5 rounded-lg bg-polar-950 border border-polar-border flex items-center justify-between text-xs"
+                className="p-2.5 rounded-lg bg-white/80 border border-slate-200/90 flex items-center justify-between text-xs shadow-xs"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold font-mono text-white text-sm">{item.label}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">({item.time})</span>
+                    <span className="font-bold font-mono text-[#0F2740] text-sm">{item.label}</span>
+                    <span className="text-[10px] text-[#36546D] font-mono">({item.time})</span>
                   </div>
-                  <span className="text-[11px] text-slate-400 block font-mono mt-0.5">{item.weather}</span>
+                  <span className="text-[11px] text-[#36546D] block font-mono mt-0.5">{item.weather}</span>
                 </div>
                 <div className="text-right text-[11px] space-y-0.5 font-mono">
-                  <div>Demand: <strong className="text-polar-cyan">{item.demand}</strong></div>
-                  <div>Battery: <strong className={item.battery.includes('0%') ? 'text-critical-red' : 'text-slate-200'}>{item.battery}</strong></div>
-                  <div>Logistics: <strong className={item.logistics === 'CRITICAL' ? 'text-critical-red' : 'text-operational-green'}>{item.logistics}</strong></div>
+                  <div>Demand: <strong className="text-[#007A9E]">{item.demand}</strong></div>
+                  <div>Battery: <strong className={item.battery.includes('0%') ? 'text-critical-red font-bold' : 'text-[#08243A]'}>{item.battery}</strong></div>
+                  <div>Logistics: <strong className={item.logistics === 'CRITICAL' ? 'text-critical-red font-bold' : 'text-emerald-700'}>{item.logistics}</strong></div>
                 </div>
               </div>
             ))}
@@ -967,58 +986,58 @@ export default function DashboardPage() {
         </div>
 
         {/* Logistics Intelligence Card (Section 10) */}
-        <div className="polar-card p-5 rounded-xl border border-polar-border space-y-3">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <div className="polar-glass p-5 rounded-xl space-y-3 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-warning-amber" />
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+              <Package className="w-4 h-4 text-amber-600" />
+              <h3 className="font-bold text-[#0F2740] text-xs uppercase tracking-wider">
                 Logistics Runway & Reserves
               </h3>
             </div>
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-              isLogisticsCritical ? 'bg-critical-red text-white' : 'bg-operational-green text-white'
+              isLogisticsCritical ? 'bg-critical-red text-white' : 'bg-emerald-600 text-white'
             }`}>
               {isLogisticsCritical ? 'CRITICAL AUTONOMY' : 'BUFFER NOMINAL'}
             </span>
           </div>
 
           <div className="space-y-2 text-xs">
-            <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-1">
+            <div className="p-3 rounded-lg bg-white/80 border border-slate-200/90 space-y-1 shadow-xs">
               <div className="flex justify-between">
-                <span className="text-slate-400">Fuel Stock Runway:</span>
-                <strong className={`font-mono text-sm ${derived.fuelRunwayDays < 14 ? 'text-critical-red font-bold' : 'text-white'}`}>
+                <span className="text-[#36546D]">Fuel Stock Runway:</span>
+                <strong className={`font-mono text-sm ${derived.fuelRunwayDays < 14 ? 'text-critical-red font-bold' : 'text-[#08243A]'}`}>
                   {derived.fuelRunwayDays.toFixed(1)} Days Remaining
                 </strong>
               </div>
-              <div className="flex justify-between text-[11px] text-slate-400">
+              <div className="flex justify-between text-[11px] text-[#36546D]">
                 <span>Mandatory Winter Safety Buffer:</span>
-                <span className="font-mono text-slate-200">14.0 Days</span>
+                <span className="font-mono text-[#08243A] font-semibold">14.0 Days</span>
               </div>
-              <div className="flex justify-between text-[11px] text-slate-400">
+              <div className="flex justify-between text-[11px] text-[#36546D]">
                 <span>Resupply Vessel Arrival:</span>
-                <span className="font-mono text-slate-200">{activeInjectedEvents.resupplyDelay ? '30 Days (+12d ICE)' : '18 Days'}</span>
+                <span className="font-mono text-[#08243A] font-semibold">{activeInjectedEvents.resupplyDelay ? '30 Days (+12d ICE)' : '18 Days'}</span>
               </div>
               {isLogisticsCritical && (
-                <p className="text-[11px] text-critical-red font-semibold pt-1 border-t border-white/5">
+                <p className="text-[11px] text-critical-red font-semibold pt-1 border-t border-slate-200">
                   Reason: Fuel runway is below operational reserve buffer. Shortage projected before vessel approach.
                 </p>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded bg-polar-950 border border-polar-border">
-                <span className="text-slate-400 block text-[11px]">Rations Runway:</span>
-                <span className="font-mono font-bold text-white text-sm">{foodItem?.daysRemaining || 120} Days</span>
+              <div className="p-2.5 rounded bg-white/80 border border-slate-200/90 shadow-xs">
+                <span className="text-[#36546D] block text-[11px]">Rations Runway:</span>
+                <span className="font-mono font-bold text-[#08243A] text-sm">{foodItem?.daysRemaining || 120} Days</span>
               </div>
-              <div className="p-2.5 rounded bg-polar-950 border border-polar-border">
-                <span className="text-slate-400 block text-[11px]">Medical Supplies:</span>
-                <span className="font-mono font-bold text-white text-sm">{medItem?.daysRemaining || 210} Days</span>
+              <div className="p-2.5 rounded bg-white/80 border border-slate-200/90 shadow-xs">
+                <span className="text-[#36546D] block text-[11px]">Medical Supplies:</span>
+                <span className="font-mono font-bold text-[#08243A] text-sm">{medItem?.daysRemaining || 210} Days</span>
               </div>
             </div>
 
             <Link
               href="/logistics"
-              className="text-xs text-polar-cyan hover:underline font-semibold flex items-center justify-between pt-1"
+              className="text-xs text-[#007A9E] hover:underline font-semibold flex items-center justify-between pt-1"
             >
               <span>Manage Supply Requisitions</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1027,39 +1046,39 @@ export default function DashboardPage() {
         </div>
 
         {/* Mission Event Timeline (Section 8) */}
-        <div className="polar-card p-5 rounded-xl border border-polar-border space-y-3">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <div className="polar-glass p-5 rounded-xl space-y-3 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-polar-cyan" />
-              <h3 className="font-bold text-white text-xs uppercase tracking-wider">
+              <Clock className="w-4 h-4 text-[#007A9E]" />
+              <h3 className="font-bold text-[#0F2740] text-xs uppercase tracking-wider">
                 Mission Execution Timeline
               </h3>
             </div>
-            <span className="text-[10px] text-slate-400 font-mono">Observe → Act</span>
+            <span className="text-[10px] text-[#36546D] font-mono">Observe → Act</span>
           </div>
 
           <div className="space-y-2.5 overflow-y-auto max-h-[300px] pr-1 text-xs">
             {missionTimeline.map((item) => {
               const categoryBadgeMap: Record<string, string> = {
-                TELEMETRY: 'bg-polar-cyan/20 text-polar-cyan border-polar-cyan/30',
-                ALERT: 'bg-critical-red/20 text-critical-red border-critical-red/40',
-                ANALYSIS: 'bg-polar-blue/20 text-polar-cyan border-polar-blue/40',
-                'HUMAN ACTION': 'bg-operational-green/20 text-operational-green border-operational-green/40',
-                'FOLLOW-UP': 'bg-warning-amber/20 text-warning-amber border-warning-amber/40',
+                TELEMETRY: 'bg-cyan-100 text-[#006A8C] border-cyan-300',
+                ALERT: 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+                ANALYSIS: 'bg-blue-100 text-blue-800 border-blue-300',
+                'HUMAN ACTION': 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                'FOLLOW-UP': 'bg-amber-100 text-amber-800 border-amber-300',
               };
-              const categoryBadge = categoryBadgeMap[item.category] || 'bg-polar-900 text-slate-300 border-polar-border';
+              const categoryBadge = categoryBadgeMap[item.category] || 'bg-slate-100 text-[#36546D] border-slate-300';
 
               return (
-                <div key={item.id} className="relative pl-4 border-l-2 border-polar-border/60 pb-2 last:pb-0">
-                  <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-polar-cyan" />
+                <div key={item.id} className="relative pl-4 border-l-2 border-slate-300 pb-2 last:pb-0">
+                  <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-cyan-600" />
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-mono font-bold text-white text-[11px]">{item.time} UTC</span>
+                    <span className="font-mono font-bold text-[#08243A] text-[11px]">{item.time} UTC</span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${categoryBadge}`}>
                       {item.category}
                     </span>
                   </div>
-                  <h4 className="font-bold text-white text-xs leading-snug">{item.title}</h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">{item.details}</p>
+                  <h4 className="font-bold text-[#0F2740] text-xs leading-snug">{item.title}</h4>
+                  <p className="text-[11px] text-[#36546D] mt-0.5 leading-snug">{item.details}</p>
                 </div>
               );
             })}
@@ -1072,82 +1091,82 @@ export default function DashboardPage() {
       {/* 6. EXPLAIN RISK MODAL / DRAWER (Section 5)                     */}
       {/* ============================================================== */}
       {showExplainModal && activeExplainAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="polar-card border border-polar-cyan/50 rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl bg-polar-navy text-slate-100">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="polar-glass border border-white/80 rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl text-[#0F2740]">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2.5">
                 <ShieldAlert className="w-5 h-5 text-critical-red" />
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-lg font-bold text-[#0F2740]">
                   Why This Operational Risk Exists (Causal Chain)
                 </h3>
               </div>
               <button
                 onClick={() => setShowExplainModal(false)}
-                className="p-1 rounded-lg hover:bg-polar-900 text-slate-400 hover:text-white transition-all"
+                className="p-1 rounded-lg hover:bg-slate-200 text-[#36546D] hover:text-[#0F2740] transition-all"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-polar-950 border border-polar-border">
-                <span className="text-xs text-slate-400 font-semibold uppercase block mb-1">Incident Headline:</span>
-                <p className="font-bold text-white text-sm">{activeExplainAlert.title}</p>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">{activeExplainAlert.why}</p>
+              <div className="p-3.5 rounded-xl bg-white/90 border border-slate-200 shadow-xs">
+                <span className="text-xs text-[#36546D] font-semibold uppercase block mb-1">Incident Headline:</span>
+                <p className="font-bold text-[#0F2740] text-sm">{activeExplainAlert.title}</p>
+                <p className="text-xs text-[#36546D] mt-1 leading-relaxed">{activeExplainAlert.why}</p>
               </div>
 
               {/* Deterministic Propagation Sequence */}
               <div className="space-y-2">
-                <span className="text-xs text-slate-400 font-semibold uppercase block">
+                <span className="text-xs text-[#36546D] font-semibold uppercase block">
                   Deterministic Propagation Sequence:
                 </span>
                 {derived.causalChain.map((step, idx) => (
-                  <div key={idx} className="p-2.5 rounded-lg bg-polar-950 border border-polar-border flex items-start gap-3 text-xs">
-                    <span className="w-5 h-5 rounded-full bg-polar-cyan/20 text-polar-cyan border border-polar-cyan/40 font-mono font-bold flex items-center justify-center shrink-0 text-[11px]">
+                  <div key={idx} className="p-2.5 rounded-lg bg-white/90 border border-slate-200 flex items-start gap-3 text-xs shadow-xs">
+                    <span className="w-5 h-5 rounded-full bg-cyan-100 text-[#006A8C] border border-cyan-300 font-mono font-bold flex items-center justify-center shrink-0 text-[11px]">
                       {idx + 1}
                     </span>
-                    <span className="text-slate-200 leading-snug pt-0.5">{step}</span>
+                    <span className="text-[#36546D] leading-snug pt-0.5">{step}</span>
                   </div>
                 ))}
               </div>
 
               {/* Data Provenance Confirmation */}
-              <div className="p-3.5 rounded-xl bg-polar-950 border border-polar-border space-y-2 text-xs">
-                <span className="text-slate-400 font-semibold uppercase block">
+              <div className="p-3.5 rounded-xl bg-white/90 border border-slate-200 space-y-2 text-xs shadow-xs">
+                <span className="text-[#36546D] font-semibold uppercase block">
                   Verifiable Data Provenance:
                 </span>
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-operational-green shrink-0" />
-                    <span>Public Observation: ECMWF ERA5 & IMD Synoptic</span>
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-[#36546D]">Public Observation: ECMWF ERA5 & IMD Synoptic</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-operational-green shrink-0" />
-                    <span>Synthetic Telemetry: Station Edge Sensors</span>
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-[#36546D]">Synthetic Telemetry: Station Edge Sensors</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-operational-green shrink-0" />
-                    <span>Derived Calculation: Microgrid & Thermal Equations</span>
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-[#36546D]">Derived Calculation: Microgrid & Thermal Equations</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="w-3.5 h-3.5 text-operational-green shrink-0" />
-                    <span>Prototype Forecast: Deterministic Timeline Engine</span>
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-[#36546D]">Prototype Forecast: Deterministic Timeline Engine</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2 border-t border-white/10">
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
               <button
                 onClick={() => setShowExplainModal(false)}
-                className="px-4 py-2 rounded-lg bg-polar-900 hover:bg-polar-800 text-slate-300 text-xs font-semibold"
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#36546D] text-xs font-semibold"
               >
                 Close
               </button>
               <Link
                 href="/simulator"
                 onClick={() => setShowExplainModal(false)}
-                className="px-4 py-2 rounded-lg bg-polar-blue hover:bg-polar-blue/80 text-white text-xs font-bold transition-all shadow-md"
+                className="px-4 py-2 rounded-lg bg-[#0F2740] hover:bg-[#1A3D60] text-white text-xs font-bold transition-all shadow-md"
               >
                 Open What-If Simulator
               </Link>

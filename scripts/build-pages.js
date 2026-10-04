@@ -10,19 +10,32 @@ const nojekyllOut = path.join(outDir, '.nojekyll');
 
 let apiMoved = false;
 
+function moveDir(src, dest) {
+  try {
+    fs.renameSync(src, dest);
+  } catch (err) {
+    if (process.platform === 'win32') {
+      execSync(`powershell -Command "Move-Item -LiteralPath '${src}' -Destination '${dest}' -Force"`);
+    } else {
+      throw err;
+    }
+  }
+}
+
 try {
   console.log('[POLAR COMMAND] Preparing static export for GitHub Pages...');
 
   // 1. Temporarily stash app/api if present to allow static export of all client UI pages
   if (fs.existsSync(apiDir)) {
     console.log('[POLAR COMMAND] Stashing app/api -> api_routes_backup for static export...');
-    fs.renameSync(apiDir, backupDir);
+    moveDir(apiDir, backupDir);
     apiMoved = true;
   }
 
   // 2. Run next build with IS_PAGES=true
   console.log('[POLAR COMMAND] Building Next.js static site (output: export)...');
-  execSync('npx next build', {
+  const npxCmd = process.platform === 'win32' ? 'npx.cmd next build' : 'npx next build';
+  execSync(npxCmd, {
     stdio: 'inherit',
     cwd: rootDir,
     env: {
@@ -49,7 +62,7 @@ try {
       // In case app/api was recreated
       fs.rmSync(apiDir, { recursive: true, force: true });
     }
-    fs.renameSync(backupDir, apiDir);
+    moveDir(backupDir, apiDir);
     console.log('[POLAR COMMAND] app/api restored successfully.');
   }
 }

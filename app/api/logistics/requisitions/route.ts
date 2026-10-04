@@ -1,5 +1,23 @@
 import { NextResponse } from 'next/server';
 import { Requisition } from '@/types';
+import { INITIAL_REQUISITIONS } from '@/mocks/stationData';
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const stationId = searchParams.get('stationId');
+
+  let list = INITIAL_REQUISITIONS;
+  if (stationId) {
+    list = list.filter(r => r.stationId === stationId);
+  }
+
+  return NextResponse.json({
+    status: 'success',
+    count: list.length,
+    requisitions: list,
+    timestamp: new Date().toISOString(),
+  });
+}
 
 export async function POST(request: Request) {
   try {

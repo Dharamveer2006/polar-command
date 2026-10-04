@@ -52,12 +52,12 @@ export default function DigitalTwinPage() {
               Spatial Digital Twin
             </span>
             <ProvenanceBadge source="Derived Calculation" />
-            <span className="text-xs font-mono text-slate-400">Station Twin • {metadata.name}</span>
+            <span className="text-xs font-mono text-[#36546D]">Station Twin • {metadata.name}</span>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight mt-1">
+          <h1 className="text-xl font-bold text-[#0F2740] tracking-tight mt-1">
             Operational Spatial Digital Twin & Microgrid Blueprint
           </h1>
-          <p className="text-xs text-slate-300 font-mono">
+          <p className="text-xs text-[#36546D] font-mono">
             Interactive 2D spatial layout connected to live sensor telemetry, thermodynamic loads, and causal risk propagation.
           </p>
         </div>
@@ -144,8 +144,8 @@ export default function DigitalTwinPage() {
                 {selectedAsset.status}
               </span>
             </div>
-            <h2 className="text-base font-bold text-white mt-1">{selectedAsset.name}</h2>
-            <p className="text-slate-400">{selectedAsset.building} • ID: {selectedAsset.assetId}</p>
+            <h2 className="text-base font-bold text-[#0F2740] mt-1">{selectedAsset.name}</h2>
+            <p className="text-[#36546D]">{selectedAsset.building} • ID: {selectedAsset.assetId}</p>
           </div>
 
           {/* Metrics & Anomaly Detection */}

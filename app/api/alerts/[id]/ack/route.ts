@@ -25,3 +25,6 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to acknowledge alert', details: error?.message }, { status: 400 });
   }
 }
+
+export const POST = PATCH;
+

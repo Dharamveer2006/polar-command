@@ -22,7 +22,7 @@ export default function OfflineBanner() {
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span className="font-semibold">{syncNotification}</span>
-          <span className="text-[10px] text-emerald-400/80">• Cloud twin synchronized at {new Date().toLocaleTimeString()}</span>
+          <span suppressHydrationWarning className="text-[10px] text-emerald-400/80">• Cloud twin synchronized at {new Date().toLocaleTimeString()}</span>
         </div>
         <button
           onClick={dismissSyncNotification}

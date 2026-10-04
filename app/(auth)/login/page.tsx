@@ -17,19 +17,19 @@ export default function LoginPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded text-xs font-mono uppercase bg-polar-ice/15 text-polar-ice border border-polar-ice/30">
+              <span className="px-2.5 py-0.5 rounded text-xs font-mono uppercase bg-cyan-500/15 text-cyan-800 border border-cyan-400/30 font-bold">
                 Authentication & Access Control
               </span>
-              <span className="text-xs font-mono text-slate-400">NCPOR Unified Directory</span>
+              <span className="text-xs font-mono text-[#36546D]">NCPOR Unified Directory</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">POLAR COMMAND Role Gateway</h1>
-            <p className="text-sm text-slate-300 mt-1 max-w-2xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0F2740]">POLAR COMMAND Role Gateway</h1>
+            <p className="text-sm text-[#36546D] mt-1 max-w-2xl font-medium">
               Role-Based Access Control (RBAC) governing telemetry observation, critical equipment command overrides, requisition workflows, and incident reporting for Maitri and Bharati.
             </p>
           </div>
           <Link
             href="/dashboard"
-            className="px-4 py-2.5 rounded-lg bg-polar-accent hover:bg-sky-400 text-polar-950 font-bold text-xs font-mono flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20"
+            className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs font-mono flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20"
           >
             Enter Command Center <ArrowRight className="w-4 h-4" />
           </Link>
@@ -54,32 +54,32 @@ export default function LoginPage() {
             >
               <div className="flex items-center justify-between mb-3">
                 <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold ${
-                  isSelected ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40' : 'bg-slate-800 text-slate-400'
+                  isSelected ? 'bg-cyan-500/20 text-cyan-800 border border-cyan-400/40' : 'bg-slate-200 text-slate-700'
                 }`}>
                   {user.role}
                 </span>
-                {isSelected && <Shield className="w-4 h-4 text-cyan-400" />}
+                {isSelected && <Shield className="w-4 h-4 text-cyan-600" />}
               </div>
 
-              <h3 className="font-semibold text-white text-sm">{user.name}</h3>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">{user.email}</p>
+              <h3 className="font-semibold text-[#0F2740] text-sm">{user.name}</h3>
+              <p className="text-xs text-[#36546D] font-mono mt-0.5">{user.email}</p>
 
-              <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px] font-mono text-slate-300">
+              <div className="mt-4 pt-3 border-t border-slate-200/80 space-y-1.5 text-[11px] font-mono text-[#36546D]">
                 <div className="flex justify-between">
                   <span>Dashboard:</span>
-                  <span className={permissions.canEditDashboard ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
+                  <span className={permissions.canEditDashboard ? 'text-emerald-700 font-bold' : 'text-slate-500'}>
                     {permissions.canEditDashboard ? 'Read/Write' : 'Read-Only'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Acknowledge Alerts:</span>
-                  <span className={permissions.canAcknowledgeAlerts ? 'text-emerald-400' : 'text-slate-500'}>
+                  <span className={permissions.canAcknowledgeAlerts ? 'text-emerald-700 font-bold' : 'text-slate-400'}>
                     {permissions.canAcknowledgeAlerts ? 'Full' : 'No'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Requisitions:</span>
-                  <span className={permissions.canApproveRequisition ? 'text-emerald-400 font-bold' : permissions.canCreateRequisition ? 'text-sky-400' : 'text-slate-500'}>
+                  <span className={permissions.canApproveRequisition ? 'text-emerald-700 font-bold' : permissions.canCreateRequisition ? 'text-sky-700 font-semibold' : 'text-slate-400'}>
                     {permissions.canApproveRequisition ? 'Create + Approve' : permissions.canCreateRequisition ? 'Create Only' : 'None'}
                   </span>
                 </div>
@@ -88,8 +88,8 @@ export default function LoginPage() {
               <button
                 className={`mt-4 w-full py-1.5 rounded text-xs font-mono font-medium transition-colors ${
                   isSelected
-                    ? 'bg-cyan-400 text-polar-950 font-bold'
-                    : 'bg-polar-800/80 text-slate-300 hover:bg-polar-700'
+                    ? 'bg-cyan-500 text-white font-bold'
+                    : 'bg-slate-100 text-[#0F2740] hover:bg-slate-200 border border-slate-200'
                 }`}
               >
                 {isSelected ? 'Active Session' : 'Switch to Profile'}
@@ -99,8 +99,8 @@ export default function LoginPage() {
         })}
       </div>
 
-      {/* Audit Log / Session Activity Preview */}
-      <div className="polar-card p-5 rounded-xl space-y-3">
+      {/* Audit Log / Session Activity Preview - Technical Dark Translucent Panel */}
+      <div className="polar-glass-dark p-5 rounded-xl space-y-3">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-polar-ice" />

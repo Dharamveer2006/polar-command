@@ -16,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen flex flex-col bg-polar-950 text-slate-100 antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+    <html lang="en">
+      <body className="min-h-screen flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-900">
         <StationProvider>
           <OfflineBanner />
           <Navbar />

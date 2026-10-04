@@ -9,51 +9,193 @@
     --bg-primary: #08243A;
     --bg-secondary: #0C2D48;
     --bg-card: #0F304E;
-    --border-polar: #CBD5E1;
+    --border-polar: rgba(255, 255, 255, 0.60);
     --ice-cyan: #00B8E6;
     --research-blue: #1976D2;
     --operational-green: #10B981;
     --warning-amber: #F59E0B;
     --critical-red: #E53935;
-    --text-primary: #0F172A;
-    --text-secondary: #334155;
+    --text-primary: #0F2740;
+    --text-secondary: #36546D;
+    --text-telemetry: #08243A;
   }
 
   * {
     box-sizing: border-box;
     scrollbar-width: thin;
-    scrollbar-color: #2A5D8F #08243A;
+    scrollbar-color: #2A5D8F rgba(225, 245, 251, 0.8);
   }
 
   body {
-    background-color: #08243A;
-    color: #FFFFFF;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.45) 0%, rgba(225, 245, 255, 0) 70%),
+      radial-gradient(ellipse at 85% 15%, rgba(0, 184, 230, 0.12) 0%, rgba(225, 245, 255, 0) 50%),
+      linear-gradient(
+        180deg,
+        rgba(225, 246, 255, 0.86),
+        rgba(198, 232, 248, 0.72),
+        rgba(225, 245, 251, 0.88)
+      ),
+      url('/images/antarctic-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: #0F2740;
     font-family: 'Inter', 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
   }
+
+  @media (max-width: 768px) {
+    body {
+      background-attachment: scroll;
+    }
+  }
 }
 
 @layer components {
-  /* Antarctic Engineering Modular Card */
+  /* Frosted Glass Panels (Light) */
+  .polar-glass {
+    background: rgba(245, 252, 255, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.60);
+    box-shadow: 0 8px 32px 0 rgba(8, 36, 58, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+    color: #0F2740;
+  }
+
+  /* Frosted Glass Panels (Dark / Technical / Command) */
+  .polar-glass-dark {
+    background: rgba(8, 36, 58, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 184, 230, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+    color: #FFFFFF;
+  }
+
+  /* Base Modular Card - Light Frosted Glass default */
   .polar-card {
-    background-color: #0C2D48;
-    border: 1px solid #1D4B75;
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.25);
+    background: rgba(245, 252, 255, 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.60);
+    box-shadow: 0 8px 32px 0 rgba(8, 36, 58, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+    color: #0F2740;
+  }
+
+  .polar-card-dark {
+    background: rgba(8, 36, 58, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 184, 230, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
     color: #FFFFFF;
   }
 
   .polar-card-light {
-    background-color: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    color: #0F172A;
-    box-shadow: 0 2px 6px rgba(8, 36, 58, 0.08);
+    background-color: rgba(255, 255, 255, 0.90);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.80);
+    color: #0F2740;
+    box-shadow: 0 4px 16px rgba(8, 36, 58, 0.06);
   }
 
   .polar-card-highlight {
-    background-color: #143C60;
+    background: rgba(235, 248, 255, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid #00B8E6;
-    box-shadow: 0 0 16px -2px rgba(0, 184, 230, 0.25);
+    box-shadow: 0 0 20px -2px rgba(0, 184, 230, 0.25);
+    color: #0F2740;
+  }
+
+  @media (max-width: 768px) {
+    .polar-glass,
+    .polar-glass-dark,
+    .polar-card,
+    .polar-card-dark,
+    .polar-card-light,
+    .polar-card-highlight {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  }
+
+  /* Mission-Control Typography Tokens */
+  .text-polar-primary {
+    color: #0F2740 !important;
+  }
+
+  .text-polar-secondary {
+    color: #36546D !important;
+  }
+
+  .text-polar-telemetry {
+    color: #08243A !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+  }
+
+  /* Automatic Contrast Enforcement on Light Frosted Panels */
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark),
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark),
+  .polar-card-light {
+    color: #0F2740;
+  }
+
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) h1,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) h2,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) h3,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) h1,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) h2,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) h3 {
+    color: #0F2740;
+  }
+
+  /* Convert accidental white/pale text on light frosted glass to High-Contrast Polar Navy */
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) > div > h1.text-white,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) > div > h2.text-white,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) > div > h3.text-white,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) > h1.text-white,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) > h2.text-white,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) > h3.text-white,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) > div > h1.text-white,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) > div > h2.text-white,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) > div > h3.text-white,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) > h1.text-white,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) > h2.text-white,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) > h3.text-white {
+    color: #0F2740;
+  }
+
+  /* Upgrade pale gray to crisp glacier slate */
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) p.text-slate-300,
+  .polar-glass:not(.polar-glass-dark):not(.polar-card-dark) p.text-slate-400,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) p.text-slate-300,
+  .polar-card:not(.polar-card-dark):not(.polar-glass-dark) p.text-slate-400 {
+    color: #36546D;
+  }
+
+  /* Explicit White/Cyan Preservation inside Dark Cards and SITREP Sheets */
+  .polar-card-dark h1,
+  .polar-card-dark h2,
+  .polar-card-dark .text-white {
+    color: #FFFFFF !important;
+  }
+  .polar-card-dark h3.text-cyan-400,
+  .polar-card-dark .text-cyan-400 {
+    color: #22d3ee !important;
+  }
+  .polar-card-dark .text-cyan-300 {
+    color: #67e8f9 !important;
+  }
+  .polar-card-dark .text-slate-300 {
+    color: #cbd5e1 !important;
+  }
+  .polar-card-dark .text-slate-400 {
+    color: #94a3b8 !important;
   }
 }
 

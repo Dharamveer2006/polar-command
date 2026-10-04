@@ -92,16 +92,16 @@ export default function ReportsPage() {
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 border border-teal-400/30 uppercase font-bold">
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-teal-100/90 text-teal-800 border border-teal-300 uppercase font-bold">
               Reporting & Historical Telemetry
             </span>
             <ProvenanceBadge source="Derived Calculation" />
-            <span className="text-xs font-mono text-slate-400">{metadata.name}</span>
+            <span className="text-xs font-mono text-[#36546D]">{metadata.name}</span>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight mt-1">
+          <h1 className="text-xl font-bold text-[#0F2740] tracking-tight mt-1">
             POLAR COMMAND PROTOTYPE REPORT
           </h1>
-          <p className="text-xs text-slate-300 font-mono">
+          <p className="text-xs text-[#36546D] font-mono">
             Synthesized operational situation reports computed over 24h, 7d, and 30d telemetry timeframes for NCPOR Command.
           </p>
         </div>
@@ -110,14 +110,14 @@ export default function ReportsPage() {
         <div className="flex items-center gap-2 font-mono text-xs">
           <button
             onClick={handleExportCSV}
-            className="px-3.5 py-2 rounded-lg bg-polar-900 hover:bg-polar-800 text-white border border-polar-border flex items-center gap-2 transition-all"
+            className="px-3.5 py-2 rounded-lg bg-polar-900 hover:bg-polar-800 text-white border border-polar-border flex items-center gap-2 transition-all shadow-sm"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
             Export CSV
           </button>
           <button
             onClick={handlePrint}
-            className="px-4 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-polar-950 font-bold flex items-center gap-2 transition-all shadow-md shadow-cyan-500/20"
+            className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold flex items-center gap-2 transition-all shadow-md"
           >
             <Printer className="w-4 h-4" />
             Print / PDF Report
@@ -128,14 +128,14 @@ export default function ReportsPage() {
       {/* Report Configuration Bar */}
       <div className="polar-card p-4 rounded-xl flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">Report Template:</span>
+          <span className="text-[#36546D] font-semibold">Report Template:</span>
           <div className="bg-polar-900 border border-polar-border rounded-lg p-0.5 flex">
             {(['daily', 'incident', 'energy', 'logistics'] as const).map(type => (
               <button
                 key={type}
                 onClick={() => setReportType(type)}
                 className={`px-3 py-1 rounded uppercase text-[11px] transition-colors ${
-                  reportType === type ? 'bg-cyan-400 text-polar-950 font-bold' : 'text-slate-400 hover:text-white'
+                  reportType === type ? 'bg-cyan-400 text-polar-950 font-bold' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {type === 'daily' ? 'Daily SITREP' : type === 'incident' ? 'Incident Report' : type === 'energy' ? 'Energy Report' : 'Logistics Report'}
@@ -145,14 +145,14 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">Historical Window:</span>
+          <span className="text-[#36546D] font-semibold">Historical Window:</span>
           <div className="bg-polar-900 border border-polar-border rounded-lg p-0.5 flex">
             {(['24h', '7d', '30d'] as const).map(win => (
               <button
                 key={win}
                 onClick={() => setReportWindow(win)}
                 className={`px-3 py-1 rounded uppercase text-[11px] transition-colors ${
-                  reportWindow === win ? 'bg-cyan-400 text-polar-950 font-bold' : 'text-slate-400 hover:text-white'
+                  reportWindow === win ? 'bg-cyan-400 text-polar-950 font-bold' : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {win}
@@ -163,7 +163,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Rendered Printable Report Sheet */}
-      <div className="polar-card p-8 rounded-2xl space-y-6 font-mono border-white/10 bg-polar-950 shadow-2xl">
+      <div className="polar-card-dark p-8 rounded-2xl space-y-6 font-mono border border-cyan-500/30 bg-polar-950 shadow-2xl text-white">
         {/* Document Header */}
         <div className="border-b-2 border-white/20 pb-4 flex flex-col sm:flex-row justify-between sm:items-start gap-4">
           <div>
@@ -178,9 +178,9 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          <div className="text-right text-xs text-slate-400 space-y-0.5">
+          <div className="text-right text-xs text-slate-300 space-y-0.5">
             <div>REF: POLAR-CMD/{metadata.stationId.toUpperCase()}/{reportType.toUpperCase()}/{reportWindow.toUpperCase()}</div>
-            <div>Generated: {new Date().toLocaleString()}</div>
+            <div suppressHydrationWarning>Generated: {new Date().toLocaleString()}</div>
             <div>Signoff: <span className="text-white font-bold">{currentUser.name}</span> ({currentUser.role})</div>
           </div>
         </div>
@@ -193,26 +193,26 @@ export default function ReportsPage() {
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div className="p-3 rounded bg-polar-900 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Cumulative Fuel Draw</span>
+              <span className="text-slate-300 text-[10px] uppercase block font-semibold">Cumulative Fuel Draw</span>
               <span className="text-lg font-bold text-amber-300">{windowMetrics.cumulativeFuelBurnLitres.toLocaleString()} L</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Burn Rate: {derived.dailyFuelBurnLitres} L/day</span>
+              <span className="text-[10px] text-slate-300 block mt-0.5">Burn Rate: {derived.dailyFuelBurnLitres} L/day</span>
             </div>
             <div className="p-3 rounded bg-polar-900 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Average Microgrid Demand</span>
+              <span className="text-slate-300 text-[10px] uppercase block font-semibold">Average Microgrid Demand</span>
               <span className="text-lg font-bold text-white">{windowMetrics.avgDemandKw} kW</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Peak Draw: {windowMetrics.peakDemandKw} kW</span>
+              <span className="text-[10px] text-slate-300 block mt-0.5">Peak Draw: {windowMetrics.peakDemandKw} kW</span>
             </div>
             <div className="p-3 rounded bg-polar-900 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Weather Envelope Window</span>
+              <span className="text-slate-300 text-[10px] uppercase block font-semibold">Weather Envelope Window</span>
               <span className="text-lg font-bold text-cyan-300">{windowMetrics.minTempRecordedC}°C Min</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Peak Gusts: {windowMetrics.maxWindRecordedKmh} km/h</span>
+              <span className="text-[10px] text-slate-300 block mt-0.5">Peak Gusts: {windowMetrics.maxWindRecordedKmh} km/h</span>
             </div>
             <div className="p-3 rounded bg-polar-900 border border-polar-border">
-              <span className="text-slate-400 text-[10px] uppercase block">Fleet Uptime / Events</span>
+              <span className="text-slate-300 text-[10px] uppercase block font-semibold">Fleet Uptime / Events</span>
               <span className={`text-lg font-bold ${windowMetrics.generatorUptimePercent < 90 ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {windowMetrics.generatorUptimePercent}% Uptime
               </span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">{windowMetrics.incidentsLoggedCount} Events in Window</span>
+              <span className="text-[10px] text-slate-300 block mt-0.5">{windowMetrics.incidentsLoggedCount} Events in Window</span>
             </div>
           </div>
         </div>
@@ -339,10 +339,10 @@ export default function ReportsPage() {
                 <div key={a.alertId} className="p-3 rounded bg-polar-900 border border-white/10 text-xs">
                   <div className="flex justify-between font-bold text-white">
                     <span>[{a.severity.toUpperCase()}] {a.title}</span>
-                    <span className="text-slate-400 text-[10px]">{new Date(a.createdAt).toLocaleTimeString()}</span>
+                    <span className="text-slate-300 text-[10px]">{new Date(a.createdAt).toLocaleTimeString()}</span>
                   </div>
-                  <p className="text-slate-300 text-[11px] mt-1">Causes: {a.cause.join('; ')}</p>
-                  <p className="text-cyan-300 text-[11px] mt-0.5">Recommended Stance: {a.recommendations[0]}</p>
+                  <p className="text-slate-200 text-[11px] mt-1 font-medium">Causes: {a.cause.join('; ')}</p>
+                  <p className="text-cyan-300 text-[11px] mt-0.5 font-medium">Recommended Stance: {a.recommendations[0]}</p>
                 </div>
               ))}
             </div>
@@ -350,7 +350,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Compliance Footer */}
-        <div className="pt-4 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-500">
+        <div className="pt-4 border-t border-white/20 flex items-center justify-between text-[10px] text-slate-300">
           <span>POLAR COMMAND PROTOTYPE REPORT • NCPOR Antarctic Digital Twin</span>
           <span>SIH26060 Build v2.0 • Deterministic Evaluation Engine</span>
         </div>

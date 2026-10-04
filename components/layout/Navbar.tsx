@@ -90,45 +90,45 @@ export default function Navbar() {
   const healthValue = derived?.overallHealthScore ?? stationState.healthScore.overall;
 
   return (
-    <header className="sticky top-0 z-50 bg-polar-950/95 backdrop-blur-md border-b border-polar-border shadow-md">
+    <header className="sticky top-0 z-50 bg-[rgba(245,252,255,0.78)] backdrop-blur-[18px] border-b border-white/60 shadow-sm transition-colors text-[#0F2740]">
       {/* Primary Compact Command Header Bar */}
       <div className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
         {/* Left Side: Brand & Station Switcher */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center justify-center">
-              <Compass className="w-4 h-4 text-cyan-300 group-hover:rotate-45 transition-transform duration-300" />
+            <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-[#007A9E] border border-cyan-400/40 flex items-center justify-center">
+              <Compass className="w-4 h-4 text-[#007A9E] group-hover:rotate-45 transition-transform duration-300" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="font-black text-sm tracking-wider text-white">POLAR COMMAND</span>
-              <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold">
+              <span className="font-black text-sm tracking-wider text-[#0F2740]">POLAR COMMAND</span>
+              <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-cyan-100 text-[#006A8C] border border-cyan-300 font-bold">
                 SIH26060
               </span>
             </div>
           </Link>
 
           {/* Station Switcher (Maitri / Bharati) */}
-          <div className="flex items-center bg-polar-900 border border-polar-border rounded-lg p-0.5">
+          <div className="flex items-center bg-white/70 border border-slate-300/80 rounded-lg p-0.5 shadow-xs">
             <button
               onClick={() => setCurrentStationId('maitri')}
               className={`px-2.5 py-1 text-[11px] rounded transition-all flex items-center gap-1.5 ${
                 currentStationId === 'maitri'
-                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 font-bold'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50 font-bold shadow-xs'
+                  : 'text-[#36546D] hover:text-[#0F2740]'
               }`}
             >
-              <Radio className={`w-3 h-3 ${currentStationId === 'maitri' ? 'animate-pulse text-cyan-400' : 'text-slate-500'}`} />
+              <Radio className={`w-3 h-3 ${currentStationId === 'maitri' ? 'animate-pulse text-[#008BB5]' : 'text-slate-400'}`} />
               MAITRI
             </button>
             <button
               onClick={() => setCurrentStationId('bharati')}
               className={`px-2.5 py-1 text-[11px] rounded transition-all flex items-center gap-1.5 ${
                 currentStationId === 'bharati'
-                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 font-bold'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50 font-bold shadow-xs'
+                  : 'text-[#36546D] hover:text-[#0F2740]'
               }`}
             >
-              <Radio className={`w-3 h-3 ${currentStationId === 'bharati' ? 'animate-pulse text-cyan-400' : 'text-slate-500'}`} />
+              <Radio className={`w-3 h-3 ${currentStationId === 'bharati' ? 'animate-pulse text-[#008BB5]' : 'text-slate-400'}`} />
               BHARATI
             </button>
           </div>
@@ -144,13 +144,13 @@ export default function Navbar() {
                 href={link.href}
                 className={`px-2.5 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1.5 ${
                   isActive
-                    ? 'bg-polar-800 text-cyan-300 border border-cyan-500/40 font-bold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-polar-900'
+                    ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50 font-bold shadow-xs'
+                    : 'text-[#36546D] hover:text-[#0F2740] hover:bg-white/60'
                 }`}
               >
                 <span>{link.label}</span>
                 {typeof link.badge === 'number' && link.badge > 0 && (
-                  <span className={`px-1 py-0.2 rounded-full text-[9px] font-bold ${
+                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
                     criticalCount > 0 ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-600 text-white'
                   }`}>
                     {link.badge}
@@ -164,26 +164,26 @@ export default function Navbar() {
         {/* Right Side: Health, Alerts, Compact Demo Controller, Role */}
         <div className="flex items-center gap-2.5">
           {/* Station Health Glance */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-polar-900 border border-polar-border">
-            <span className="text-slate-400 text-[10px] uppercase font-bold">Health:</span>
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/70 border border-slate-300/80 shadow-xs text-[#0F2740]">
+            <span className="text-[#36546D] text-[10px] uppercase font-bold">Health:</span>
             <span className={`font-bold ${
-              healthValue >= 80 ? 'text-emerald-400' :
-              healthValue >= 60 ? 'text-amber-400' : 'text-rose-400'
+              healthValue >= 80 ? 'text-emerald-700' :
+              healthValue >= 60 ? 'text-amber-700' : 'text-rose-700'
             }`}>
               {healthValue}%
             </span>
-            <span className="text-slate-600">|</span>
+            <span className="text-slate-300">|</span>
             {criticalCount > 0 ? (
-              <span className="text-rose-400 text-[10px] font-bold animate-pulse">
+              <span className="text-rose-700 text-[10px] font-bold animate-pulse">
                 {criticalCount} CRIT
               </span>
             ) : warningCount > 0 ? (
-              <span className="text-amber-400 text-[10px] font-bold">
+              <span className="text-amber-700 text-[10px] font-bold">
                 {warningCount} WARN
               </span>
             ) : (
-              <span className="text-emerald-400 text-[10px] flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Nominal
+              <span className="text-emerald-700 text-[10px] flex items-center gap-1 font-semibold">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Nominal
               </span>
             )}
           </div>
@@ -196,31 +196,31 @@ export default function Navbar() {
               onClick={() => setIsDemoOpen(!isDemoOpen)}
               className={`px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all border ${
                 activeScenariosCount > 0
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm animate-pulse'
-                  : 'bg-polar-900 hover:bg-polar-800 text-cyan-300 border-polar-border'
+                  ? 'bg-amber-500/20 text-amber-900 border-amber-500/50 shadow-xs animate-pulse'
+                  : 'bg-white/80 hover:bg-white text-[#0F2740] border-slate-300/80 shadow-xs'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-current" />
+              <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
               <span>DEMO MODE</span>
               {activeScenariosCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded bg-amber-500 text-polar-950 font-black text-[9px]">
+                <span className="px-1.5 py-0.2 rounded bg-amber-500 text-white font-black text-[9px]">
                   {activeScenariosCount}
                 </span>
               )}
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-[#36546D]" />
             </button>
 
             {/* Compact Popover Menu */}
             {isDemoOpen && (
-              <div className="absolute right-0 mt-2 w-80 p-3 bg-polar-950 border border-polar-border rounded-xl shadow-2xl z-50 space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <span className="font-bold text-white uppercase text-[11px] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="absolute right-0 mt-2 w-80 p-3 bg-[rgba(245,252,255,0.96)] backdrop-blur-xl border border-white/80 rounded-xl shadow-2xl z-50 space-y-3 font-mono text-xs text-[#0F2740]">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <span className="font-bold text-[#0F2740] uppercase text-[11px] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
                     Inject Stress Scenarios
                   </span>
                   <button
                     onClick={resetAllEvents}
-                    className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1"
+                    className="text-[10px] text-[#36546D] hover:text-[#0F2740] flex items-center gap-1 font-semibold"
                     title="Reset all to nominal"
                   >
                     <RotateCcw className="w-3 h-3" /> Reset
@@ -234,15 +234,15 @@ export default function Navbar() {
                     onClick={() => toggleInjectedEvent('extremeCold')}
                     className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                       activeInjectedEvents.extremeCold
-                        ? 'bg-cyan-950/80 border-cyan-400 text-cyan-200'
-                        : 'bg-polar-900 border-polar-border text-slate-300 hover:border-slate-600'
+                        ? 'bg-cyan-600 border-cyan-700 text-white shadow-xs font-bold'
+                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[10px] uppercase">Cold Snap</span>
-                      <Snowflake className="w-3 h-3 text-cyan-400" />
+                      <Snowflake className={`w-3 h-3 ${activeInjectedEvents.extremeCold ? 'text-white' : 'text-cyan-600'}`} />
                     </div>
-                    <span className="text-[9px] text-slate-400 mt-1">-12°C HVAC draw</span>
+                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.extremeCold ? 'text-cyan-100' : 'text-slate-500'}`}>-12°C HVAC draw</span>
                   </button>
 
                   {/* Blizzard */}
@@ -250,15 +250,15 @@ export default function Navbar() {
                     onClick={() => toggleInjectedEvent('highWind')}
                     className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                       activeInjectedEvents.highWind
-                        ? 'bg-sky-950/80 border-sky-400 text-sky-200'
-                        : 'bg-polar-900 border-polar-border text-slate-300 hover:border-slate-600'
+                        ? 'bg-sky-600 border-sky-700 text-white shadow-xs font-bold'
+                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[10px] uppercase">Blizzard</span>
-                      <Wind className="w-3 h-3 text-sky-400" />
+                      <Wind className={`w-3 h-3 ${activeInjectedEvents.highWind ? 'text-white' : 'text-sky-600'}`} />
                     </div>
-                    <span className="text-[9px] text-slate-400 mt-1">+45 km/h Katabatic</span>
+                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.highWind ? 'text-sky-100' : 'text-slate-500'}`}>+45 km/h Katabatic</span>
                   </button>
 
                   {/* Generator 2 Failure */}
@@ -266,15 +266,15 @@ export default function Navbar() {
                     onClick={() => toggleInjectedEvent('generator2Failure')}
                     className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                       activeInjectedEvents.generator2Failure
-                        ? 'bg-rose-950/80 border-rose-400 text-rose-200'
-                        : 'bg-polar-900 border-polar-border text-slate-300 hover:border-slate-600'
+                        ? 'bg-rose-600 border-rose-700 text-white shadow-xs font-bold animate-pulse'
+                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[10px] uppercase">Gen #2 Trip</span>
-                      <ZapOff className="w-3 h-3 text-rose-400" />
+                      <ZapOff className={`w-3 h-3 ${activeInjectedEvents.generator2Failure ? 'text-white' : 'text-rose-600'}`} />
                     </div>
-                    <span className="text-[9px] text-slate-400 mt-1">-190kW microgrid</span>
+                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.generator2Failure ? 'text-rose-100' : 'text-slate-500'}`}>-190kW microgrid</span>
                   </button>
 
                   {/* Resupply Delay */}
@@ -282,42 +282,42 @@ export default function Navbar() {
                     onClick={() => toggleInjectedEvent('resupplyDelay')}
                     className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
                       activeInjectedEvents.resupplyDelay
-                        ? 'bg-amber-950/80 border-amber-400 text-amber-200'
-                        : 'bg-polar-900 border-polar-border text-slate-300 hover:border-slate-600'
+                        ? 'bg-amber-600 border-amber-700 text-white shadow-xs font-bold'
+                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[10px] uppercase">Resupply Delay</span>
-                      <CalendarClock className="w-3 h-3 text-amber-400" />
+                      <CalendarClock className={`w-3 h-3 ${activeInjectedEvents.resupplyDelay ? 'text-white' : 'text-amber-600'}`} />
                     </div>
-                    <span className="text-[9px] text-slate-400 mt-1">+12d sea-ice lock</span>
+                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.resupplyDelay ? 'text-amber-100' : 'text-slate-500'}`}>+12d sea-ice lock</span>
                   </button>
                 </div>
 
                 {/* Macro Actions: Full Cascade & Reset */}
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10">
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
                   <button
                     onClick={triggerFullCascade}
-                    className="py-1.5 px-2 rounded bg-rose-600/30 hover:bg-rose-600/40 text-rose-200 border border-rose-500/50 font-bold text-[10px] flex items-center justify-center gap-1"
+                    className="py-1.5 px-2 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 font-bold text-[10px] flex items-center justify-center gap-1 shadow-xs"
                   >
-                    <Flame className="w-3 h-3 text-rose-400" /> Full Cascade
+                    <Flame className="w-3 h-3 text-rose-600" /> Full Cascade
                   </button>
                   <button
                     onClick={resetAllEvents}
-                    className="py-1.5 px-2 rounded bg-polar-900 hover:bg-polar-800 text-slate-300 border border-polar-border font-bold text-[10px] flex items-center justify-center gap-1"
+                    className="py-1.5 px-2 rounded bg-white/80 hover:bg-white text-[#36546D] border border-slate-300 font-bold text-[10px] flex items-center justify-center gap-1 shadow-xs"
                   >
-                    <RotateCcw className="w-3 h-3 text-slate-400" /> Reset Nominal
+                    <RotateCcw className="w-3 h-3 text-slate-500" /> Reset Nominal
                   </button>
                 </div>
 
                 {/* Telemetry Drift & Link Simulation Controls */}
-                <div className="pt-2 border-t border-white/10 space-y-2 text-[10px]">
-                  <div className="flex items-center justify-between text-slate-400">
+                <div className="pt-2 border-t border-slate-200 space-y-2 text-[10px]">
+                  <div className="flex items-center justify-between text-[#36546D]">
                     <span>Coupled Realtime Drift:</span>
                     <button
                       onClick={() => setIsRealtimeActive(!isRealtimeActive)}
                       className={`px-2 py-0.5 rounded font-bold flex items-center gap-1 ${
-                        isRealtimeActive ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-polar-900 text-slate-400'
+                        isRealtimeActive ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50' : 'bg-slate-100 text-[#36546D]'
                       }`}
                     >
                       {isRealtimeActive ? <Play className="w-2.5 h-2.5 fill-current" /> : <Pause className="w-2.5 h-2.5 fill-current" />}
@@ -325,7 +325,7 @@ export default function Navbar() {
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between text-slate-400">
+                  <div className="flex items-center justify-between text-[#36546D]">
                     <span>Satellite Link:</span>
                     <div className="flex gap-1">
                       {(['CONNECTED', 'INTERMITTENT', 'DISCONNECTED'] as ConnectivityStatus[]).map(status => (
@@ -336,7 +336,7 @@ export default function Navbar() {
                             connectivity === status
                               ? status === 'CONNECTED' ? 'bg-emerald-600 text-white' :
                                 status === 'INTERMITTENT' ? 'bg-amber-600 text-white' : 'bg-rose-600 text-white'
-                              : 'bg-polar-900 text-slate-400 hover:text-white'
+                              : 'bg-slate-100 text-[#36546D] hover:bg-slate-200'
                           }`}
                         >
                           {status === 'CONNECTED' ? 'ONLINE' : status === 'INTERMITTENT' ? 'INT' : 'OFF'}
@@ -350,19 +350,19 @@ export default function Navbar() {
           </div>
 
           {/* Role Switcher (RBAC) */}
-          <div className="flex items-center gap-1.5 bg-polar-900 border border-polar-border px-2.5 py-1 rounded-lg">
-            <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-400 text-[10px] hidden md:inline">ROLE:</span>
+          <div className="flex items-center gap-1.5 bg-white/70 border border-slate-300/80 px-2.5 py-1 rounded-lg shadow-xs text-[#0F2740]">
+            <UserCheck className="w-3.5 h-3.5 text-cyan-600" />
+            <span className="text-[#36546D] text-[10px] hidden md:inline font-semibold">ROLE:</span>
             <select
               value={currentUser.id}
               onChange={(e) => {
                 const user = allUsers.find(u => u.id === e.target.value);
                 if (user) setCurrentUser(user);
               }}
-              className="bg-transparent text-white font-mono text-xs focus:outline-none cursor-pointer font-medium"
+              className="bg-transparent text-[#0F2740] font-mono text-xs focus:outline-none cursor-pointer font-bold"
             >
               {allUsers.map(user => (
-                <option key={user.id} value={user.id} className="bg-polar-950 text-white">
+                <option key={user.id} value={user.id} className="bg-white text-[#0F2740]">
                   {user.role}
                 </option>
               ))}
@@ -372,7 +372,7 @@ export default function Navbar() {
       </div>
 
       {/* Lightweight Secondary Navigation Bar for mobile / smaller screens */}
-      <div className="xl:hidden px-4 py-1 flex items-center gap-1 overflow-x-auto border-t border-white/5 scrollbar-none font-mono text-[11px]">
+      <div className="xl:hidden px-4 py-1 flex items-center gap-1 overflow-x-auto border-t border-slate-200/80 scrollbar-none font-mono text-[11px]">
         {navLinks.map((link) => {
           const isActive = pathname === link.href;
           return (
@@ -381,8 +381,8 @@ export default function Navbar() {
               href={link.href}
               className={`px-2 py-0.5 rounded whitespace-nowrap transition-colors ${
                 isActive
-                  ? 'bg-polar-800 text-cyan-300 font-bold'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-cyan-500/20 text-[#006A8C] font-bold'
+                  : 'text-[#36546D] hover:text-[#0F2740]'
               }`}
             >
               {link.label}

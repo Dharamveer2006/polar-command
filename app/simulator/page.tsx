@@ -60,22 +60,22 @@ export default function SimulatorPage() {
       <div className="polar-card p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 uppercase font-bold">
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-100/90 text-cyan-900 border border-cyan-300 uppercase font-bold">
               Predictive Decision Support
             </span>
             <ProvenanceBadge source="Prototype Forecast" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight mt-1">
+          <h1 className="text-xl font-bold text-[#0F2740] tracking-tight mt-1">
             Timeline-Based What-If Station Stress Simulator
           </h1>
-          <p className="text-xs text-slate-300 font-mono">
+          <p className="text-xs text-[#36546D] font-mono">
             Simulate compounded extreme weather, generator trips, and icebreaker resupply delays across T+0h to T+96h timeline horizons.
           </p>
         </div>
 
         <button
           onClick={handleRun}
-          className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-polar-950 font-bold text-xs font-mono flex items-center gap-2 transition-all shadow-lg shadow-cyan-500/20"
+          className="px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs font-mono flex items-center gap-2 transition-all shadow-md"
         >
           <Play className="w-4 h-4 fill-current" />
           [ RUN SIMULATION ]
@@ -86,18 +86,18 @@ export default function SimulatorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Input Parameter Controls */}
         <div className="polar-card p-5 rounded-xl space-y-5 font-mono text-xs">
-          <div className="border-b border-white/10 pb-3 flex items-center justify-between">
-            <span className="text-white font-bold uppercase tracking-wider">Scenario Stress Inputs</span>
-            <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
+          <div className="border-b border-slate-200/80 pb-3 flex items-center justify-between">
+            <span className="text-[#0F2740] font-bold uppercase tracking-wider">Scenario Stress Inputs</span>
+            <SlidersHorizontal className="w-4 h-4 text-cyan-600" />
           </div>
 
           {/* Temperature Adjustment */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Thermometer className="w-3.5 h-3.5 text-cyan-400" /> Temperature Delta:
+              <span className="text-[#36546D] flex items-center gap-1.5 font-semibold">
+                <Thermometer className="w-3.5 h-3.5 text-cyan-600" /> Temperature Delta:
               </span>
-              <span className="font-bold text-cyan-300">{temperatureAdjustmentC} °C</span>
+              <span className="font-bold text-cyan-900">{temperatureAdjustmentC} °C</span>
             </div>
             <input
               type="range"
@@ -106,9 +106,9 @@ export default function SimulatorPage() {
               step={1}
               value={temperatureAdjustmentC}
               onChange={(e) => setTemperatureAdjustmentC(Number(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
+              className="w-full accent-cyan-600 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-slate-500">
+            <div className="flex justify-between text-[10px] text-[#4B6B88] font-medium">
               <span>-30°C (Antarctic Polar Snap)</span>
               <span>0°C (Baseline)</span>
             </div>
@@ -117,10 +117,10 @@ export default function SimulatorPage() {
           {/* Wind Speed Adjustment */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Wind className="w-3.5 h-3.5 text-sky-400" /> Katabatic Wind Delta:
+              <span className="text-[#36546D] flex items-center gap-1.5 font-semibold">
+                <Wind className="w-3.5 h-3.5 text-sky-600" /> Katabatic Wind Delta:
               </span>
-              <span className="font-bold text-sky-300">+{windAdjustmentKmh} km/h</span>
+              <span className="font-bold text-sky-900">+{windAdjustmentKmh} km/h</span>
             </div>
             <input
               type="range"
@@ -129,9 +129,9 @@ export default function SimulatorPage() {
               step={5}
               value={windAdjustmentKmh}
               onChange={(e) => setWindAdjustmentKmh(Number(e.target.value))}
-              className="w-full accent-sky-400 cursor-pointer"
+              className="w-full accent-sky-600 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-slate-500">
+            <div className="flex justify-between text-[10px] text-[#4B6B88] font-medium">
               <span>0 km/h (Calm)</span>
               <span>+60 km/h (Severe Katabatic Storm)</span>
             </div>
@@ -139,7 +139,7 @@ export default function SimulatorPage() {
 
           {/* Generator 2 State */}
           <div className="p-3.5 rounded-lg bg-polar-900 border border-polar-border space-y-2">
-            <span className="text-slate-300 flex items-center gap-1.5">
+            <span className="text-slate-200 flex items-center gap-1.5 font-semibold">
               <Zap className="w-3.5 h-3.5 text-amber-400" /> Genset #2 (Primary 220kW Unit)
             </span>
             <div className="grid grid-cols-2 gap-2">
@@ -167,10 +167,10 @@ export default function SimulatorPage() {
           {/* Resupply Delay */}
           <div className="space-y-1.5">
             <div className="flex justify-between">
-              <span className="text-slate-300 flex items-center gap-1.5">
-                <Fuel className="w-3.5 h-3.5 text-purple-400" /> Resupply Ship Delay:
+              <span className="text-[#36546D] flex items-center gap-1.5 font-semibold">
+                <Fuel className="w-3.5 h-3.5 text-purple-600" /> Resupply Ship Delay:
               </span>
-              <span className="font-bold text-purple-300">+{resupplyDelayDays} Days</span>
+              <span className="font-bold text-purple-900">+{resupplyDelayDays} Days</span>
             </div>
             <input
               type="range"
@@ -179,15 +179,15 @@ export default function SimulatorPage() {
               step={1}
               value={resupplyDelayDays}
               onChange={(e) => setResupplyDelayDays(Number(e.target.value))}
-              className="w-full accent-purple-400 cursor-pointer"
+              className="w-full accent-purple-600 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-slate-500">
+            <div className="flex justify-between text-[10px] text-[#4B6B88] font-medium">
               <span>On Schedule (0d)</span>
               <span>+25 Days (Pack-Ice Blockade)</span>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-white/10 space-y-2">
+          <div className="pt-2 border-t border-slate-200/80 space-y-2">
             <button
               onClick={handleRun}
               className="w-full py-2.5 rounded-lg bg-polar-blue hover:bg-polar-blue/80 text-white font-bold text-xs transition-all shadow-md flex items-center justify-center gap-2"
@@ -238,24 +238,24 @@ export default function SimulatorPage() {
               {/* Top Result Banner */}
               <div className={`p-4 rounded-xl border font-mono text-xs flex items-center justify-between ${
                 res.simulated.overallRisk === 'critical'
-                  ? 'bg-rose-950/80 border-rose-500 text-rose-200'
+                  ? 'bg-rose-900 border-rose-600 text-white shadow-md'
                   : res.simulated.overallRisk === 'warning'
-                  ? 'bg-amber-950/80 border-amber-500 text-amber-200'
-                  : 'bg-emerald-950/80 border-emerald-500 text-emerald-200'
+                  ? 'bg-amber-900 border-amber-600 text-white shadow-md'
+                  : 'bg-emerald-900 border-emerald-600 text-white shadow-md'
               }`}>
                 <div className="flex items-center gap-3">
                   <ShieldAlert className="w-6 h-6 shrink-0" />
                   <div>
-                    <span className="text-[10px] uppercase tracking-wider block opacity-75">
+                    <span className="text-[10px] uppercase tracking-wider block opacity-90 text-white/80">
                       Simulated Operational Risk Verdict
                     </span>
-                    <span className="text-base font-bold uppercase">
+                    <span className="text-base font-bold uppercase text-white">
                       {res.simulated.overallRisk} RISK — {res.scenarioName}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 rounded bg-black/40 border border-current font-bold uppercase text-xs">
+                  <span className="px-3 py-1 rounded bg-black/40 border border-white/40 font-bold uppercase text-xs text-white">
                     Deficit: {res.simulated.energyDeficitPercent}%
                   </span>
                 </div>
@@ -265,14 +265,14 @@ export default function SimulatorPage() {
               {/* PHASE 4: TIMELINE CARDS (T+0h to T+96h)                         */}
               {/* ============================================================== */}
               <div className="polar-card p-4 rounded-xl space-y-3 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-cyan-400" />
-                    <span className="font-bold text-white uppercase tracking-wider">
+                    <Clock className="w-4 h-4 text-cyan-600" />
+                    <span className="font-bold text-[#0F2740] uppercase tracking-wider">
                       Simulation Horizons: T+0h → T+96h Progression
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-400">Click horizon to inspect point</span>
+                  <span className="text-[10px] text-[#36546D] font-medium">Click horizon to inspect point</span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
@@ -287,34 +287,54 @@ export default function SimulatorPage() {
                         onClick={() => setSelectedTimelinePoint(point.timeHorizon)}
                         className={`p-2.5 rounded-lg border text-left flex flex-col justify-between transition-all ${
                           isSelected
-                            ? 'bg-polar-800 border-cyan-400 ring-1 ring-cyan-400/50'
+                            ? 'bg-[#0B192C] border-cyan-400 ring-2 ring-cyan-400/50 shadow-md'
                             : isCrit
-                            ? 'bg-rose-950/40 border-rose-800/60 hover:border-rose-500'
+                            ? 'bg-rose-50/95 border-rose-300 hover:border-rose-400 shadow-sm'
                             : isWarn
-                            ? 'bg-amber-950/40 border-amber-800/60 hover:border-amber-500'
-                            : 'bg-polar-950 border-polar-border hover:border-slate-600'
+                            ? 'bg-amber-50/95 border-amber-300 hover:border-amber-400 shadow-sm'
+                            : 'bg-white/85 border-slate-200 hover:border-cyan-400 shadow-sm'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-xs">{point.timeHorizon}</span>
+                          <span className={`font-bold text-xs ${
+                            isSelected
+                              ? 'text-white'
+                              : isCrit
+                              ? 'text-rose-950'
+                              : isWarn
+                              ? 'text-amber-950'
+                              : 'text-[#0F2740]'
+                          }`}>
+                            {point.timeHorizon}
+                          </span>
                           <span className={`w-2 h-2 rounded-full ${
-                            isCrit ? 'bg-rose-500' : isWarn ? 'bg-amber-500' : 'bg-emerald-500'
+                            isCrit ? 'bg-rose-600' : isWarn ? 'bg-amber-600' : 'bg-emerald-600'
                           }`} />
                         </div>
                         <div className="mt-2 space-y-1 text-[10px]">
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Demand:</span>
-                            <span className="text-cyan-300 font-bold">{point.energyDemandKw}kW</span>
+                            <span className={isSelected ? 'text-slate-300' : 'text-[#36546D] font-medium'}>Demand:</span>
+                            <span className={isSelected ? 'text-cyan-300 font-bold' : 'text-[#08243A] font-bold'}>
+                              {point.energyDemandKw}kW
+                            </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">SOC:</span>
-                            <span className={point.batterySoc < 40 ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
+                            <span className={isSelected ? 'text-slate-300' : 'text-[#36546D] font-medium'}>SOC:</span>
+                            <span className={`font-bold ${
+                              isSelected
+                                ? (point.batterySoc < 40 ? 'text-rose-400' : 'text-emerald-400')
+                                : (point.batterySoc < 40 ? 'text-rose-700' : 'text-emerald-700')
+                            }`}>
                               {point.batterySoc}%
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Fuel:</span>
-                            <span className={point.fuelRunwayDays < 15 ? 'text-rose-400 font-bold' : 'text-slate-200'}>
+                            <span className={isSelected ? 'text-slate-300' : 'text-[#36546D] font-medium'}>Fuel:</span>
+                            <span className={`font-bold ${
+                              isSelected
+                                ? (point.fuelRunwayDays < 15 ? 'text-rose-400' : 'text-slate-200')
+                                : (point.fuelRunwayDays < 15 ? 'text-rose-700' : 'text-[#08243A]')
+                            }`}>
                               {point.fuelRunwayDays}d
                             </span>
                           </div>
@@ -328,13 +348,13 @@ export default function SimulatorPage() {
                 {activePoint && (
                   <div className="mt-3 p-3 rounded-lg bg-polar-900 border border-polar-border grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase">Demand / Capacity</span>
+                      <span className="text-[10px] text-slate-300 uppercase font-semibold">Demand / Capacity</span>
                       <div className="text-sm font-bold text-white mt-0.5">
                         {activePoint.energyDemandKw} kW / {activePoint.generationKw} kW
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase">Power Balance</span>
+                      <span className="text-[10px] text-slate-300 uppercase font-semibold">Power Balance</span>
                       <div className={`text-sm font-bold mt-0.5 ${
                         activePoint.powerDeficitKw > 0 ? 'text-rose-400' : 'text-emerald-400'
                       }`}>
@@ -342,7 +362,7 @@ export default function SimulatorPage() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase">Battery Reserve</span>
+                      <span className="text-[10px] text-slate-300 uppercase font-semibold">Battery Reserve</span>
                       <div className={`text-sm font-bold mt-0.5 ${
                         activePoint.batterySoc < 40 ? 'text-rose-400' : 'text-emerald-400'
                       }`}>
@@ -350,7 +370,7 @@ export default function SimulatorPage() {
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase">Critical Inventory</span>
+                      <span className="text-[10px] text-slate-300 uppercase font-semibold">Critical Inventory</span>
                       <div className="text-sm font-bold text-amber-300 mt-0.5">
                         {activePoint.criticalInventoryDays} Days Buffer
                       </div>
@@ -363,41 +383,89 @@ export default function SimulatorPage() {
               {/* PHASE 4: VISUAL CASCADE (Weather → HVAC → Energy → ...)        */}
               {/* ============================================================== */}
               <div className="polar-card p-5 rounded-xl space-y-4 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                   <div className="flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-rose-400" />
-                    <span className="font-bold text-white uppercase tracking-wider">
+                    <Activity className="w-4 h-4 text-rose-600" />
+                    <span className="font-bold text-[#0F2740] uppercase tracking-wider">
                       Physical Visual Cascade Flow
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-400">Environment ↔ Energy ↔ Infra ↔ Logistics</span>
+                  <span className="text-[10px] text-[#36546D] font-medium">Environment ↔ Energy ↔ Infra ↔ Logistics</span>
                 </div>
 
                 <div className="space-y-2">
                   {[
-                    { step: 'Weather Stress', domain: 'Environment', desc: `Ambient offset ${temperatureAdjustmentC}°C, Wind +${windAdjustmentKmh} km/h`, color: 'border-cyan-500/40 text-cyan-300 bg-cyan-950/30' },
-                    { step: 'HVAC Thermal Load Surge', domain: 'HVAC Infrastructure', desc: 'Thermodynamic building loss escalates electrical heating draw', color: 'border-sky-500/40 text-sky-300 bg-sky-950/30' },
-                    { step: 'Station Energy Demand Jump', domain: 'Microgrid Energy', desc: `Total station electrical demand climbs to ${res.simulated.energyDemandKw} kW`, color: 'border-amber-500/40 text-amber-300 bg-amber-950/30' },
-                    { step: 'Power Deficit & Battery Drain', domain: 'Microgrid & BESS', desc: generator2Offline ? 'Genset #2 trip exposes station microgrid deficit; battery discharge begins' : 'Gensets support demand; fuel burn accelerates', color: 'border-rose-500/40 text-rose-300 bg-rose-950/30' },
-                    { step: 'Battery Depletion & Fuel Consumption', domain: 'Energy Storage', desc: `Battery drains toward ${res.simulated.batterySocAfter24h}% SOC; daily fuel burn accelerates`, color: 'border-orange-500/40 text-orange-300 bg-orange-950/30' },
-                    { step: 'Logistics Runway Contraction', domain: 'Logistics Supply', desc: `Fuel autonomy drops to ${res.simulated.fuelRunwayDays} days vs ${res.simulated.criticalInventoryDays}d resupply window`, color: 'border-red-500/40 text-red-300 bg-red-950/40' },
+                    { 
+                      step: 'Weather Stress', 
+                      domain: 'Environment', 
+                      desc: `Ambient offset ${temperatureAdjustmentC}°C, Wind +${windAdjustmentKmh} km/h`, 
+                      cardBg: 'bg-cyan-50/90 border-cyan-300 text-cyan-950',
+                      badge: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+                      descColor: 'text-[#08243A]',
+                      pillBg: 'bg-cyan-700 text-white'
+                    },
+                    { 
+                      step: 'HVAC Thermal Load Surge', 
+                      domain: 'HVAC Infrastructure', 
+                      desc: 'Thermodynamic building loss escalates electrical heating draw', 
+                      cardBg: 'bg-sky-50/90 border-sky-300 text-sky-950',
+                      badge: 'bg-sky-100 text-sky-800 border-sky-300',
+                      descColor: 'text-[#08243A]',
+                      pillBg: 'bg-sky-700 text-white'
+                    },
+                    { 
+                      step: 'Station Energy Demand Jump', 
+                      domain: 'Microgrid Energy', 
+                      desc: `Total station electrical demand climbs to ${res.simulated.energyDemandKw} kW`, 
+                      cardBg: 'bg-amber-50/95 border-amber-300 text-amber-950',
+                      badge: 'bg-amber-100 text-amber-900 border-amber-300',
+                      descColor: 'text-[#78350F]',
+                      pillBg: 'bg-amber-600 text-white'
+                    },
+                    { 
+                      step: 'Power Deficit & Battery Drain', 
+                      domain: 'Microgrid & BESS', 
+                      desc: generator2Offline ? 'Genset #2 trip exposes station microgrid deficit; battery discharge begins' : 'Gensets support demand; fuel burn accelerates', 
+                      cardBg: 'bg-rose-50/95 border-rose-300 text-rose-950',
+                      badge: 'bg-rose-100 text-rose-900 border-rose-300',
+                      descColor: 'text-[#9F1239]',
+                      pillBg: 'bg-rose-600 text-white'
+                    },
+                    { 
+                      step: 'Battery Depletion & Fuel Consumption', 
+                      domain: 'Energy Storage', 
+                      desc: `Battery drains toward ${res.simulated.batterySocAfter24h}% SOC; daily fuel burn accelerates`, 
+                      cardBg: 'bg-orange-50/95 border-orange-300 text-orange-950',
+                      badge: 'bg-orange-100 text-orange-900 border-orange-300',
+                      descColor: 'text-[#9A3412]',
+                      pillBg: 'bg-orange-600 text-white'
+                    },
+                    { 
+                      step: 'Logistics Runway Contraction', 
+                      domain: 'Logistics Supply', 
+                      desc: `Fuel autonomy drops to ${res.simulated.fuelRunwayDays} days vs ${res.simulated.criticalInventoryDays}d resupply window`, 
+                      cardBg: 'bg-red-50/95 border-red-300 text-red-950',
+                      badge: 'bg-red-100 text-red-900 border-red-300',
+                      descColor: 'text-[#991B1B]',
+                      pillBg: 'bg-red-700 text-white'
+                    },
                   ].map((cascade, idx) => (
                     <div key={idx} className="relative">
-                      <div className={`p-3 rounded-lg border flex items-start gap-3 ${cascade.color}`}>
-                        <span className="w-5 h-5 rounded-full bg-black/50 border border-current flex items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className={`p-3.5 rounded-xl border shadow-sm flex items-start gap-3 transition-all ${cascade.cardBg}`}>
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm ${cascade.pillBg}`}>
                           {idx + 1}
                         </span>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-white text-xs">{cascade.step}</span>
-                            <span className="text-[10px] uppercase opacity-75">{cascade.domain}</span>
+                            <span className="font-bold text-[#0F2740] text-xs">{cascade.step}</span>
+                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${cascade.badge}`}>{cascade.domain}</span>
                           </div>
-                          <p className="text-[11px] opacity-90 mt-0.5">{cascade.desc}</p>
+                          <p className={`text-[11px] font-mono mt-1 font-medium leading-relaxed ${cascade.descColor}`}>{cascade.desc}</p>
                         </div>
                       </div>
                       {idx < 5 && (
-                        <div className="flex justify-center my-0.5">
-                          <ArrowDown className="w-3.5 h-3.5 text-slate-600" />
+                        <div className="flex justify-center my-1">
+                          <ArrowDown className="w-4 h-4 text-[#36546D]" />
                         </div>
                       )}
                     </div>
@@ -408,17 +476,17 @@ export default function SimulatorPage() {
               {/* ============================================================== */}
               {/* PHASE 4: "WHY DID THIS HAPPEN?" EXPLANATION                    */}
               {/* ============================================================== */}
-              <div className="polar-card p-5 rounded-xl space-y-3 font-mono text-xs border border-cyan-800/40">
-                <div className="flex items-center gap-2 border-b border-white/10 pb-2.5">
-                  <HelpCircle className="w-4 h-4 text-cyan-400" />
-                  <span className="font-bold text-white uppercase tracking-wider">
+              <div className="polar-card p-5 rounded-xl space-y-3 font-mono text-xs border border-cyan-300/80 shadow-md">
+                <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2.5">
+                  <HelpCircle className="w-4 h-4 text-cyan-600" />
+                  <span className="font-bold text-[#0F2740] uppercase tracking-wider text-xs">
                     Why Did This Happen? (Coupled Physical Explanation)
                   </span>
                 </div>
-                <p className="text-slate-200 text-xs leading-relaxed font-sans">
+                <p className="text-[#0F2740] text-xs leading-relaxed font-sans font-medium">
                   {res.whyDidThisHappen}
                 </p>
-                <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs text-slate-300 space-y-2">
+                <div className="p-4 rounded-xl bg-polar-900 border border-polar-border text-xs text-slate-200 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-bold text-polar-cyan uppercase text-xs">Recommended Mitigating Stance</span>
                     <button
@@ -435,7 +503,7 @@ export default function SimulatorPage() {
                           resupplyDelayDays: 0,
                         });
                       }}
-                      className="px-3 py-1 rounded-md bg-operational-green hover:bg-operational-green/80 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm"
+                      className="px-3.5 py-1.5 rounded-md bg-operational-green hover:bg-operational-green/90 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       [ EXECUTE RECOVERY ACTION ]

@@ -115,7 +115,7 @@ export default function EnvironmentPage() {
   };
 
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full font-sans text-slate-100">
+    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full font-sans text-[#0F2740]">
       
       {/* ============================================================== */}
       {/* 1. TOP HEADER & MULTI-SOURCE PROVENANCE BAR                    */}
@@ -123,20 +123,20 @@ export default function EnvironmentPage() {
       <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 uppercase font-bold">
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-800 border border-cyan-400/30 uppercase font-bold">
               SIH26060 • POLAR WEATHER ENGINE
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono text-[#36546D]">
               Station Ground-Truth Ingestion Layer
             </span>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight mt-1 flex items-center gap-2.5">
+          <h1 className="text-xl md:text-2xl font-bold text-[#0F2740] tracking-tight mt-1 flex items-center gap-2.5">
             POLAR WEATHER MONITOR
-            <span className="text-sm font-mono px-2 py-0.5 rounded bg-polar-navy border border-polar-border text-slate-300">
+            <span className="text-sm font-mono px-2 py-0.5 rounded bg-cyan-50 border border-cyan-200 text-[#0F2740]">
               {metadata.name} ({currentStationId === 'bharati' ? '69°24\'S, 76°11\'E' : '70°46\'S, 11°44\'E'})
             </span>
           </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-3xl">
+          <p className="text-xs text-[#36546D] mt-1 max-w-3xl font-medium">
             Real-time multi-source weather ingestion driving the Antarctic Digital Twin. Feeds thermodynamic envelope loss, HVAC heating demand, microgrid load, and logistics resupply windows.
           </p>
         </div>
@@ -181,59 +181,59 @@ export default function EnvironmentPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono text-xs">
         {/* 1. SOURCE */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block font-semibold">SOURCE</span>
-          <span className="text-sm font-bold text-polar-cyan block mt-0.5 truncate">
+          <span className="text-[10px] text-[#36546D] uppercase block font-semibold">SOURCE</span>
+          <span className="text-sm font-bold text-cyan-800 block mt-0.5 truncate">
             {currentNorm?.source || (connectivity === 'DISCONNECTED' ? 'SYNTHETIC FALLBACK' : 'NCPOR')}
           </span>
-          <span className="text-[10px] text-slate-400 truncate block">Public AWS Ingestion</span>
+          <span className="text-[10px] text-[#36546D] truncate block">Public AWS Ingestion</span>
         </div>
 
         {/* 2. STATUS */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block font-semibold">STATUS</span>
+          <span className="text-[10px] text-[#36546D] uppercase block font-semibold">STATUS</span>
           <span className={`text-xs px-2 py-0.5 mt-1 inline-flex items-center gap-1.5 rounded border uppercase font-bold ${currentBadge.bg} ${currentBadge.text} ${currentBadge.border}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${currentBadge.dot}`} />
             {currentNorm?.status || weatherState}
           </span>
-          <span className="text-[10px] text-slate-400 block mt-1">Freshness Engine</span>
+          <span className="text-[10px] text-[#36546D] block mt-1">Freshness Engine</span>
         </div>
 
         {/* 3. OBSERVED */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block font-semibold">OBSERVED</span>
-          <span className="text-xs font-bold text-white block mt-0.5 truncate" title={currentNorm?.observedAt || currentObs.observedAt || currentObs.lastUpdated}>
+          <span className="text-[10px] text-[#36546D] uppercase block font-semibold">OBSERVED</span>
+          <span suppressHydrationWarning className="text-xs font-bold text-[#08243A] block mt-0.5 truncate" title={currentNorm?.observedAt || currentObs.observedAt || currentObs.lastUpdated}>
             {currentNorm?.observedAt 
               ? new Date(currentNorm.observedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC'
               : currentObs.lastUpdated ? new Date(currentObs.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' UTC' : 'Recent'}
           </span>
-          <span className="text-[10px] text-slate-400 block">Antarctic Sensor Mast</span>
+          <span className="text-[10px] text-[#36546D] block">Antarctic Sensor Mast</span>
         </div>
 
         {/* 4. LAST SYNCED */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block font-semibold">LAST SYNCED</span>
-          <span className="text-xs font-bold text-emerald-400 block mt-0.5 truncate">
+          <span className="text-[10px] text-[#36546D] uppercase block font-semibold">LAST SYNCED</span>
+          <span suppressHydrationWarning className="text-xs font-bold text-emerald-700 block mt-0.5 truncate">
             {lastWeatherSync ? new Date(lastWeatherSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Synchronized'}
           </span>
-          <span className="text-[10px] text-slate-400 block">Server Ingestion</span>
+          <span className="text-[10px] text-[#36546D] block">Server Ingestion</span>
         </div>
 
         {/* 5. NEXT CHECK */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block font-semibold">NEXT CHECK</span>
-          <span className="text-xs font-bold text-purple-300 block mt-0.5 truncate">
+          <span className="text-[10px] text-[#36546D] uppercase block font-semibold">NEXT CHECK</span>
+          <span suppressHydrationWarning className="text-xs font-bold text-purple-700 block mt-0.5 truncate">
             {nextWeatherSync ? new Date(nextWeatherSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'in ~3 min'}
           </span>
-          <span className="text-[10px] text-slate-400 block">Auto-Poll (3m)</span>
+          <span className="text-[10px] text-[#36546D] block">Auto-Poll (3m)</span>
         </div>
 
         {/* 6. LATENCY */}
         <div className="polar-card p-3 rounded-lg border border-polar-border">
-          <span className="text-[10px] text-slate-400 uppercase block font-semibold">LATENCY</span>
-          <span className="text-sm font-bold text-amber-300 block mt-0.5">
+          <span className="text-[10px] text-[#36546D] uppercase block font-semibold">LATENCY</span>
+          <span className="text-sm font-bold text-amber-700 block mt-0.5">
             {currentNorm?.latencySeconds !== undefined ? `${currentNorm.latencySeconds}s` : (currentObs.sourceLatencySec ? `${currentObs.sourceLatencySec}s` : '42s')}
           </span>
-          <span className="text-[10px] text-slate-400 block">rcv - obs delta</span>
+          <span className="text-[10px] text-[#36546D] block">rcv - obs delta</span>
         </div>
       </div>
 
@@ -263,8 +263,8 @@ export default function EnvironmentPage() {
           onClick={() => setActiveTab('OBSERVATION')}
           className={`px-5 py-2.5 text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center gap-2 border-b-2 ${
             activeTab === 'OBSERVATION'
-              ? 'border-polar-cyan text-polar-cyan bg-polar-cyan/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'border-cyan-600 text-cyan-900 bg-cyan-500/15'
+              : 'border-transparent text-[#36546D] hover:text-[#0F2740]'
           }`}
         >
           <Thermometer className="w-4 h-4" />
@@ -278,13 +278,13 @@ export default function EnvironmentPage() {
           onClick={() => setActiveTab('SATELLITE')}
           className={`px-5 py-2.5 text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center gap-2 border-b-2 ${
             activeTab === 'SATELLITE'
-              ? 'border-polar-cyan text-polar-cyan bg-polar-cyan/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'border-cyan-600 text-cyan-900 bg-cyan-500/15'
+              : 'border-transparent text-[#36546D] hover:text-[#0F2740]'
           }`}
         >
           <Layers className="w-4 h-4" />
           <span>SATELLITE</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300">
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-800 font-bold">
             NRT
           </span>
         </button>
@@ -293,13 +293,13 @@ export default function EnvironmentPage() {
           onClick={() => setActiveTab('FORECAST')}
           className={`px-5 py-2.5 text-xs md:text-sm font-bold uppercase tracking-wider transition-all flex items-center gap-2 border-b-2 ${
             activeTab === 'FORECAST'
-              ? 'border-polar-cyan text-polar-cyan bg-polar-cyan/10'
-              : 'border-transparent text-slate-400 hover:text-white'
+              ? 'border-cyan-600 text-cyan-900 bg-cyan-500/15'
+              : 'border-transparent text-[#36546D] hover:text-[#0F2740]'
           }`}
         >
           <CloudSun className="w-4 h-4" />
           <span>FORECAST</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300">
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-800 font-bold">
             +96H
           </span>
         </button>
@@ -317,44 +317,46 @@ export default function EnvironmentPage() {
               {activeWeatherEvents.map((evt, idx) => (
                 <div 
                   key={idx}
-                  className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                  className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs ${
                     evt.severity === 'critical'
-                      ? 'bg-rose-950/40 border-rose-500/50 text-rose-200'
-                      : 'bg-amber-950/40 border-amber-500/50 text-amber-200'
+                      ? 'bg-rose-50/90 border-rose-300 text-rose-950'
+                      : 'bg-amber-50/90 border-amber-300 text-amber-950'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <ShieldAlert className={`w-5 h-5 shrink-0 mt-0.5 ${evt.severity === 'critical' ? 'text-rose-400' : 'text-amber-400'}`} />
+                    <ShieldAlert className={`w-5 h-5 shrink-0 mt-0.5 ${evt.severity === 'critical' ? 'text-rose-600' : 'text-amber-600'}`} />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold uppercase px-2 py-0.5 rounded bg-black/40 border border-current">
+                        <span className={`text-xs font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+                          evt.severity === 'critical' ? 'bg-rose-100 text-rose-900 border-rose-400' : 'bg-amber-100 text-amber-900 border-amber-400'
+                        }`}>
                           WEATHER EVENT: {evt.type.replace('_', ' ')}
                         </span>
-                        <span className="text-xs font-mono font-bold uppercase">
+                        <span className={`text-xs font-mono font-bold uppercase ${evt.severity === 'critical' ? 'text-rose-700' : 'text-amber-700'}`}>
                           {evt.severity === 'critical' ? 'CRITICAL ALERT' : 'WARNING'}
                         </span>
                       </div>
-                      <h3 className="text-sm font-bold text-white mt-1">{evt.title}</h3>
-                      <p className="text-xs text-slate-300 mt-0.5">{evt.description}</p>
-                      <p className="text-xs font-mono text-cyan-300 mt-1">
+                      <h3 className="text-sm font-bold text-[#0F2740] mt-1">{evt.title}</h3>
+                      <p className="text-xs text-[#36546D] mt-0.5">{evt.description}</p>
+                      <p className="text-xs font-mono text-cyan-800 mt-1">
                         <strong>Operational Impact:</strong> {evt.operationalImpact}
                       </p>
                     </div>
                   </div>
                   <div className="text-right shrink-0 font-mono text-xs">
-                    <span className="text-slate-400 block text-[10px]">RATE OF CHANGE</span>
-                    <span className="font-bold text-white">{evt.rateOfChange}</span>
+                    <span className="text-[#36546D] block text-[10px] font-semibold">RATE OF CHANGE</span>
+                    <span className="font-bold text-[#08243A]">{evt.rateOfChange}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between text-xs font-mono text-emerald-300">
+            <div className="p-3 rounded-lg bg-emerald-50/90 border border-emerald-300/80 flex items-center justify-between text-xs font-mono text-emerald-900 shadow-xs">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>DETERMINISTIC EVENT DETECTOR: NO ACTIVE METEOROLOGICAL ANOMALIES DETECTED</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-bold">DETERMINISTIC EVENT DETECTOR: NO ACTIVE METEOROLOGICAL ANOMALIES DETECTED</span>
               </div>
-              <span className="text-[11px] text-slate-400">Monitoring: Rapid Cooling, High Wind, Low Visibility, Pressure Drop, Blizzard Risk</span>
+              <span className="text-[11px] text-emerald-800/80 font-medium">Monitoring: Rapid Cooling, High Wind, Low Visibility, Pressure Drop, Blizzard Risk</span>
             </div>
           )}
 
@@ -362,90 +364,90 @@ export default function EnvironmentPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* 1. Surface Air Temperature */}
-            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-                <span className="uppercase font-semibold">Surface Air Temp</span>
-                <Thermometer className="w-4 h-4 text-cyan-400" />
+            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border shadow-xs">
+              <div className="flex items-center justify-between text-[#36546D] text-xs font-mono">
+                <span className="uppercase font-bold tracking-wide">Surface Air Temp</span>
+                <Thermometer className="w-4 h-4 text-cyan-600" />
               </div>
               <div className="my-3">
-                <div className="text-3xl font-mono font-bold text-white tracking-tight">
-                  {currentObs.temperatureC.toFixed(1)} <span className="text-lg font-normal text-cyan-300">°C</span>
+                <div className="text-3xl font-mono font-bold text-[#08243A] tracking-tight">
+                  {currentObs.temperatureC.toFixed(1)} <span className="text-lg font-normal text-cyan-700">°C</span>
                 </div>
-                <p className="text-xs font-mono text-slate-400 mt-1 flex items-center gap-1">
-                  <TrendingDown className="w-3.5 h-3.5 text-sky-400" /> 
-                  Wind Chill: <strong className="text-slate-200">{(currentObs.temperatureC - (currentObs.windKmh * 0.18)).toFixed(1)} °C</strong>
+                <p className="text-xs font-mono text-[#36546D] mt-1 flex items-center gap-1">
+                  <TrendingDown className="w-3.5 h-3.5 text-sky-600" /> 
+                  Wind Chill: <strong className="text-[#0F2740]">{(currentObs.temperatureC - (currentObs.windKmh * 0.18)).toFixed(1)} °C</strong>
                 </p>
               </div>
-              <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-slate-400 flex justify-between">
+              <div className="pt-2 border-t border-slate-200/80 text-[11px] font-mono text-[#36546D] flex justify-between">
                 <span>Threshold: -30.0 °C</span>
-                <span className={currentObs.temperatureC < -25 ? 'text-amber-400 font-semibold' : 'text-emerald-400'}>
+                <span className={currentObs.temperatureC < -25 ? 'text-amber-700 font-bold' : 'text-emerald-700 font-bold'}>
                   {currentObs.temperatureC < -25 ? 'Cold Alert' : 'Nominal'}
                 </span>
               </div>
             </div>
 
             {/* 2. Katabatic Wind Speed (knots, km/h, and m/s per Section 3 & 6) */}
-            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-                <span className="uppercase font-semibold">Katabatic Wind Speed</span>
-                <Wind className="w-4 h-4 text-sky-400" />
+            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border shadow-xs">
+              <div className="flex items-center justify-between text-[#36546D] text-xs font-mono">
+                <span className="uppercase font-bold tracking-wide">Katabatic Wind Speed</span>
+                <Wind className="w-4 h-4 text-sky-600" />
               </div>
               <div className="my-3">
-                <div className="text-2xl lg:text-3xl font-mono font-bold text-white tracking-tight flex flex-wrap items-baseline gap-2">
-                  <span>{currentObs.windKmh} <span className="text-base font-normal text-sky-300">km/h</span></span>
-                  <span className="text-lg font-semibold text-slate-300">({currentNorm?.windKnots !== undefined ? currentNorm.windKnots : (currentObs.windKnots || Number((currentObs.windKmh / 1.852).toFixed(1)))} kts)</span>
-                  <span className="text-xs font-normal text-slate-400">({(currentObs.windKmh / 3.6).toFixed(1)} m/s)</span>
+                <div className="text-2xl lg:text-3xl font-mono font-bold text-[#08243A] tracking-tight flex flex-wrap items-baseline gap-2">
+                  <span>{currentObs.windKmh} <span className="text-base font-normal text-sky-700">km/h</span></span>
+                  <span className="text-lg font-semibold text-[#36546D]">({currentNorm?.windKnots !== undefined ? currentNorm.windKnots : (currentObs.windKnots || Number((currentObs.windKmh / 1.852).toFixed(1)))} kts)</span>
+                  <span className="text-xs font-normal text-[#475569]">({(currentObs.windKmh / 3.6).toFixed(1)} m/s)</span>
                 </div>
-                <p className="text-xs font-mono text-slate-400 mt-1 flex items-center gap-1">
-                  <Compass className="w-3.5 h-3.5 text-slate-400" /> 
-                  Bearing: <strong className="text-slate-200">{currentObs.windDirectionDeg}° ({currentObs.windDirectionDeg > 180 ? 'SSW' : 'SE'} Gusts)</strong>
+                <p className="text-xs font-mono text-[#36546D] mt-1 flex items-center gap-1">
+                  <Compass className="w-3.5 h-3.5 text-[#36546D]" /> 
+                  Bearing: <strong className="text-[#0F2740]">{currentObs.windDirectionDeg}° ({currentObs.windDirectionDeg > 180 ? 'SSW' : 'SE'} Gusts)</strong>
                 </p>
               </div>
-              <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-slate-400 flex justify-between">
+              <div className="pt-2 border-t border-slate-200/80 text-[11px] font-mono text-[#36546D] flex justify-between">
                 <span>Gale Cutoff: 55 km/h (29.7 kts)</span>
-                <span className={currentObs.windKmh >= 55 ? 'text-rose-400 font-semibold' : 'text-emerald-400'}>
+                <span className={currentObs.windKmh >= 55 ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}>
                   {currentObs.windKmh >= 55 ? 'High Wind Alert' : 'Safe Window'}
                 </span>
               </div>
             </div>
 
             {/* 3. Barometric Pressure */}
-            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-                <span className="uppercase font-semibold">Atmospheric Pressure</span>
-                <CloudSun className="w-4 h-4 text-amber-400" />
+            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border shadow-xs">
+              <div className="flex items-center justify-between text-[#36546D] text-xs font-mono">
+                <span className="uppercase font-bold tracking-wide">Atmospheric Pressure</span>
+                <CloudSun className="w-4 h-4 text-amber-600" />
               </div>
               <div className="my-3">
-                <div className="text-3xl font-mono font-bold text-white tracking-tight">
-                  {currentObs.pressureHpa.toFixed(1)} <span className="text-lg font-normal text-amber-300">hPa</span>
+                <div className="text-3xl font-mono font-bold text-[#08243A] tracking-tight">
+                  {currentObs.pressureHpa.toFixed(1)} <span className="text-lg font-normal text-amber-700">hPa</span>
                 </div>
-                <p className="text-xs font-mono text-slate-400 mt-1">
+                <p className="text-xs font-mono text-[#36546D] mt-1">
                   Polar trough baseline • Barometer steady
                 </p>
               </div>
-              <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-slate-400 flex justify-between">
+              <div className="pt-2 border-t border-slate-200/80 text-[11px] font-mono text-[#36546D] flex justify-between">
                 <span>Cyclonic Drop Limit: -4 hPa</span>
-                <span className="text-emerald-400 font-semibold">Nominal</span>
+                <span className="text-emerald-700 font-bold">Nominal</span>
               </div>
             </div>
 
             {/* 4. Optical Visibility & Humidity */}
-            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border">
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono">
-                <span className="uppercase font-semibold">Optical Visibility</span>
-                <Eye className="w-4 h-4 text-purple-400" />
+            <div className="polar-card p-4 rounded-xl flex flex-col justify-between border border-polar-border shadow-xs">
+              <div className="flex items-center justify-between text-[#36546D] text-xs font-mono">
+                <span className="uppercase font-bold tracking-wide">Optical Visibility</span>
+                <Eye className="w-4 h-4 text-purple-600" />
               </div>
               <div className="my-3">
-                <div className="text-3xl font-mono font-bold text-white tracking-tight">
-                  {currentObs.visibilityKm.toFixed(1)} <span className="text-lg font-normal text-purple-300">km</span>
+                <div className="text-3xl font-mono font-bold text-[#08243A] tracking-tight">
+                  {currentObs.visibilityKm.toFixed(1)} <span className="text-lg font-normal text-purple-700">km</span>
                 </div>
-                <p className="text-xs font-mono text-slate-400 mt-1 flex items-center gap-1">
-                  <Droplets className="w-3.5 h-3.5 text-slate-400" /> Humidity: <strong className="text-slate-200">{currentObs.humidityPercent}%</strong>
+                <p className="text-xs font-mono text-[#36546D] mt-1 flex items-center gap-1">
+                  <Droplets className="w-3.5 h-3.5 text-[#36546D]" /> Humidity: <strong className="text-[#0F2740]">{currentObs.humidityPercent}%</strong>
                 </p>
               </div>
-              <div className="pt-2 border-t border-white/5 text-[11px] font-mono text-slate-400 flex justify-between">
+              <div className="pt-2 border-t border-slate-200/80 text-[11px] font-mono text-[#36546D] flex justify-between">
                 <span>Sortie Cutoff: 2.0 km</span>
-                <span className={currentObs.visibilityKm <= 2.0 ? 'text-rose-400 font-semibold' : 'text-emerald-400'}>
+                <span className={currentObs.visibilityKm <= 2.0 ? 'text-rose-700 font-bold' : 'text-emerald-700 font-bold'}>
                   {currentObs.visibilityKm <= 2.0 ? 'Aviation Grounded' : 'Clear Horizon'}
                 </span>
               </div>
@@ -460,11 +462,11 @@ export default function EnvironmentPage() {
                   <Sparkles className="w-4 h-4 text-polar-cyan" />
                   REAL WEATHER + ACTIVE DEMO SCENARIO SEPARATION (SECTION 9)
                 </span>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-slate-300">
                   Live observation baseline remains immutable. Active demo faults inject non-destructive offsets into the simulated twin.
                 </span>
               </div>
-              <span className="px-2 py-0.5 rounded bg-polar-cyan/20 text-polar-cyan text-[10px] font-mono border border-polar-cyan/30">
+              <span className="px-2 py-0.5 rounded bg-polar-cyan/20 text-polar-cyan text-[10px] font-mono border border-polar-cyan/30 font-semibold">
                 DATA PROVENANCE SEPARATED
               </span>
             </div>
@@ -479,11 +481,11 @@ export default function EnvironmentPage() {
                 <div className="text-base font-bold text-white mt-1">
                   {currentObs.temperatureC.toFixed(1)}°C • {(currentObs.windKmh / 3.6).toFixed(1)} m/s
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-300">
                   Wind: {currentObs.windKmh} km/h • Vis: {currentObs.visibilityKm.toFixed(1)} km
                 </div>
-                <div className="text-[10px] text-slate-300 pt-1 border-t border-white/5">
-                  Source: <strong>{currentObs.primarySource}</strong>
+                <div className="text-[10px] text-slate-300 pt-1 border-t border-white/10">
+                  Source: <strong className="text-white">{currentObs.primarySource}</strong>
                 </div>
               </div>
 
@@ -496,11 +498,11 @@ export default function EnvironmentPage() {
                 <div className="text-base font-bold text-amber-300 mt-1">
                   {separation.activeScenarioOffset.tempOffsetC !== 0 ? `${separation.activeScenarioOffset.tempOffsetC}°C` : '0°C'} • {separation.activeScenarioOffset.windOffsetKmh > 0 ? `+${separation.activeScenarioOffset.windOffsetKmh} km/h` : '0 km/h'}
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-300">
                   {activeInjectedEvents.extremeCold ? 'Cold Snap Active (-12°C)' : 'No Thermal Offset'} • {activeInjectedEvents.highWind ? 'High Wind Active (+45 km/h)' : 'Nominal Wind'}
                 </div>
-                <div className="text-[10px] text-slate-300 pt-1 border-t border-white/5">
-                  Mode: <strong>RUNTIME OVERLAY (BASELINE UNTOUCHED)</strong>
+                <div className="text-[10px] text-slate-300 pt-1 border-t border-white/10">
+                  Mode: <strong className="text-white">RUNTIME OVERLAY (BASELINE UNTOUCHED)</strong>
                 </div>
               </div>
 
@@ -513,11 +515,11 @@ export default function EnvironmentPage() {
                 <div className="text-base font-bold text-cyan-300 mt-1">
                   {separation.effectiveWeather.temperatureC.toFixed(1)}°C • {separation.effectiveWeather.windMs} m/s
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-slate-300">
                   Effective Wind: {separation.effectiveWeather.windKmh} km/h • Wind Chill: {separation.effectiveWeather.windChillC}°C
                 </div>
-                <div className="text-[10px] text-slate-300 pt-1 border-t border-white/5">
-                  Fed To: <strong>DIGITAL TWIN HVAC & MICROGRID ENGINE</strong>
+                <div className="text-[10px] text-slate-300 pt-1 border-t border-white/10">
+                  Fed To: <strong className="text-white">DIGITAL TWIN HVAC & MICROGRID ENGINE</strong>
                 </div>
               </div>
             </div>
@@ -531,7 +533,7 @@ export default function EnvironmentPage() {
                   <Sliders className="w-4 h-4 text-sky-400" />
                   SECTION 14 TEST BENCH — INGEST NEW POLAR OBSERVATION & PROPAGATION
                 </span>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-slate-300">
                   Verify Section 14 test case: Live baseline (-17.5°C, 5.2 m/s) → New observation (-21.0°C, 10.8 m/s) → HVAC ↑ → Demand ↑ → Fuel Burn ↑ → Fuel Runway ↓ → Risk ↑
                 </span>
               </div>
@@ -556,7 +558,7 @@ export default function EnvironmentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
               <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">TEST AIR TEMPERATURE (°C):</span>
+                  <span className="text-slate-300 font-semibold">TEST AIR TEMPERATURE (°C):</span>
                   <span className="font-bold text-cyan-300">{testTempInput.toFixed(1)} °C</span>
                 </div>
                 <input
@@ -572,7 +574,7 @@ export default function EnvironmentPage() {
                   }}
                   className="w-full accent-cyan-400 bg-polar-800 rounded-lg cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
+                <div className="flex justify-between text-[10px] text-slate-300">
                   <span>-45.0°C (Extreme Polar)</span>
                   <span>-5.0°C (Summer)</span>
                 </div>
@@ -580,7 +582,7 @@ export default function EnvironmentPage() {
 
               <div className="p-3 rounded-lg bg-polar-950 border border-polar-border space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">TEST KATABATIC WIND (m/s):</span>
+                  <span className="text-slate-300 font-semibold">TEST KATABATIC WIND (m/s):</span>
                   <span className="font-bold text-sky-300">{testWindInput.toFixed(1)} m/s ({(testWindInput * 3.6).toFixed(1)} km/h)</span>
                 </div>
                 <input
@@ -599,7 +601,7 @@ export default function EnvironmentPage() {
                   }}
                   className="w-full accent-sky-400 bg-polar-800 rounded-lg cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
+                <div className="flex justify-between text-[10px] text-slate-300">
                   <span>2.0 m/s (Calm)</span>
                   <span>35.0 m/s (Category 3 Blizzard)</span>
                 </div>
@@ -608,34 +610,34 @@ export default function EnvironmentPage() {
 
             {/* Downstream Propagation Live Impact Display (Section 8 & 14) */}
             <div className="p-3 rounded-lg bg-polar-950 border border-polar-border font-mono text-xs space-y-2">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">
+              <span className="text-[10px] text-slate-300 uppercase font-bold block">
                 DOWNSTREAM DIGITAL TWIN RE-EVALUATION CASCADE (REAL-TIME PROPAGATION):
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center">
                 <div className="p-2 rounded bg-polar-900 border border-polar-border">
-                  <span className="text-[10px] text-slate-400 block">OBSERVED TEMP</span>
+                  <span className="text-[10px] text-slate-300 block font-medium">OBSERVED TEMP</span>
                   <span className="text-sm font-bold text-cyan-300">{currentObs.temperatureC.toFixed(1)}°C</span>
                 </div>
                 <div className="p-2 rounded bg-polar-900 border border-polar-border">
-                  <span className="text-[10px] text-slate-400 block">HVAC HEAT LOAD</span>
+                  <span className="text-[10px] text-slate-300 block font-medium">HVAC HEAT LOAD</span>
                   <span className="text-sm font-bold text-amber-300">{derived.heatingLoadKw} kW</span>
                 </div>
                 <div className="p-2 rounded bg-polar-900 border border-polar-border">
-                  <span className="text-[10px] text-slate-400 block">TOTAL DEMAND</span>
+                  <span className="text-[10px] text-slate-300 block font-medium">TOTAL DEMAND</span>
                   <span className="text-sm font-bold text-white">{derived.totalDemandKw} kW</span>
                 </div>
                 <div className="p-2 rounded bg-polar-900 border border-polar-border">
-                  <span className="text-[10px] text-slate-400 block">DAILY FUEL BURN</span>
+                  <span className="text-[10px] text-slate-300 block font-medium">DAILY FUEL BURN</span>
                   <span className="text-sm font-bold text-sky-300">{derived.dailyFuelBurnLitres} L/d</span>
                 </div>
                 <div className="p-2 rounded bg-polar-900 border border-polar-border">
-                  <span className="text-[10px] text-slate-400 block">FUEL RUNWAY</span>
+                  <span className="text-[10px] text-slate-300 block font-medium">FUEL RUNWAY</span>
                   <span className={`text-sm font-bold ${derived.fuelRunwayDays < 14 ? 'text-rose-400' : 'text-emerald-400'}`}>
                     {derived.fuelRunwayDays.toFixed(1)} days
                   </span>
                 </div>
                 <div className="p-2 rounded bg-polar-900 border border-polar-border">
-                  <span className="text-[10px] text-slate-400 block">CROSS-DOMAIN RISK</span>
+                  <span className="text-[10px] text-slate-300 block font-medium">CROSS-DOMAIN RISK</span>
                   <span className={`text-sm font-bold uppercase ${
                     derived.crossDomainRisk === 'critical' ? 'text-rose-400' :
                     derived.crossDomainRisk === 'warning' ? 'text-amber-400' : 'text-emerald-400'
@@ -648,10 +650,10 @@ export default function EnvironmentPage() {
           </div>
 
           {/* Continuous Historical Met Trend Chart (Section 13) */}
-          <div className="polar-card p-5 rounded-xl space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2">
-              <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-cyan-400" />
+          <div className="polar-card p-5 rounded-xl space-y-3 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
+              <span className="text-xs font-mono font-bold text-[#0F2740] uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-700" />
                 HISTORICAL OBSERVATIONS TREND ({historyHorizon} HORIZON)
               </span>
               <div className="flex items-center gap-1 bg-polar-950 p-1 rounded-lg border border-polar-border font-mono text-xs">
@@ -660,7 +662,7 @@ export default function EnvironmentPage() {
                   className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
                     historyHorizon === '24H'
                       ? 'bg-polar-blue text-white shadow'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   24H Trend
@@ -670,7 +672,7 @@ export default function EnvironmentPage() {
                   className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-all ${
                     historyHorizon === '7D'
                       ? 'bg-polar-blue text-white shadow'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   7D Trend
@@ -712,14 +714,14 @@ export default function EnvironmentPage() {
         <div className="space-y-5">
           
           {/* Layer Selector Bar */}
-          <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-3">
+          <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-wrap items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-polar-cyan" />
+              <Layers className="w-5 h-5 text-cyan-700" />
               <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                <h3 className="text-sm font-bold text-[#0F2740] uppercase tracking-wider">
                   ANTARCTIC NEAR-REAL-TIME SATELLITE IMAGERY
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#36546D]">
                   Switch multispectral satellite raster layers. Station markers represent Indian Antarctic Research Bases.
                 </p>
               </div>
@@ -908,8 +910,8 @@ export default function EnvironmentPage() {
           </div>
 
           {/* Satellite Technical Specifications Table */}
-          <div className="polar-card p-4 rounded-xl border border-polar-border font-mono text-xs space-y-2">
-            <span className="text-[10px] text-slate-400 uppercase font-bold block">
+          <div className="polar-card p-4 rounded-xl border border-polar-border font-mono text-xs space-y-2 shadow-xs">
+            <span className="text-[10px] text-[#36546D] uppercase font-bold block">
               ORBITAL SATELLITE MULTI-SPECTRAL SENSOR INGESTION SPECIFICATIONS:
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -941,48 +943,48 @@ export default function EnvironmentPage() {
         <div className="space-y-5">
           
           {/* Forecast Header & Model Provenance Banner */}
-          <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="polar-card p-4 rounded-xl border border-polar-border flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase font-bold">
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-100 text-purple-900 border border-purple-300 uppercase font-bold">
                   ECMWF HRES 0.1° INTEGRATED FORECASTING SYSTEM
                 </span>
-                <span className="text-xs font-mono text-slate-400">00Z Global Cycle</span>
+                <span className="text-xs font-mono text-[#36546D]">00Z Global Cycle</span>
               </div>
-              <h2 className="text-lg font-bold text-white mt-1">
+              <h2 className="text-lg font-bold text-[#0F2740] mt-1">
                 Polar Microclimate Forecast Horizons (+6H to +96H)
               </h2>
-              <p className="text-xs text-slate-300 font-mono mt-0.5">
+              <p className="text-xs text-[#36546D] font-mono mt-0.5">
                 Deterministic atmospheric forecast driving predictive heating demand calculations and logistics window validation.
               </p>
             </div>
 
             <div className="p-2.5 rounded-lg bg-polar-900 border border-polar-border font-mono text-xs text-right">
-              <span className="text-[10px] text-slate-400 block">MODEL PROVENANCE</span>
+              <span className="text-[10px] text-slate-300 block">MODEL PROVENANCE</span>
               <span className="text-purple-300 font-bold">ECMWF IFS Cycle 48r1</span>
-              <span className="text-[10px] text-slate-400 block">Calibrated Physical Model (No arbitrary confidence %)</span>
+              <span className="text-[10px] text-slate-300 block">Calibrated Physical Model (No arbitrary confidence %)</span>
             </div>
           </div>
 
           {/* Multi-Horizon Cards Grid (+6H, +12H, +24H, +48H, +72H, +96H) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs">
             {stationForecast.map((f, i) => (
-              <div key={i} className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-3">
+              <div key={i} className="polar-card p-4 rounded-xl border border-polar-border flex flex-col justify-between space-y-3 shadow-xs">
                 
                 {/* Horizon Header */}
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-bold text-white bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded border border-purple-500/30">
+                    <span className="text-base font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded border border-purple-300">
                       {f.horizon}
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-[#36546D]">
                       {new Date(f.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} UTC
                     </span>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
-                    f.blizzardProbability > 50 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                    f.blizzardProbability > 20 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                    'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    f.blizzardProbability > 50 ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                    f.blizzardProbability > 20 ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                    'bg-emerald-100 text-emerald-800 border border-emerald-300'
                   }`}>
                     Blizzard: {f.blizzardProbability}%
                   </span>
@@ -991,34 +993,34 @@ export default function EnvironmentPage() {
                 {/* Weather Metrics */}
                 <div className="grid grid-cols-2 gap-2 my-1">
                   <div>
-                    <span className="text-[10px] text-slate-400 block uppercase">Temperature</span>
-                    <span className="text-xl font-bold text-cyan-300">{f.temperatureC.toFixed(1)} °C</span>
+                    <span className="text-[10px] text-[#36546D] block uppercase font-semibold">Temperature</span>
+                    <span className="text-xl font-bold text-cyan-800 font-mono">{f.temperatureC.toFixed(1)} °C</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 block uppercase">Katabatic Wind</span>
-                    <span className="text-xl font-bold text-sky-300">{f.windKmh} km/h</span>
-                    <span className="text-[10px] text-slate-400 block">({f.windMs} m/s)</span>
+                    <span className="text-[10px] text-[#36546D] block uppercase font-semibold">Katabatic Wind</span>
+                    <span className="text-xl font-bold text-sky-800 font-mono">{f.windKmh} km/h</span>
+                    <span className="text-[10px] text-[#475569] block font-mono">({f.windMs} m/s)</span>
                   </div>
                 </div>
 
-                <div className="text-[11px] text-slate-300 bg-polar-950 p-2 rounded border border-white/5">
-                  <span className="text-slate-400 text-[10px] uppercase block">Condition</span>
-                  <span className="font-semibold text-white">{f.condition}</span>
+                <div className="text-[11px] text-[#0F2740] bg-cyan-50/80 p-2 rounded border border-cyan-200">
+                  <span className="text-[#36546D] text-[10px] uppercase block font-semibold">Condition</span>
+                  <span className="font-bold text-[#08243A]">{f.condition}</span>
                 </div>
 
                 {/* DIGITAL TWIN PHYSICAL COUPLING LINK */}
-                <div className="pt-2 border-t border-white/10 space-y-1">
-                  <span className="text-[10px] text-amber-400 uppercase font-bold block flex items-center gap-1">
-                    <Zap className="w-3 h-3 text-amber-400" />
+                <div className="pt-2 border-t border-slate-200 space-y-1">
+                  <span className="text-[10px] text-amber-800 uppercase font-bold block flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-amber-600" />
                     PROJECTED DIGITAL TWIN LOAD:
                   </span>
                   <div className="flex justify-between text-[11px]">
-                    <span className="text-slate-400">HVAC Heating Draw:</span>
-                    <strong className="text-white">{f.projectedHeatingLoadKw} kW</strong>
+                    <span className="text-[#36546D]">HVAC Heating Draw:</span>
+                    <strong className="text-[#08243A]">{f.projectedHeatingLoadKw} kW</strong>
                   </div>
                   <div className="flex justify-between text-[11px]">
-                    <span className="text-slate-400">Fuel Burn Impact:</span>
-                    <strong className="text-sky-300">+{Math.round((f.projectedHeatingLoadKw - 135) * 0.24 * 24)} L/day</strong>
+                    <span className="text-[#36546D]">Fuel Burn Impact:</span>
+                    <strong className="text-sky-800 font-bold">+{Math.round((f.projectedHeatingLoadKw - 135) * 0.24 * 24)} L/day</strong>
                   </div>
                 </div>
               </div>
