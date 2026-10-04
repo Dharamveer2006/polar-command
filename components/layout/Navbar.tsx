@@ -29,7 +29,8 @@ import {
   Pause,
   Wifi,
   WifiOff,
-  Flame
+  Flame,
+  X
 } from 'lucide-react';
 import { ActiveScenarios, ConnectivityStatus } from '@/types';
 
@@ -210,142 +211,162 @@ export default function Navbar() {
               <ChevronDown className="w-3 h-3 text-[#36546D]" />
             </button>
 
-            {/* Compact Popover Menu */}
+            {/* Compact Popover Menu with Solid Opaque Background */}
             {isDemoOpen && (
-              <div className="absolute right-0 mt-2 w-80 p-3 bg-[rgba(245,252,255,0.96)] backdrop-blur-xl border border-white/80 rounded-xl shadow-2xl z-50 space-y-3 font-mono text-xs text-[#0F2740]">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <span className="font-bold text-[#0F2740] uppercase text-[11px] flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
-                    Inject Stress Scenarios
-                  </span>
-                  <button
-                    onClick={resetAllEvents}
-                    className="text-[10px] text-[#36546D] hover:text-[#0F2740] flex items-center gap-1 font-semibold"
-                    title="Reset all to nominal"
-                  >
-                    <RotateCcw className="w-3 h-3" /> Reset
-                  </button>
-                </div>
+              <>
+                {/* Backdrop dismiss layer to prevent click collisions and focus user attention */}
+                <div 
+                  className="fixed inset-0 bg-slate-900/25 z-40"
+                  onClick={() => setIsDemoOpen(false)}
+                />
 
-                {/* 4 Composable Scenario Buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Cold Snap */}
-                  <button
-                    onClick={() => toggleInjectedEvent('extremeCold')}
-                    className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                      activeInjectedEvents.extremeCold
-                        ? 'bg-cyan-600 border-cyan-700 text-white shadow-xs font-bold'
-                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[10px] uppercase">Cold Snap</span>
-                      <Snowflake className={`w-3 h-3 ${activeInjectedEvents.extremeCold ? 'text-white' : 'text-cyan-600'}`} />
+                <div 
+                  className="absolute right-0 mt-2 w-[350px] max-w-[calc(100vw-1.5rem)] p-3.5 bg-white border-2 border-slate-300 rounded-xl shadow-2xl z-50 space-y-3 font-mono text-xs text-[#0F2740]"
+                  style={{ backgroundColor: '#ffffff', opacity: 1 }}
+                >
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="font-bold text-[#0F2740] uppercase text-[11px] flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
+                      Inject Stress Scenarios
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={resetAllEvents}
+                        className="text-[10px] text-[#36546D] hover:text-[#0F2740] px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 flex items-center gap-1 font-semibold transition-colors"
+                        title="Reset all scenarios to nominal"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Reset
+                      </button>
+                      <button
+                        onClick={() => setIsDemoOpen(false)}
+                        className="text-slate-400 hover:text-slate-700 p-0.5 rounded hover:bg-slate-100 transition-colors"
+                        title="Close popover"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.extremeCold ? 'text-cyan-100' : 'text-slate-500'}`}>-12°C HVAC draw</span>
-                  </button>
+                  </div>
 
-                  {/* Blizzard */}
-                  <button
-                    onClick={() => toggleInjectedEvent('highWind')}
-                    className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                      activeInjectedEvents.highWind
-                        ? 'bg-sky-600 border-sky-700 text-white shadow-xs font-bold'
-                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[10px] uppercase">Blizzard</span>
-                      <Wind className={`w-3 h-3 ${activeInjectedEvents.highWind ? 'text-white' : 'text-sky-600'}`} />
-                    </div>
-                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.highWind ? 'text-sky-100' : 'text-slate-500'}`}>+45 km/h Katabatic</span>
-                  </button>
-
-                  {/* Generator 2 Failure */}
-                  <button
-                    onClick={() => toggleInjectedEvent('generator2Failure')}
-                    className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                      activeInjectedEvents.generator2Failure
-                        ? 'bg-rose-600 border-rose-700 text-white shadow-xs font-bold animate-pulse'
-                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[10px] uppercase">Gen #2 Trip</span>
-                      <ZapOff className={`w-3 h-3 ${activeInjectedEvents.generator2Failure ? 'text-white' : 'text-rose-600'}`} />
-                    </div>
-                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.generator2Failure ? 'text-rose-100' : 'text-slate-500'}`}>-190kW microgrid</span>
-                  </button>
-
-                  {/* Resupply Delay */}
-                  <button
-                    onClick={() => toggleInjectedEvent('resupplyDelay')}
-                    className={`p-2 rounded-lg border text-left flex flex-col justify-between transition-all ${
-                      activeInjectedEvents.resupplyDelay
-                        ? 'bg-amber-600 border-amber-700 text-white shadow-xs font-bold'
-                        : 'bg-white/80 border-slate-300 text-[#36546D] hover:border-slate-500 hover:text-[#0F2740]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[10px] uppercase">Resupply Delay</span>
-                      <CalendarClock className={`w-3 h-3 ${activeInjectedEvents.resupplyDelay ? 'text-white' : 'text-amber-600'}`} />
-                    </div>
-                    <span className={`text-[9px] mt-1 ${activeInjectedEvents.resupplyDelay ? 'text-amber-100' : 'text-slate-500'}`}>+12d sea-ice lock</span>
-                  </button>
-                </div>
-
-                {/* Macro Actions: Full Cascade & Reset */}
-                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
-                  <button
-                    onClick={triggerFullCascade}
-                    className="py-1.5 px-2 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 font-bold text-[10px] flex items-center justify-center gap-1 shadow-xs"
-                  >
-                    <Flame className="w-3 h-3 text-rose-600" /> Full Cascade
-                  </button>
-                  <button
-                    onClick={resetAllEvents}
-                    className="py-1.5 px-2 rounded bg-white/80 hover:bg-white text-[#36546D] border border-slate-300 font-bold text-[10px] flex items-center justify-center gap-1 shadow-xs"
-                  >
-                    <RotateCcw className="w-3 h-3 text-slate-500" /> Reset Nominal
-                  </button>
-                </div>
-
-                {/* Telemetry Drift & Link Simulation Controls */}
-                <div className="pt-2 border-t border-slate-200 space-y-2 text-[10px]">
-                  <div className="flex items-center justify-between text-[#36546D]">
-                    <span>Coupled Realtime Drift:</span>
+                  {/* 4 Composable Scenario Buttons (100% Opaque Solid Surfaces) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Cold Snap */}
                     <button
-                      onClick={() => setIsRealtimeActive(!isRealtimeActive)}
-                      className={`px-2 py-0.5 rounded font-bold flex items-center gap-1 ${
-                        isRealtimeActive ? 'bg-cyan-500/20 text-[#006A8C] border border-cyan-400/50' : 'bg-slate-100 text-[#36546D]'
+                      onClick={() => toggleInjectedEvent('extremeCold')}
+                      className={`p-2.5 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                        activeInjectedEvents.extremeCold
+                          ? 'bg-cyan-600 border-cyan-700 text-white shadow-xs font-bold'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-[#36546D] hover:border-slate-400 hover:text-[#0F2740]'
                       }`}
                     >
-                      {isRealtimeActive ? <Play className="w-2.5 h-2.5 fill-current" /> : <Pause className="w-2.5 h-2.5 fill-current" />}
-                      {isRealtimeActive ? 'STREAMING' : 'PAUSED'}
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10px] uppercase">Cold Snap</span>
+                        <Snowflake className={`w-3 h-3 ${activeInjectedEvents.extremeCold ? 'text-white' : 'text-cyan-600'}`} />
+                      </div>
+                      <span className={`text-[9px] mt-1 ${activeInjectedEvents.extremeCold ? 'text-cyan-100' : 'text-slate-500'}`}>-12°C HVAC draw</span>
+                    </button>
+
+                    {/* Blizzard */}
+                    <button
+                      onClick={() => toggleInjectedEvent('highWind')}
+                      className={`p-2.5 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                        activeInjectedEvents.highWind
+                          ? 'bg-sky-600 border-sky-700 text-white shadow-xs font-bold'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-[#36546D] hover:border-slate-400 hover:text-[#0F2740]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10px] uppercase">Blizzard</span>
+                        <Wind className={`w-3 h-3 ${activeInjectedEvents.highWind ? 'text-white' : 'text-sky-600'}`} />
+                      </div>
+                      <span className={`text-[9px] mt-1 ${activeInjectedEvents.highWind ? 'text-sky-100' : 'text-slate-500'}`}>+45 km/h Katabatic</span>
+                    </button>
+
+                    {/* Generator 2 Failure */}
+                    <button
+                      onClick={() => toggleInjectedEvent('generator2Failure')}
+                      className={`p-2.5 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                        activeInjectedEvents.generator2Failure
+                          ? 'bg-rose-600 border-rose-700 text-white shadow-xs font-bold animate-pulse'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-[#36546D] hover:border-slate-400 hover:text-[#0F2740]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10px] uppercase">Gen #2 Trip</span>
+                        <ZapOff className={`w-3 h-3 ${activeInjectedEvents.generator2Failure ? 'text-white' : 'text-rose-600'}`} />
+                      </div>
+                      <span className={`text-[9px] mt-1 ${activeInjectedEvents.generator2Failure ? 'text-rose-100' : 'text-slate-500'}`}>-190kW microgrid</span>
+                    </button>
+
+                    {/* Resupply Delay */}
+                    <button
+                      onClick={() => toggleInjectedEvent('resupplyDelay')}
+                      className={`p-2.5 rounded-lg border text-left flex flex-col justify-between transition-all ${
+                        activeInjectedEvents.resupplyDelay
+                          ? 'bg-amber-600 border-amber-700 text-white shadow-xs font-bold'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-[#36546D] hover:border-slate-400 hover:text-[#0F2740]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10px] uppercase">Resupply Delay</span>
+                        <CalendarClock className={`w-3 h-3 ${activeInjectedEvents.resupplyDelay ? 'text-white' : 'text-amber-600'}`} />
+                      </div>
+                      <span className={`text-[9px] mt-1 ${activeInjectedEvents.resupplyDelay ? 'text-amber-100' : 'text-slate-500'}`}>+12d sea-ice lock</span>
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between text-[#36546D]">
-                    <span>Satellite Link:</span>
-                    <div className="flex gap-1">
-                      {(['CONNECTED', 'INTERMITTENT', 'DISCONNECTED'] as ConnectivityStatus[]).map(status => (
-                        <button
-                          key={status}
-                          onClick={() => setConnectivity(status)}
-                          className={`px-1.5 py-0.5 rounded font-bold text-[9px] ${
-                            connectivity === status
-                              ? status === 'CONNECTED' ? 'bg-emerald-600 text-white' :
-                                status === 'INTERMITTENT' ? 'bg-amber-600 text-white' : 'bg-rose-600 text-white'
-                              : 'bg-slate-100 text-[#36546D] hover:bg-slate-200'
-                          }`}
-                        >
-                          {status === 'CONNECTED' ? 'ONLINE' : status === 'INTERMITTENT' ? 'INT' : 'OFF'}
-                        </button>
-                      ))}
+                  {/* Macro Actions: Full Cascade & Reset */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                    <button
+                      onClick={triggerFullCascade}
+                      className="py-2 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                    >
+                      <Flame className="w-3 h-3 text-rose-600" /> Full Cascade
+                    </button>
+                    <button
+                      onClick={resetAllEvents}
+                      className="py-2 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#0F2740] border border-slate-300 font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                    >
+                      <RotateCcw className="w-3 h-3 text-slate-500" /> Reset Nominal
+                    </button>
+                  </div>
+
+                  {/* Telemetry Drift & Link Simulation Controls */}
+                  <div className="pt-2 border-t border-slate-200 space-y-2 text-[10px]">
+                    <div className="flex items-center justify-between text-[#36546D]">
+                      <span className="font-semibold">Coupled Realtime Drift:</span>
+                      <button
+                        onClick={() => setIsRealtimeActive(!isRealtimeActive)}
+                        className={`px-2 py-0.5 rounded font-bold flex items-center gap-1 ${
+                          isRealtimeActive ? 'bg-cyan-100 text-[#006A8C] border border-cyan-300' : 'bg-slate-100 text-[#36546D]'
+                        }`}
+                      >
+                        {isRealtimeActive ? <Play className="w-2.5 h-2.5 fill-current" /> : <Pause className="w-2.5 h-2.5 fill-current" />}
+                        {isRealtimeActive ? 'STREAMING' : 'PAUSED'}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[#36546D]">
+                      <span className="font-semibold">Satellite Link:</span>
+                      <div className="flex gap-1">
+                        {(['CONNECTED', 'INTERMITTENT', 'DISCONNECTED'] as ConnectivityStatus[]).map(status => (
+                          <button
+                            key={status}
+                            onClick={() => setConnectivity(status)}
+                            className={`px-2 py-0.5 rounded font-bold text-[9px] transition-colors ${
+                              connectivity === status
+                                ? status === 'CONNECTED' ? 'bg-emerald-600 text-white' :
+                                  status === 'INTERMITTENT' ? 'bg-amber-600 text-white' : 'bg-rose-600 text-white'
+                                : 'bg-slate-100 text-[#36546D] hover:bg-slate-200'
+                            }`}
+                          >
+                            {status === 'CONNECTED' ? 'ONLINE' : status === 'INTERMITTENT' ? 'INT' : 'OFF'}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 
