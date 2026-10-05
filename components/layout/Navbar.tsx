@@ -215,35 +215,58 @@ export default function Navbar() {
         {/* ============================================================== */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           
-          {/* Station Health Capsule */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 border border-slate-300/80 shadow-xs text-[#0F2740] transition-all hover:bg-white">
-            <Activity className="w-3.5 h-3.5 text-cyan-600" />
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-[#475569] text-[10px] font-semibold uppercase">Health:</span>
-              <span className={`font-bold ${
-                healthValue >= 80 ? 'text-emerald-700' :
-                healthValue >= 60 ? 'text-amber-700' : 'text-rose-700'
-              }`}>
-                {healthValue}%
-              </span>
-            </div>
+          {/* Station Health & Warnings Header Segment */}
+          <div className="hidden sm:flex items-center gap-1.5 p-1 rounded-xl bg-white/85 border border-slate-300/85 shadow-xs text-[#0F2740]">
+            {/* Health Overview Pill - Clickable to Dashboard */}
+            <Link
+              href="/dashboard"
+              title={`Station Health: ${healthValue}% • Click to view Command Overview`}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-slate-100/90 text-[#0F2740] transition-all cursor-pointer group/health"
+            >
+              <Activity className="w-3.5 h-3.5 text-cyan-600 group-hover/health:scale-110 transition-transform" />
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-[#475569] text-[10px] font-semibold uppercase">Health:</span>
+                <span className={`font-bold font-mono ${
+                  healthValue >= 80 ? 'text-emerald-700' :
+                  healthValue >= 60 ? 'text-amber-700' : 'text-rose-700'
+                }`}>
+                  {healthValue}%
+                </span>
+              </div>
+            </Link>
             
-            <span className="text-slate-300">|</span>
+            <span className="text-slate-300 select-none">|</span>
             
+            {/* WARNING SECTION - Clickable to redirect directly to Warning Section */}
             {criticalCount > 0 ? (
-              <span className="text-rose-700 text-[10px] font-bold flex items-center gap-1 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
-                {criticalCount} CRIT
-              </span>
+              <Link
+                href="/alerts?severity=critical#warning-alerts"
+                title={`${criticalCount} Critical Incidents • Click to redirect to Critical Incidents section`}
+                aria-label={`${criticalCount} Critical Incidents. Click to redirect to Critical Incidents section.`}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100/90 hover:bg-rose-200 border border-rose-300 text-rose-800 text-[10px] font-bold font-mono transition-all duration-200 cursor-pointer shadow-xs hover:shadow-[0_0_10px_rgba(225,29,72,0.3)] hover:scale-105 active:scale-95 animate-pulse"
+              >
+                <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+                <span>{criticalCount} CRIT</span>
+              </Link>
             ) : warningCount > 0 ? (
-              <span className="text-amber-700 text-[10px] font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                {warningCount} WARN
-              </span>
+              <Link
+                href="/alerts?severity=warning#warning-alerts"
+                title={`${warningCount} Active Warnings • Click to redirect to Warning section`}
+                aria-label={`${warningCount} Active Warnings. Click to redirect to Warning section.`}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-[10px] font-bold font-mono transition-all duration-200 cursor-pointer shadow-xs hover:shadow-[0_0_10px_rgba(245,158,11,0.35)] hover:scale-105 active:scale-95"
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_#f59e0b]" />
+                <span>{warningCount} WARN</span>
+              </Link>
             ) : (
-              <span className="text-emerald-700 text-[10px] flex items-center gap-1 font-semibold">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Nominal
-              </span>
+              <Link
+                href="/alerts"
+                title="All Subsystems Nominal • Click to view Alerts"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-emerald-700 hover:bg-emerald-50 text-[10px] font-semibold transition-all cursor-pointer font-mono"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Nominal</span>
+              </Link>
             )}
           </div>
 

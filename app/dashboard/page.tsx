@@ -646,8 +646,23 @@ export default function DashboardPage() {
               {operationalStatus === 'CRITICAL' ? 'CRITICAL RISK' : operationalStatus === 'WARNING' ? 'ELEVATED RISK' : operationalStatus}
             </span>
           </div>
-          <div className="text-xs text-[#36546D] my-0.5 font-medium">
-            Active Alerts: <strong className={criticalCount > 0 ? 'text-rose-700 font-mono' : 'text-[#08243A] font-mono'}>{criticalCount} CRITICAL</strong> • <strong className={warningCount > 0 ? 'text-amber-700 font-mono' : 'text-[#08243A] font-mono'}>{warningCount} WARNING</strong>
+          <div className="text-xs text-[#36546D] my-0.5 font-medium flex items-center gap-1.5 flex-wrap">
+            <span>Active Alerts:</span>
+            <Link
+              href="/alerts?severity=critical#warning-alerts"
+              title="Click to view Critical Alerts"
+              className={criticalCount > 0 ? 'text-rose-700 font-mono font-bold hover:underline' : 'text-[#08243A] font-mono hover:underline'}
+            >
+              {criticalCount} CRITICAL
+            </Link>
+            <span>•</span>
+            <Link
+              href="/alerts?severity=warning#warning-alerts"
+              title="Click to redirect to Warning section"
+              className={warningCount > 0 ? 'text-amber-700 font-mono font-bold hover:underline' : 'text-[#08243A] font-mono hover:underline'}
+            >
+              {warningCount} WARNING
+            </Link>
           </div>
           <div className="space-y-0.5 text-[10.5px] pt-1 border-t border-slate-200 font-mono">
             <div className="flex justify-between">

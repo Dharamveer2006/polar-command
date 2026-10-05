@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useStation } from '@/context/StationContext';
 import { 
   Bell, 
@@ -24,7 +25,10 @@ import {
 import { RiskSeverity, Alert } from '@/types';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 
-export default function AlertsPage() {
+function AlertsContent() {
+  const searchParams = useSearchParams();
+  const severityParam = searchParams.get('severity');
+
   const { 
     stationState, 
     effectiveStationState,
@@ -35,9 +39,30 @@ export default function AlertsPage() {
     currentUser 
   } = useStation();
 
-  const [severityFilter, setSeverityFilter] = useState<'ALL' | RiskSeverity>('ALL');
+  const [severityFilter, setSeverityFilter] = useState<'ALL' | RiskSeverity>(() => {
+    if (severityParam === 'warning' || severityParam === 'critical') {
+      return severityParam;
+    }
+    return 'ALL';
+  });
   const [domainFilter, setDomainFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'active' | 'acknowledged' | 'resolved'>('ALL');
+
+  useEffect(() => {
+    if (severityParam === 'warning' || severityParam === 'critical') {
+      setSeverityFilter(severityParam);
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          const el = document.getElementById('warning-alerts');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 120);
+      }
+    } else if (severityParam === 'ALL') {
+      setSeverityFilter('ALL');
+    }
+  }, [severityParam]);
 
   const activeAlerts = stationState.activeAlerts;
   const resolvedAlerts = stationState.resolvedAlerts || [];
@@ -138,7 +163,22 @@ export default function AlertsPage() {
       {/* Main Grid: Left = Alert Feed, Right = Incident Summary & Affected Systems Panels (Requirement 13) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 cols): Alert Feed */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4" id="warning-alerts">
+          {severityFilter === 'warning' && (
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950 font-mono shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_#f59e0b]" />
+                <span className="font-bold uppercase tracking-wider text-amber-900">Station Warning Section:</span>
+                <span className="text-[#36546D]">Displaying {filteredAlerts.length} Active Operational Warning Advisories</span>
+              </div>
+              <button
+                onClick={() => setSeverityFilter('ALL')}
+                className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 font-bold text-[10px] hover:bg-amber-100 transition-colors shadow-2xs cursor-pointer"
+              >
+                Clear Filter (View All)
+              </button>
+            </div>
+          )}
           {filteredAlerts.length === 0 ? (
             <div className="polar-card p-12 text-center rounded-2xl font-mono text-xs text-[#36546D] space-y-3">
               <ShieldCheck className="w-10 h-10 text-emerald-600 mx-auto" />
@@ -442,5 +482,19 @@ export default function AlertsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AlertsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-1 p-6 flex items-center justify-center font-mono text-xs text-[#36546D]">
+          Loading Incident Triage & Advisories...
+        </div>
+      }
+    >
+      <AlertsContent />
+    </Suspense>
   );
 }
