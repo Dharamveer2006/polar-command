@@ -57,59 +57,86 @@
 @layer components {
   /* Frosted Glass Panels (Light) */
   .polar-glass {
-    background: rgba(245, 252, 255, 0.78);
+    background: rgba(245, 252, 255, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.70);
     box-shadow: 0 8px 32px 0 rgba(8, 36, 58, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
     color: #0F2740;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-glass:hover {
+    box-shadow: 0 12px 36px 0 rgba(0, 184, 230, 0.12), 0 2px 8px 0 rgba(8, 36, 58, 0.06);
   }
 
   /* Frosted Glass Panels (Dark / Technical / Command) */
   .polar-glass-dark {
-    background: rgba(8, 36, 58, 0.82);
+    background: rgba(8, 36, 58, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(0, 184, 230, 0.25);
+    border: 1px solid rgba(0, 184, 230, 0.30);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
     color: #FFFFFF;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-glass-dark:hover {
+    box-shadow: 0 12px 40px 0 rgba(0, 184, 230, 0.25);
+    border-color: rgba(0, 184, 230, 0.50);
   }
 
   /* Base Modular Card - Light Frosted Glass default */
   .polar-card {
-    background: rgba(245, 252, 255, 0.78);
+    background: rgba(245, 252, 255, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.70);
     box-shadow: 0 8px 32px 0 rgba(8, 36, 58, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
     color: #0F2740;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-card:hover {
+    box-shadow: 0 12px 36px 0 rgba(0, 184, 230, 0.14), 0 2px 8px 0 rgba(8, 36, 58, 0.06);
+    border-color: rgba(0, 184, 230, 0.35);
   }
 
   .polar-card-dark {
-    background: rgba(8, 36, 58, 0.82);
+    background: rgba(8, 36, 58, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(0, 184, 230, 0.25);
+    border: 1px solid rgba(0, 184, 230, 0.30);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
     color: #FFFFFF;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-card-dark:hover {
+    box-shadow: 0 12px 40px 0 rgba(0, 184, 230, 0.25);
+    border-color: rgba(0, 184, 230, 0.50);
   }
 
   .polar-card-light {
-    background-color: rgba(255, 255, 255, 0.90);
+    background-color: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.80);
+    border: 1px solid rgba(255, 255, 255, 0.85);
     color: #0F2740;
     box-shadow: 0 4px 16px rgba(8, 36, 58, 0.06);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-card-light:hover {
+    box-shadow: 0 8px 24px rgba(8, 36, 58, 0.1);
   }
 
   .polar-card-highlight {
-    background: rgba(235, 248, 255, 0.88);
+    background: rgba(235, 248, 255, 0.90);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid #00B8E6;
     box-shadow: 0 0 20px -2px rgba(0, 184, 230, 0.25);
     color: #0F2740;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-card-highlight:hover {
+    box-shadow: 0 0 28px -2px rgba(0, 184, 230, 0.45);
   }
 
   @media (max-width: 768px) {
@@ -215,9 +242,55 @@
   .animate-pulse-subtle {
     animation: pulse-subtle 2.5s infinite ease-in-out;
   }
+
+  /* Flexbox & Box Model Helpers */
+  .flex-box-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .flex-box-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .flex-box-start {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* Interactive Hover Animations */
+  .polar-interactive-chip {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-interactive-chip:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 16px -2px rgba(0, 184, 230, 0.28);
+  }
+
+  .polar-card-interactive {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+  }
+  .polar-card-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px 0 rgba(0, 184, 230, 0.15), 0 2px 8px 0 rgba(8, 36, 58, 0.08);
+    border-color: rgba(0, 184, 230, 0.45);
+  }
+
+  .polar-btn-hover {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .polar-btn-hover:hover {
+    transform: translateY(-1px) scale(1.02);
+    filter: brightness(1.05);
+  }
+  .polar-btn-hover:active {
+    transform: translateY(0) scale(0.99);
+  }
 }
-
-
 
 /* Keyframes */
 @keyframes pulse-subtle {
@@ -231,6 +304,21 @@
   }
 }
 
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+@keyframes wave-bounce {
+  0%, 100% { height: 4px; }
+  50% { height: 13px; }
+}
+
 /* WebKit Custom scrollbars for Light Theme */
 ::-webkit-scrollbar {
   width: 6px;
@@ -242,9 +330,10 @@
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
+  transition: background 0.2s;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #00b8e6;
 }
 
 /* Print Styles for Official SITREP Reports */

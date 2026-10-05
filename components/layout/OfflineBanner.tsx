@@ -18,18 +18,22 @@ export default function OfflineBanner() {
   // If there's an active sync flush notification (e.g., "17 telemetry events synchronized")
   if (syncNotification) {
     return (
-      <div className="w-full px-4 py-2 text-xs font-mono bg-emerald-950/90 border-b border-emerald-500/60 text-emerald-200 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span className="font-semibold">{syncNotification}</span>
-          <span suppressHydrationWarning className="text-[10px] text-emerald-400/80">• Cloud twin synchronized at {new Date().toLocaleTimeString()}</span>
+      <div className="w-full px-4 py-2.5 text-xs font-mono bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 border-b border-emerald-500/60 text-emerald-100 flex items-center justify-between shadow-lg backdrop-blur-md">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/40">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <span className="font-bold tracking-wide">{syncNotification}</span>
+          <span suppressHydrationWarning className="text-[11px] text-emerald-300/80 font-sans">
+            • Cloud twin synchronized at {new Date().toLocaleTimeString()}
+          </span>
         </div>
         <button
           onClick={dismissSyncNotification}
-          className="p-1 hover:bg-emerald-900/60 rounded text-emerald-300"
-          title="Dismiss"
+          className="p-1.5 hover:bg-emerald-900/70 rounded-lg text-emerald-300 hover:text-white transition-colors"
+          title="Dismiss notification"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
     );
@@ -42,45 +46,55 @@ export default function OfflineBanner() {
   const isIntermittent = connectivity === 'INTERMITTENT';
 
   return (
-    <div className={`w-full px-4 py-2 text-xs font-mono flex flex-wrap items-center justify-between gap-3 transition-colors ${
+    <div className={`w-full px-4 py-2.5 text-xs font-mono flex flex-wrap items-center justify-between gap-3 shadow-lg backdrop-blur-md transition-all ${
       isIntermittent 
-        ? 'bg-amber-950/90 border-b border-amber-600/50 text-amber-200' 
-        : 'bg-rose-950/90 border-b border-rose-600/60 text-rose-200'
+        ? 'bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 border-b border-amber-500/60 text-amber-100' 
+        : 'bg-gradient-to-r from-rose-950 via-slate-900 to-rose-950 border-b border-rose-500/60 text-rose-100'
     }`}>
-      <div className="flex items-center gap-3">
-        {isIntermittent ? (
-          <AlertTriangle className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
-        ) : (
-          <WifiOff className="w-4 h-4 text-rose-400 animate-pulse shrink-0" />
-        )}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className={`p-1.5 rounded-xl border ${
+          isIntermittent 
+            ? 'bg-amber-500/20 border-amber-400/40 text-amber-400' 
+            : 'bg-rose-500/20 border-rose-400/40 text-rose-400'
+        }`}>
+          {isIntermittent ? (
+            <AlertTriangle className="w-4 h-4 animate-pulse shrink-0" />
+          ) : (
+            <WifiOff className="w-4 h-4 animate-pulse shrink-0" />
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-bold uppercase tracking-wider">
+          <span className="font-extrabold uppercase tracking-wider text-xs">
             {isIntermittent ? 'Satellite Link Intermittent' : 'Station Disconnected (Edge Mode)'}
           </span>
-          <span className="text-white/60">|</span>
-          <span>Last Cloud Sync: <strong>{new Date(lastSyncTime).toLocaleTimeString()}</strong></span>
-          <span className="text-white/60">|</span>
-          <span className="flex items-center gap-1">
-            <HardDrive className="w-3 h-3 text-current" />
-            Buffered Events: <strong>{edgeQueue.length}</strong>
+          <span className="text-white/40">|</span>
+          <span className="text-[11px] opacity-90">
+            Last Cloud Sync: <strong className="text-white">{new Date(lastSyncTime).toLocaleTimeString()}</strong>
           </span>
-          <span className="text-white/60">|</span>
-          <span>Pending Ops: <strong>{pendingOperationsCount}</strong></span>
-          <span className="text-white/60">|</span>
-          <span className="text-[11px] opacity-80">
+          <span className="text-white/40">|</span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 border border-white/15 text-[10px]">
+            <HardDrive className="w-3 h-3 text-cyan-400" />
+            Buffered Events: <strong className="text-white">{edgeQueue.length}</strong>
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 border border-white/15 text-[10px]">
+            Pending Ops: <strong className="text-white">{pendingOperationsCount}</strong>
+          </span>
+          <span className="text-white/40 hidden md:inline">|</span>
+          <span className="text-[11px] opacity-75 hidden lg:inline">
             {isIntermittent 
-              ? 'Status: Delayed packet transmissions (simulate ~25% loss)' 
-              : 'Status: Local edge queue active. Autonomous local alerts operational.'}
+              ? 'Status: Delayed packet transmissions (~25% loss simulated)' 
+              : 'Status: Local edge queue active. Autonomous edge alerts operational.'}
           </span>
         </div>
       </div>
 
       <button
         onClick={triggerManualSync}
-        className="px-3 py-1 rounded bg-black/40 hover:bg-black/60 border border-current flex items-center gap-1.5 transition-all text-xs font-bold"
+        className="px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/30 hover:border-white/50 flex items-center gap-2 transition-all duration-200 text-xs font-bold shadow-xs hover:scale-[1.02] active:scale-100"
       >
-        <RefreshCw className="w-3.5 h-3.5" />
-        Flush & Sync Buffer
+        <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
+        <span>Flush & Sync Buffer</span>
       </button>
     </div>
   );
