@@ -57,7 +57,12 @@ export default function StationTwin2D({
   showEnergyFlow = true,
 }: StationTwin2DProps) {
   const [hoveredAssetId, setHoveredAssetId] = useState<string | null>(null);
-  const { stationState, activeInjectedEvents } = useStation();
+  const { 
+    stationState, 
+    activeInjectedEvents, 
+    spatialHardwareNodes, 
+    setSelectedHardwareNodeId 
+  } = useStation();
   const { derived, activeAlerts } = stationState;
 
   const isBharati = stationId === 'bharati';
@@ -478,7 +483,120 @@ export default function StationTwin2D({
             </text>
           </g>
 
-          {/* Interactive Hotspot Nodes for Assets */}
+          {/* ============================================================== */}
+          {/* HARDWARE-FIRST ENGINEERING NODES (SIH26060 Requirement 14)     */}
+          {/* GEN #1, GEN #2, BESS, HVAC, WATER PUMP, RO, FUEL TANK, SATCOM   */}
+          {/* Shows: device ID, health, status, live telemetry                */}
+          {/* ============================================================== */}
+          {spatialHardwareNodes.map((hwNode) => {
+            const isSelected = selectedAssetId === hwNode.deviceId || selectedAssetId === hwNode.assetId;
+            const isOnline = hwNode.status === 'ONLINE';
+            const isWarning = hwNode.status === 'WARNING';
+            const isCritical = hwNode.status === 'CRITICAL' || hwNode.status === 'OFFLINE';
+            const statusColor = isCritical ? '#f43f5e' : isWarning ? '#f59e0b' : '#10b981';
+
+            return (
+              <g
+                key={hwNode.nodeId}
+                transform={`translate(${hwNode.coordinates.x}, ${hwNode.coordinates.y})`}
+                onClick={() => {
+                  onSelectAsset(hwNode.deviceId);
+                  setSelectedHardwareNodeId(hwNode.deviceId);
+                }}
+                className="cursor-pointer group select-none"
+              >
+                {/* Outer Selection Highlight or Fault Ring */}
+                {(isSelected || isCritical) && (
+                  <rect
+                    x="-54"
+                    y="-28"
+                    width="108"
+                    height="56"
+                    rx="6"
+                    fill="none"
+                    stroke={statusColor}
+                    strokeWidth={isSelected ? "2.5" : "1.5"}
+                    strokeDasharray={isSelected ? "4 2" : undefined}
+                    className={isCritical ? "animate-pulse" : ""}
+                    opacity="0.9"
+                  />
+                )}
+
+                {/* Main Hardware Instrument Enclosure */}
+                <rect
+                  x="-50"
+                  y="-25"
+                  width="100"
+                  height="50"
+                  rx="5"
+                  fill={isSelected ? "#09243E" : "#0A131F"}
+                  stroke={statusColor}
+                  strokeWidth={isSelected ? "2" : "1.2"}
+                  className="transition-all group-hover:fill-[#0F2238]"
+                />
+
+                {/* Top Industrial Header Strip */}
+                <rect x="-49" y="-24" width="98" height="13" rx="3" fill="#132438" />
+                
+                {/* Status LED */}
+                <circle cx="-42" cy="-17.5" r="2.5" fill={statusColor} className={isOnline ? "animate-pulse" : ""} />
+                
+                {/* Label */}
+                <text
+                  x="-35"
+                  y="-14.5"
+                  fontSize="7.5"
+                  fontWeight="bold"
+                  fill="#FFFFFF"
+                  fontFamily="monospace"
+                >
+                  {hwNode.shortLabel}
+                </text>
+
+                {/* Health % */}
+                <text
+                  x="44"
+                  y="-14.5"
+                  textAnchor="end"
+                  fontSize="7"
+                  fontWeight="bold"
+                  fill={hwNode.health > 80 ? "#34D399" : (hwNode.health > 50 ? "#FBBF24" : "#F87171")}
+                  fontFamily="monospace"
+                >
+                  {hwNode.health > 0 ? `${hwNode.health}%` : 'ERR'}
+                </text>
+
+                {/* Device ID */}
+                <text
+                  x="0"
+                  y="-1.5"
+                  textAnchor="middle"
+                  fontSize="7.5"
+                  fontWeight="bold"
+                  fill="#38BDF8"
+                  fontFamily="monospace"
+                >
+                  {hwNode.deviceId}
+                </text>
+
+                {/* Live Telemetry Value Box */}
+                <rect x="-44" y="6" width="88" height="15" rx="3" fill="#040C16" stroke="#1E293B" strokeWidth="0.8" />
+                <text
+                  x="0"
+                  y="16.5"
+                  textAnchor="middle"
+                  fontSize="8.5"
+                  fontWeight="bold"
+                  fill="#F8FAFC"
+                  fontFamily="monospace"
+                >
+                  {hwNode.primaryValue}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Interactive Hotspot Nodes for Assets (Backward Compatible) */}
           {assets.map((asset) => {
             const pos = ASSET_SCHEMATIC_POSITIONS[asset.assetId] || { x: 400, y: 200, zone: asset.building, icon: Cpu };
             const isSelected = selectedAssetId === asset.assetId;
@@ -493,7 +611,10 @@ export default function StationTwin2D({
               <g
                 key={asset.assetId}
                 transform={`translate(${pos.x}, ${pos.y})`}
-                onClick={() => onSelectAsset(asset.assetId)}
+                onClick={() => {
+                  onSelectAsset(asset.assetId);
+                  setSelectedHardwareNodeId(asset.assetId);
+                }}
                 onMouseEnter={() => setHoveredAssetId(asset.assetId)}
                 onMouseLeave={() => setHoveredAssetId(null)}
                 className="cursor-pointer group"

@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 import StationTwin2D from '@/components/twin/StationTwin2D';
+import HardwareStatus from '@/components/hardware/HardwareStatus';
 import { StationId, StationMode } from '@/types';
 
 export default function DashboardPage() {
@@ -351,7 +352,9 @@ export default function DashboardPage() {
   const medItem = logistics.inventory.find(i => i.category === 'medical');
 
   return (
-    <div className="flex-1 p-4 md:p-6 space-y-5 max-w-7xl mx-auto w-full font-sans text-[#0F2740]">
+    <div className="flex-1 p-4 md:p-6 space-y-4 max-w-7xl mx-auto w-full font-sans text-[#0F2740]">
+      {/* Hardware Telemetry Status Banner (Requirement 23) */}
+      <HardwareStatus />
       
       {/* ============================================================== */}
       {/* 1. TOP HEADER: STATION IDENTITY, MODES & ANTARCTIC SWITCHER    */}

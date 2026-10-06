@@ -53,6 +53,18 @@ import {
   EffectiveFuelState
 } from '@/types';
 import { hasPermission } from '@/lib/permissions';
+import {
+  HardwareFieldSimulator,
+  EdgeGatewayManager,
+  HardwareCommandDispatcher,
+  HardwareScenarioState,
+  HardwareNetworkSummary,
+  HardwareAssetNode,
+  CommandPacket,
+  EdgeGateway,
+  CommandExecutionResult,
+  HardwareCommandType
+} from '@/lib/hardware';
 
 interface StationContextType {
   // Station & Auth
@@ -61,6 +73,24 @@ interface StationContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   allUsers: User[];
+
+  // Hardware-First Architecture (SIH26060)
+  hardwareSimulator: HardwareFieldSimulator;
+  hardwareNetwork: HardwareNetworkSummary;
+  edgeGateway: EdgeGateway;
+  spatialHardwareNodes: HardwareAssetNode[];
+  commandHistory: CommandPacket[];
+  hardwareScenario: HardwareScenarioState;
+  toggleHardwareScenario: (scenario: keyof HardwareScenarioState) => void;
+  dispatchHardwareCommand: (params: {
+    deviceId: string;
+    assetId: string;
+    command: HardwareCommandType;
+    forceActuatorFailure?: boolean;
+  }) => Promise<CommandExecutionResult>;
+  syncEdgeGateway: () => Promise<{ syncedPacketsCount: number; executedCommandsCount: number }>;
+  selectedHardwareNodeId: string | null;
+  setSelectedHardwareNodeId: (id: string | null) => void;
   
   // Single Source of Truth: Canonical Station State
   effectiveStationState: EffectiveStationState;
@@ -163,6 +193,32 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     generator2Failure: false,
     resupplyDelay: false,
   });
+
+  // Hardware-First Architecture State (SIH26060)
+  const hardwareSimulators = useMemo(() => ({
+    maitri: new HardwareFieldSimulator('maitri'),
+    bharati: new HardwareFieldSimulator('bharati'),
+  }), []);
+
+  const edgeGateways = useMemo(() => ({
+    maitri: new EdgeGatewayManager('maitri'),
+    bharati: new EdgeGatewayManager('bharati'),
+  }), []);
+
+  const commandDispatcher = useMemo(() => new HardwareCommandDispatcher(), []);
+
+  const [hardwareScenario, setHardwareScenario] = useState<HardwareScenarioState>({
+    generator2Offline: false,
+    pumpVibrationFault: false,
+    pressureSensorOffline: false,
+    edgeGatewayDisconnected: false,
+    bessLowSoc: false,
+    fuelTransferFailure: false,
+    actuatorStartGenFailure: false,
+  });
+
+  const [commandHistory, setCommandHistory] = useState<CommandPacket[]>(() => commandDispatcher.getHistory());
+  const [selectedHardwareNodeId, setSelectedHardwareNodeId] = useState<string | null>(null);
 
   // Realtime continuous physical drift
   const [telemetryDrift, setTelemetryDrift] = useState<Record<StationId, { tempNoise: number; windNoise: number; loadNoise: number }>>({
@@ -504,6 +560,119 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
+    // Hardware-First Scenarios Integration (SIH26060 Requirements 8, 10, 20, 21, 28)
+    if (hardwareScenario.pumpVibrationFault) {
+      dynamicAlerts.push({
+        alertId: `ALT-DYN-PUMP-VIB-${stationId}`,
+        stationId,
+        severity: 'warning',
+        domain: 'infrastructure',
+        title: `Water Pump #1 Triaxial Vibration Warning (4.8 mm/s - ISO 10816 Zone D)`,
+        cause: [
+          `Vibration surged to 4.8 mm/s on primary pump drive bearing`,
+          `Suction pressure variance detected (2.7 bar vs nominal 3.4 bar)`,
+          `Hydraulic flow reduced to 98 Lpm: Mechanical degradation risk`,
+        ],
+        affectedAssets: [`${stationId}-water-1`],
+        recommendations: [
+          'Shift primary water extraction loop to standby pump',
+          'Inspect impeller cavitation and bearing lubricant viscosity',
+          'Place Life Support thermal trace loop on WATCH',
+        ],
+        acknowledged: false,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Update physical assets in evaluated state (Single Source of Truth)
+      evaluated.infrastructure.assets = evaluated.infrastructure.assets.map(asset => {
+        if (asset.type === 'water_pump') {
+          return {
+            ...asset,
+            status: 'warning',
+            health: 42,
+            metrics: {
+              ...asset.metrics,
+              vibrationMmSec: 4.8,
+              vibrationMmS: 4.8,
+              pressureBar: 2.7,
+              flowRateLpm: 98,
+            },
+            alerts: ['Vibration 4.8 mm/s (Zone D) + Pressure deviation = Mechanical wear risk'],
+          };
+        }
+        return asset;
+      });
+      evaluated.infrastructure.waterPumpHealth = 42;
+      evaluated.healthScore.infrastructureScore = Math.max(30, evaluated.healthScore.infrastructureScore - 22);
+      evaluated.healthScore.overall = Math.round(
+        (evaluated.healthScore.environmentScore * 0.20) +
+        (evaluated.healthScore.energyScore * 0.30) +
+        (evaluated.healthScore.infrastructureScore * 0.25) +
+        (evaluated.healthScore.logisticsScore * 0.25)
+      );
+    }
+
+    if (hardwareScenario.pressureSensorOffline) {
+      dynamicAlerts.push({
+        alertId: `ALT-DYN-SENSOR-FAULT-${stationId}`,
+        stationId,
+        severity: 'warning',
+        domain: 'infrastructure',
+        title: `Instrumentation Fault: Pump #1 Discharge Pressure Sensor Offline`,
+        cause: [
+          `Transducer circuit open on sensor ${stationId === 'bharati' ? 'BHR' : 'MTR'}-PUMP-01-PRES`,
+          `Data quality degraded to UNCERTAIN / FAULT`,
+          `Real physical equipment health is UNKNOWN — false alarm prevention interlock active`,
+        ],
+        affectedAssets: [`${stationId}-water-1`],
+        recommendations: [
+          'Dispatch instrumentation technician to pumphouse junction box',
+          'Verify analog 4-20mA loop continuity',
+          'Do NOT trip primary pump until physical telemetry verified',
+        ],
+        acknowledged: false,
+        createdAt: new Date().toISOString(),
+      });
+
+      evaluated.infrastructure.assets = evaluated.infrastructure.assets.map(asset => {
+        if (asset.type === 'water_pump') {
+          return {
+            ...asset,
+            health: 0,
+            metrics: {
+              ...asset.metrics,
+              pressureBar: 0,
+            },
+            alerts: ['Discharge pressure sensor offline: DATA QUALITY DEGRADED (Health Unknown)'],
+          };
+        }
+        return asset;
+      });
+    }
+
+    if (hardwareScenario.actuatorStartGenFailure) {
+      dynamicAlerts.push({
+        alertId: `ALT-DYN-ACTUATOR-FAULT-${stationId}`,
+        stationId,
+        severity: 'critical',
+        domain: 'energy',
+        title: `Actuator Start Failure: Genset #2 Auxiliary Starter Contactor Trip`,
+        cause: [
+          `Operator command START was ACKNOWLEDGED by gateway but EXECUTED FAILED`,
+          `Main breaker failed to close due to starter solenoid coil interlock`,
+          `Genset #2 remains in lock-out offline state`,
+        ],
+        affectedAssets: [`${stationId}-gen-02`],
+        recommendations: [
+          'Inspect generator main breaker auxiliary contacts',
+          'Verify 24V DC starting battery bank voltage',
+          'Keep cold-reserve Genset #4 on high standby',
+        ],
+        acknowledged: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
     // Merge dynamic alerts with state overrides to support complete workflow: ACTIVE -> ACKNOWLEDGED -> RESOLVED
     const candidateMap = new Map<string, Alert>();
     
@@ -580,7 +749,7 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       derived: evaluated.derived,
       lastEvaluatedAt: new Date().toISOString(),
     };
-  }, [connectivity, lastSyncTime, activeInjectedEvents, telemetryDrift, requisitions, alerts, stationMode]);
+  }, [connectivity, lastSyncTime, activeInjectedEvents, hardwareScenario, telemetryDrift, requisitions, alerts, stationMode]);
 
   // Phase 3 — Composable Scenario Toggling
   const toggleInjectedEvent = useCallback((eventKey: keyof ActiveScenarios) => {
@@ -982,6 +1151,106 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
     addAuditLog('CHANGE_STATION_MODE', 'STATION', currentStationId, `Operational stance updated to ${mode}`);
   }, [currentStationId, addAuditLog]);
 
+  // Hardware-First Handlers (SIH26060)
+  const toggleHardwareScenario = useCallback((scenario: keyof HardwareScenarioState) => {
+    setHardwareScenario(prev => {
+      const nextVal = !prev[scenario];
+      const updated = { ...prev, [scenario]: nextVal };
+
+      hardwareSimulators.maitri.setScenario(updated);
+      hardwareSimulators.bharati.setScenario(updated);
+
+      if (scenario === 'generator2Offline') {
+        setActiveInjectedEvents(aPrev => ({ ...aPrev, generator2Failure: nextVal }));
+      }
+
+      if (scenario === 'edgeGatewayDisconnected') {
+        edgeGateways.maitri.setConnectionState(nextVal ? 'OFFLINE' : 'CONNECTED');
+        edgeGateways.bharati.setConnectionState(nextVal ? 'OFFLINE' : 'CONNECTED');
+        setConnectivityState(nextVal ? 'DISCONNECTED' : 'CONNECTED');
+      }
+
+      addAuditLog('HARDWARE_SCENARIO_TOGGLE', 'STATION', currentStationId, `Hardware scenario ${scenario} set to ${nextVal}`);
+      return updated;
+    });
+  }, [hardwareSimulators, edgeGateways, currentStationId, addAuditLog]);
+
+  const dispatchHardwareCommand = useCallback(async (params: {
+    deviceId: string;
+    assetId: string;
+    command: HardwareCommandType;
+    forceActuatorFailure?: boolean;
+  }): Promise<CommandExecutionResult> => {
+    const result = await commandDispatcher.executeCommand({
+      stationId: currentStationId,
+      deviceId: params.deviceId,
+      assetId: params.assetId,
+      command: params.command,
+      currentUser,
+      forceActuatorFailure: params.forceActuatorFailure,
+    });
+
+    setCommandHistory(commandDispatcher.getHistory(currentStationId));
+
+    if (result.success && params.deviceId.includes('GEN-02')) {
+      if (params.command === 'START') {
+        setHardwareScenario(prev => {
+          const next = { ...prev, generator2Offline: false, actuatorStartGenFailure: false };
+          hardwareSimulators.maitri.setScenario(next);
+          hardwareSimulators.bharati.setScenario(next);
+          return next;
+        });
+        setActiveInjectedEvents(prev => ({ ...prev, generator2Failure: false }));
+      } else if (params.command === 'STOP') {
+        setHardwareScenario(prev => {
+          const next = { ...prev, generator2Offline: true };
+          hardwareSimulators.maitri.setScenario(next);
+          hardwareSimulators.bharati.setScenario(next);
+          return next;
+        });
+        setActiveInjectedEvents(prev => ({ ...prev, generator2Failure: true }));
+      }
+    } else if (!result.success && result.isActuatorFailure) {
+      setHardwareScenario(prev => {
+        const next = { ...prev, actuatorStartGenFailure: true };
+        hardwareSimulators.maitri.setScenario(next);
+        hardwareSimulators.bharati.setScenario(next);
+        return next;
+      });
+    }
+
+    if (params.command === 'RESET_FAULT') {
+      setHardwareScenario(prev => {
+        const next = { ...prev, pumpVibrationFault: false, pressureSensorOffline: false, actuatorStartGenFailure: false, fuelTransferFailure: false };
+        hardwareSimulators.maitri.setScenario(next);
+        hardwareSimulators.bharati.setScenario(next);
+        return next;
+      });
+    }
+
+    addAuditLog('DISPATCH_HARDWARE_COMMAND', 'STATION', params.deviceId, `${params.command} executed by ${currentUser.name} - Status: ${result.packet.status}`);
+    return result;
+  }, [commandDispatcher, currentStationId, currentUser, hardwareSimulators, addAuditLog]);
+
+  const syncEdgeGateway = useCallback(async () => {
+    const res = edgeGateways[currentStationId].syncAfterReconnection();
+    setHardwareScenario(prev => {
+      const next = { ...prev, edgeGatewayDisconnected: false };
+      hardwareSimulators.maitri.setScenario(next);
+      hardwareSimulators.bharati.setScenario(next);
+      return next;
+    });
+    setConnectivityState('CONNECTED');
+    setSyncNotification(`${res.syncedPacketsCount} buffered packets reconciled from ${edgeGateways[currentStationId].getGatewayState().gatewayId}`);
+    addAuditLog('EDGE_GATEWAY_SYNC', 'STATION', currentStationId, `Reconnected edge gateway; synced ${res.syncedPacketsCount} packets.`);
+    return res;
+  }, [edgeGateways, currentStationId, hardwareSimulators, addAuditLog]);
+
+  const currentSimulator = hardwareSimulators[currentStationId];
+  const hardwareNetwork = currentSimulator.getNetworkSummary();
+  const edgeGateway = edgeGateways[currentStationId].getGatewayState();
+  const spatialHardwareNodes = currentSimulator.getSpatialHardwareNodes();
+
   return (
     <StationContext.Provider value={{
       currentStationId,
@@ -1021,6 +1290,18 @@ export function StationProvider({ children }: { children: React.ReactNode }) {
       actionFeedback,
       dismissActionFeedback,
       auditLogs,
+      // Hardware-First Architecture (SIH26060)
+      hardwareSimulator: currentSimulator,
+      hardwareNetwork,
+      edgeGateway,
+      spatialHardwareNodes,
+      commandHistory,
+      hardwareScenario,
+      toggleHardwareScenario,
+      dispatchHardwareCommand,
+      syncEdgeGateway,
+      selectedHardwareNodeId,
+      setSelectedHardwareNodeId,
       // Real-Time Polar Weather Engine (SIH26060)
       liveWeather,
       normalizedWeather,

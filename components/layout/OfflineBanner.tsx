@@ -68,6 +68,9 @@ export default function OfflineBanner() {
           <span className="font-extrabold uppercase tracking-wider text-xs">
             {isIntermittent ? 'Satellite Link Intermittent' : 'Station Disconnected (Edge Mode)'}
           </span>
+          <span className="px-2 py-0.5 rounded bg-amber-500/30 text-amber-300 font-extrabold border border-amber-400 text-[10px] animate-pulse">
+            LOCAL CONTROL ACTIVE
+          </span>
           <span className="text-white/40">|</span>
           <span className="text-[11px] opacity-90">
             Last Cloud Sync: <strong className="text-white">{new Date(lastSyncTime).toLocaleTimeString()}</strong>
